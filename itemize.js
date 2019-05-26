@@ -73,7 +73,11 @@ class Itemize {
             child.classList.add("itemize_" + child.itemizeId);
             if (!options.eraseBtn) {
               child.onclick = () => {
-                this.erase(child.itemizeId);
+                if (this.options.modalConfirm) {
+                  this.modalConfirm(child.itemizeId);
+                } else {
+                  this.erase(child.itemizeId);
+                }
               };
             } else {
               if (!options.eraseBtnClass) {
@@ -82,7 +86,12 @@ class Itemize {
                 button.classList.add("itemize_btn_" + child.itemizeId);
                 button.classList.add("itemize_btn_close");
                 button.onclick = () => {
-                  this.erase(child.itemizeId);
+                  if (this.options.modalConfirm) {
+                    console.log(child.itemizeId);
+                    this.modalConfirm(child.itemizeId);
+                  } else {
+                    this.erase(child.itemizeId);
+                  }
                 };
                 child.appendChild(button);
               } else {
@@ -96,7 +105,11 @@ class Itemize {
                     "\n";
                 }
                 button.onclick = () => {
-                  this.erase(child.itemizeId);
+                  if (this.options.modalConfirm) {
+                    this.modalConfirm(child.itemizeId);
+                  } else {
+                    this.erase(child.itemizeId);
+                  }
                 };
               }
             }
@@ -106,6 +119,122 @@ class Itemize {
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + knownErrors);
       console.error(error);
+    }
+  }
+  modalConfirm(el) {
+    try {
+      let item = null;
+      if (typeof el === "string") {
+        console.log("strign");
+        for (let i = 0; i < this.items.length; i++) {
+          if (this.items[i].itemizeId === el) {
+            item = this.items[i];
+          }
+        }
+        if (!item) {
+          item = document.querySelector(el);
+          if (!item || !item.itemizeId) {
+            throw new Error(
+              "Not a valid Itemize element1, cannot create a confirm modal."
+            );
+          }
+        }
+        if (!item) {
+          throw new Error("No item found2, cannot create a confirm modal.");
+        }
+      } else {
+        item = elem;
+        if (!item) {
+          throw new Error("No item found3, cannot create a confirm modal.");
+        }
+        if (!item.itemizeId) {
+          throw new Error(
+            "Not a valid Itemize element4, cannot create a confirm modal."
+          );
+        }
+      }
+      const backDrop = document.createElement("div");
+      const modal = document.createElement("div");
+      const alertText = document.createElement("div");
+      const btnConfirm = document.createElement("button");
+      const btnCancel = document.createElement("button");
+      const body = document.querySelector("body");
+      backDrop.classList.add("itemize_modal_backdrop");
+      modal.classList.add("itemize_modal");
+      alertText.textContent = "Are you sure?";
+      btnConfirm.innerHTML = "Yes";
+      btnCancel.innerHTML = "Cancel";
+      modal.appendChild(alertText);
+      modal.appendChild(btnConfirm);
+      modal.appendChild(btnCancel);
+      backDrop.onclick = () => {
+        body.removeChild(backDrop);
+        body.removeChild(modal);
+      };
+      btnCancel.onclick = () => {
+        body.removeChild(backDrop);
+        body.removeChild(modal);
+      };
+      btnConfirm.onclick = () => {
+        this.erase(el);
+        body.removeChild(backDrop);
+        body.removeChild(modal);
+      };
+      Object.assign(modal.style, {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        right: "0",
+        bottom: "0",
+        margin: "auto",
+        width: "35vw",
+        height: "35vh",
+        background: "rgb(250, 220,250)",
+        zIndex: 1000000
+      });
+      Object.assign(backDrop.style, {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100%",
+        height: "100%",
+        background: "rgba(0, 0, 0,0.5)",
+        zIndex: 100000
+      });
+      body.prepend(modal);
+      body.prepend(backDrop);
+      backDrop.animate(
+        [
+          {
+            opacity: 0
+          },
+          {
+            opacity: 1
+          }
+        ],
+        {
+          duration: 300,
+          easing: "ease-in-out",
+          fill: "both"
+        }
+      );
+      modal.animate(
+        [
+          {
+            opacity: 0
+          },
+          {
+            opacity: 1
+          }
+        ],
+        {
+          duration: 300,
+          easing: "ease-in-out",
+          fill: "both"
+        }
+      );
+    } catch (error) {
+      console.error("- Itemize - ERROR:\n" + error);
     }
   }
   erase(el) {
@@ -147,16 +276,15 @@ class Itemize {
         }
       }
       if (item.arrayPosition || item.arrayPosition === 0) {
-        if (this.options.onErase) {
-          this.options.onErase(item);
-        }
-
         if (this.options.flipAnimation) {
           this.flipRead(this.items);
           this.flipRemove(item);
           this.items.splice(item.arrayPosition, 1);
           this.flipPlay(this.items);
         } else {
+          if (this.options.onErase) {
+            this.options.onErase(item);
+          }
           el.removeChild(item);
           this.items.splice(item.arrayPosition, 1);
         }
@@ -191,6 +319,9 @@ class Itemize {
       }
     );
     setTimeout(() => {
+      if (this.options.onErase) {
+        this.options.onErase(elem);
+      }
       elem.parentNode.removeChild(elem);
     }, this.options.flipAnimDuration);
   }
@@ -225,6 +356,7 @@ class Itemize {
       );
     }
   }
+
   mergeOptions(newOptions) {
     try {
       const defaultOptions = {
@@ -234,6 +366,7 @@ class Itemize {
         eraseBtnColor: "#525252",
         eraseBtnHoverColor: "#000000",
         eraseBtnClass: null,
+        modalConfirm: false,
         flipAnimation: false,
         flipAnimDuration: 500,
         onErase: null
@@ -252,6 +385,9 @@ class Itemize {
     let error = "";
     if (typeof options.eraseBtn !== "boolean") {
       error += "option 'button' must be a Boolean\n";
+    }
+    if (typeof options.modalConfirm !== "boolean") {
+      error += "option 'modalConfirm' must be a Boolean\n";
     }
     if (typeof options.eraseBtnWidth !== "number") {
       error += "option 'eraseBtnWidth' must be a Number\n";
