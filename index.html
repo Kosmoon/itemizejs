@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="index.css">
+    <script src="itemize.js"></script>
+
+    <title>Itemize</title>
+</head>
+
+<body>
+    <div class="closable_container" itemize>
+        <li class="closable">
+            test1
+            <div class="close_btn">test</div>
+        </li>
+        <li class="closable">
+            test2
+            <div class="close_btn">test</div>
+        </li>
+        <li class="closable">
+            test3
+            <div class="close_btn">test</div>
+        </li>
+        <li class="closable">
+            test4
+            <div class="close_btn">test</div>
+        </li>
+        <li class="closable">
+            test5
+            <div class="close_btn">test</div>
+        </li>
+    </div>
+
+    <div class="closable_container2" itemize>
+        <li class="closable">
+            test1
+            <div class="close_btn">test</div>
+        </li>
+        <li class="closable">
+            test2
+            <div class="close_btn">test</div>
+        </li>
+        <li class="closable">
+            test3
+            <div class="close_btn">test</div>
+        </li>
+        <li class="closable">
+            test4
+            <div class="close_btn">test</div>
+        </li>
+        <li class="closable">
+            test5
+            <div class="close_btn">test</div>
+        </li>
+    </div>
+
+    <script>
+        let closableContainer = new Itemize({
+            eraseBtnWidth: 20,
+            eraseBtnThickness: 1,
+            flipAnimation: true,
+            eraseConfirm: () => {
+                return true;
+            },
+            onErase: (el) => {
+                console.log(el.itemizeId)
+            }
+        });
+        console.log(closableContainer)
+        console.log("L'execution à continué")
+    </script>
+
+</body>
+
+</html>

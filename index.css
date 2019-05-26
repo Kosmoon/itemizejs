@@ -1,0 +1,90 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.closable_container {
+    background: rgb(194, 194, 202);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.closable_container2 {
+    background: rgb(223, 223, 255);
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+.closable {
+    background: rgb(238, 238, 238);
+    width: 33%;
+    margin: 20px;
+    -webkit-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+
+}
+
+
+.closable div {
+    height: 100px;
+    width: 100px;
+}
+
+.close_btn {}
+
+.itemize_btn_close {
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+
+/* .itemize_btn_close {
+    position: absolute;
+    top: 0px !important;
+    right: 0px !important;
+    width: 20px !important;
+    height: 20px !important;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.itemize_btn_close:hover::before,
+.itemize_btn_close:hover::after {
+    background: #000000;
+
+}
+
+.itemize_btn_close::before,
+.itemize_btn_close::after {
+    content: "";
+    position: absolute;
+    height: 1px;
+    width: 20px;
+    top: 50%;
+    left: 0;
+    margin-top: -1px;
+    background: #525252;
+    border-radius: 100%;
+}
+
+.itemize_btn_close::before {
+    -webkit-transform: rotate(45deg);
+    -moz-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    -o-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+.itemize_btn_close::after {
+    -webkit-transform: rotate(-45deg);
+    -moz-transform: rotate(-45deg);
+    -ms-transform: rotate(-45deg);
+    -o-transform: rotate(-45deg);
+    transform: rotate(-45deg);
+} */

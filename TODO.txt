@@ -1,0 +1,6 @@
+[ ] - system d'alert avant suppression
+[ ] - before erase async
+[ ] - animate() browser compatibility
+[ ] - flip presset et duration
+[ ] - flip presset dans les params de la function erase pour flip de la facon qu'on veux pour chaque erase
+[ ] - doc commentée avec @param (HTMLelement) etc..
