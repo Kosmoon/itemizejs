@@ -1,3 +1,4 @@
+[ ] - parent attributes -> options
 [ ] - event listener sur parent pour gerer les add (pas oublier d'unscubscribe)
 [ ] - system d'alert avant suppression
 [ ] - before erase async
