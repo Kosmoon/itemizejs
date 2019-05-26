@@ -1,8 +1,7 @@
 /*
- * itemize.js v0.56
- * (c) 2019 Kosmoon Studio
- * Released under the MIT license
- * itemizejs.com
+ -- itemize.js v0.56 --
+ -- (c) 2019 Kosmoon Studio --
+ -- Released under the MIT license --
  */
 class Itemize {
   constructor(options) {
@@ -84,6 +83,34 @@ class Itemize {
         let options = Object.assign({}, this.globalOptions); // cloning options
         options = this.getOptionsFromAttributes(parent, options);
         parent.options = options;
+        // node added OBSERVER
+        let config = { attributes: true, childList: true, subtree: true };
+        let callback = function(mutationsList, observer) {
+          for (var mutation of mutationsList) {
+            if (mutation.type == "childList") {
+              mutation.addedNodes.forEach(node => {
+                let newNode = true;
+                node.classList.forEach(className => {
+                  if (className.indexOf("itemize_") !== -1) {
+                    newNode = false;
+                  }
+                });
+                if (newNode) {
+                  console.log("nouvel elment added");
+                  console.log(node);
+                }
+              });
+              mutation.removedNodes.forEach(node => {
+                console.log("nouvel elment removed");
+                console.log(node);
+              });
+            }
+          }
+        };
+        let observer = new MutationObserver(callback);
+        observer.observe(parent, config);
+        // Later, you can stop observing
+        // observer.disconnect();
         let oldStyle = document.querySelector(this.target + " .itemize_style");
         if (oldStyle) {
           parent.querySelector(".itemize_style").remove();
