@@ -1,3 +1,9 @@
+/*
+ * itemize.js v0.56
+ * (c) 2019 Kosmoon Studio
+ * Released under the MIT license
+ * itemizejs.com
+ */
 class Itemize {
   constructor(options) {
     this.items = [];
@@ -57,7 +63,6 @@ class Itemize {
       options.flipAnimDuration = parseInt(
         parent.getAttribute("flipAnimDuration")
       );
-      console.log(options.flipAnimDuration);
     }
     return options;
   }
@@ -341,17 +346,44 @@ class Itemize {
         }
       }
       if (item.arrayPosition || item.arrayPosition === 0) {
-        if (item.parentNode.options.flipAnimation) {
-          this.flipRead(this.items);
-          this.flipRemove(item);
-          this.items.splice(item.arrayPosition, 1);
-          this.flipPlay(this.items);
-        } else {
-          if (this.globalOptions.onErase) {
-            this.globalOptions.onErase(item);
+        if (this.globalOptions.beforeErase) {
+          let confirmErase = this.globalOptions.beforeErase(item);
+          if (typeof confirmErase.then === "function") {
+            confirmErase
+              .then(response => {
+                console.log(response);
+                if (item.parentNode.options.flipAnimation) {
+                  this.flipRead(this.items);
+                  this.flipRemove(item);
+                  this.items.splice(item.arrayPosition, 1);
+                  this.flipPlay(this.items);
+                } else {
+                  item.parentNode.removeChild(item);
+                  this.items.splice(item.arrayPosition, 1);
+                }
+              })
+              .catch(err => console.log(err));
+          } else if (confirmErase) {
+            if (item.parentNode.options.flipAnimation) {
+              this.flipRead(this.items);
+              this.flipRemove(item);
+              this.items.splice(item.arrayPosition, 1);
+              this.flipPlay(this.items);
+            } else {
+              item.parentNode.removeChild(item);
+              this.items.splice(item.arrayPosition, 1);
+            }
           }
-          item.parentNode.removeChild(item);
-          this.items.splice(item.arrayPosition, 1);
+        } else {
+          if (item.parentNode.options.flipAnimation) {
+            this.flipRead(this.items);
+            this.flipRemove(item);
+            this.items.splice(item.arrayPosition, 1);
+            this.flipPlay(this.items);
+          } else {
+            item.parentNode.removeChild(item);
+            this.items.splice(item.arrayPosition, 1);
+          }
         }
       } else {
         throw new Error("this element has an invalid itemizeId");
@@ -366,7 +398,6 @@ class Itemize {
     const oldPos = this.elPos[elem.itemizeId];
     const deltaX = oldPos.x - newPos.x;
     const deltaY = oldPos.y - newPos.y;
-    console.log(elem.parentNode.options.flipAnimDuration);
     elem.animate(
       [
         {
@@ -385,9 +416,6 @@ class Itemize {
       }
     );
     setTimeout(() => {
-      if (this.globalOptions.onErase) {
-        this.globalOptions.onErase(elem);
-      }
       elem.parentNode.removeChild(elem);
     }, elem.parentNode.options.flipAnimDuration);
   }
@@ -435,7 +463,7 @@ class Itemize {
         modalConfirm: false,
         flipAnimation: true,
         flipAnimDuration: 500,
-        onErase: null
+        beforeErase: null
       };
       for (var key in newOptions) {
         if (newOptions.hasOwnProperty(key))
@@ -470,8 +498,8 @@ class Itemize {
     if (typeof options.flipAnimDuration !== "number") {
       error += "option 'flipAnimDuration' must be a Number\n";
     }
-    if (options.onErase && typeof options.onErase !== "function") {
-      error += "option 'onErase' must be a Function\n";
+    if (options.beforeErase && typeof options.beforeErase !== "function") {
+      error += "option 'beforeErase' must be a Function\n";
     }
     if (error === "") {
       return "valid";

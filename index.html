@@ -16,7 +16,7 @@
       itemize
       eraseBtn="true"
       eraseBtnWidth="20"
-      flipAnimDuration="2000"
+      flipAnimDuration="300"
     >
       <li class="closable">
         test1
@@ -101,11 +101,16 @@
         eraseBtnThickness: 1,
         flipAnimation: true,
         modalConfirm: true,
-        eraseConfirm: () => {
-          return true;
-        },
-        onErase: el => {
-          console.log(el.itemizeId);
+        beforeErase: el => {
+          return new Promise((resolve, reject) => {
+            setTimeout(() => {
+              if (Math.random() > 0.5) {
+                resolve(el.itemizeId + " OUEP");
+              } else {
+                reject(el.itemizeId + " NOP");
+              }
+            }, 1000);
+          });
         }
       });
       console.log(closableContainer);
