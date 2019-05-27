@@ -1,120 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <link rel="stylesheet" href="index.css" />
-    <script src="itemize.js"></script>
 
-    <title>Itemize</title>
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="stylesheet" href="index.css" />
+  <script src="itemize.min.js"></script>
 
-  <body>
-    <div
-      class="closable_container"
-      itemize
-      eraseBtn="true"
-      eraseBtnWidth="20"
-      flipAnimDuration="300"
-    >
-      <li class="closable">
-        test1
-        <div class="close_btn">test1</div>
-      </li>
-      <li class="closable">
-        test2
-        <div class="close_btn">test1</div>
-      </li>
-      <li class="closable">
-        test3
-        <div class="close_btn">test</div>
-      </li>
-      <li class="closable">
-        test4
-        <div class="close_btn">test</div>
-      </li>
-      <li class="closable">
-        test5
-        <div class="close_btn">test</div>
-      </li>
-    </div>
+  <title>Itemize</title>
+</head>
 
-    <div
-      class="closable_container2"
-      itemize
-      eraseBtn="true"
-      eraseBtnWidth="10"
-      modalConfirm="false"
-    >
-      <li class="closable">
-        test1
-        <div class="close_btn">test2</div>
-      </li>
-      <li class="closable">
-        test2
-        <div class="close_btn">test2</div>
-      </li>
-      <li class="closable">
-        test3
-        <div class="close_btn">test</div>
-      </li>
-      <li class="closable">
-        test4
-        <div class="close_btn">test</div>
-      </li>
-      <li class="closable">
-        test5
-        <div class="close_btn">test</div>
-      </li>
-    </div>
-    <div
-      class="closable_container3"
-      itemize
-      eraseBtn="false"
-      flipAnimation="false"
-    >
-      <li class="closable">
-        test1
-        <div class="close_btn">test3</div>
-      </li>
-      <li class="closable">
-        test2
-        <div class="close_btn">test3</div>
-      </li>
-      <li class="closable">
-        test3
-        <div class="close_btn">test</div>
-      </li>
-      <li class="closable">
-        test4
-        <div class="close_btn">test</div>
-      </li>
-      <li class="closable">
-        test5
-        <div class="close_btn">test</div>
-      </li>
-    </div>
-    <script>
-      let closableContainer = new Itemize({
-        eraseBtnWidth: 20,
-        eraseBtnThickness: 1,
-        flipAnimation: true,
-        modalConfirm: true,
-        beforeErase: el => {
-          return new Promise((resolve, reject) => {
-            setTimeout(() => {
-              if (Math.random() > 0.5) {
-                resolve(el.itemizeId + " OUEP");
-              } else {
-                reject(el.itemizeId + " NOP");
-              }
-            }, 1000);
-          });
-        }
-      });
-      console.log(closableContainer);
-      console.log("L'execution à continué");
-    </script>
-  </body>
+<body>
+  <div class="closable_container" itemize eraseBtn="true" eraseBtnWidth="20" flipAnimDuration="300"
+    customModalText="AllO?">
+    <li class="closable" notItemize>
+      test1
+      <div class="close_btn">test1</div>
+    </li>
+    <li class="closable">
+      test2
+      <div class="close_btn">test1</div>
+    </li>
+    <li class="closable">
+      test3
+      <div class="close_btn">test</div>
+    </li>
+    <li class="closable">
+      test4
+      <div class="close_btn">test</div>
+    </li>
+    <li class="closable">
+      test5
+      <div class="close_btn">test</div>
+    </li>
+  </div>
+
+  <div class="closable_container2" itemize eraseBtn="true" eraseBtnWidth="10" modalConfirm="false">
+    <li class="closable">
+      test1
+      <div class="close_btn">test2</div>
+    </li>
+    <li class="closable">
+      test2
+      <div class="close_btn">test2</div>
+    </li>
+    <li class="closable">
+      test3
+      <div class="close_btn">test</div>
+    </li>
+    <li class="closable">
+      test4
+      <div class="close_btn">test</div>
+    </li>
+    <li class="closable">
+      test5
+      <div class="close_btn">test</div>
+    </li>
+  </div>
+  <div class="closable_container3" itemize eraseBtn="false" flipAnimation="false">
+    <li class="closable">
+      test1
+      <div class="close_btn">test3</div>
+    </li>
+    <li class="closable">
+      test2
+      <div class="close_btn">test3</div>
+    </li>
+    <li class="closable">
+      test3
+      <div class="close_btn">test</div>
+    </li>
+    <li class="closable">
+      test4
+      <div class="close_btn">test</div>
+    </li>
+    <li class="closable">
+      test5
+      <div class="close_btn">test</div>
+    </li>
+  </div>
+  <script>
+    let closableContainer = new Itemize({
+      eraseBtnWidth: 20,
+      eraseBtnThickness: 1,
+      flipAnimation: true,
+      modalConfirm: true,
+      customModalText: "T'es sur de toi, on supprime?",
+      beforeErase: el => {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            if (Math.random() > 0.5) {
+              resolve(el.itemizeId + " OUEP");
+            } else {
+              reject(el.itemizeId + " NOP");
+            }
+          }, 1000);
+        });
+      }
+    });
+    console.log(closableContainer);
+    console.log("L'execution à continué");
+  </script>
+</body>
+
 </html>

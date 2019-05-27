@@ -55,6 +55,9 @@ class Itemize {
     ) {
       options.eraseBtnWidth = parseInt(parent.getAttribute("eraseBtnWidth"));
     }
+    if (typeof parent.getAttribute("customModalText") === "string") {
+      options.customModalText = parent.getAttribute("customModalText");
+    }
     if (
       typeof parent.getAttribute("flipAnimDuration") === "string" &&
       parseInt(parent.getAttribute("flipAnimDuration")) > 0
@@ -96,13 +99,21 @@ class Itemize {
                   }
                 });
                 if (newNode) {
-                  console.log("nouvel elment added");
+                  console.log("nouvel element added");
                   console.log(node);
                 }
               });
               mutation.removedNodes.forEach(node => {
-                console.log("nouvel elment removed");
-                console.log(node);
+                let newNode = true;
+                node.classList.forEach(className => {
+                  if (className.indexOf("itemize_") !== -1) {
+                    newNode = false;
+                  }
+                });
+                if (newNode) {
+                  console.log("nouvel element removed");
+                  console.log(node);
+                }
               });
             }
           }
@@ -160,7 +171,10 @@ class Itemize {
         parent.appendChild(css);
         for (let z = 0; z < parent.children.length; z++) {
           let child = parent.children[z];
-          if (child.type !== "text/css") {
+          if (
+            child.type !== "text/css" &&
+            typeof child.getAttribute("notItemize") !== "string"
+          ) {
             if (!child.itemizeId) {
               child.itemizeId = this.makeId(8);
             }
@@ -253,41 +267,85 @@ class Itemize {
       const backDrop = document.createElement("div");
       const modal = document.createElement("div");
       const alertText = document.createElement("div");
+      const btnContainer = document.createElement("div");
       const btnConfirm = document.createElement("button");
       const btnCancel = document.createElement("button");
       const body = document.querySelector("body");
+      const bodyInitialOverflow = body.style.overflow;
+      body.style.overflow = "hidden";
       backDrop.classList.add("itemize_modal_backdrop");
       modal.classList.add("itemize_modal");
-      alertText.textContent = "Are you sure?";
+      alertText.classList.add("itemize_modal_text");
+      btnConfirm.classList.add("itemize_modal_btnConfirm");
+      btnCancel.classList.add("itemize_modal_btnCancel");
+      alertText.textContent = item.parentNode.options.customModalText;
       btnConfirm.innerHTML = "Yes";
       btnCancel.innerHTML = "Cancel";
+      btnContainer.appendChild(btnCancel);
+      btnContainer.appendChild(btnConfirm);
       modal.appendChild(alertText);
-      modal.appendChild(btnConfirm);
-      modal.appendChild(btnCancel);
+      modal.appendChild(btnContainer);
       backDrop.onclick = () => {
         body.removeChild(backDrop);
         body.removeChild(modal);
+        body.style.overflow = bodyInitialOverflow;
       };
       btnCancel.onclick = () => {
         body.removeChild(backDrop);
         body.removeChild(modal);
+        body.style.overflow = bodyInitialOverflow;
       };
       btnConfirm.onclick = () => {
         this.erase(el);
         body.removeChild(backDrop);
         body.removeChild(modal);
+        body.style.overflow = bodyInitialOverflow;
       };
+
       Object.assign(modal.style, {
         position: "fixed",
-        top: "0",
-        left: "0",
-        right: "0",
-        bottom: "0",
-        margin: "auto",
-        width: "35vw",
-        height: "35vh",
-        background: "rgb(250, 220,250)",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        padding: "25px",
+        background: "#FFFFFF",
+        width: "90vw",
+        maxWidth: "500px",
+        borderRadius: "4px",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        textAlign: "center",
+        fontFamily: "helvetica",
         zIndex: 1000000
+      });
+      Object.assign(alertText.style, {
+        marginBottom: "25px"
+      });
+      Object.assign(btnContainer.style, {
+        width: "100%",
+        display: "flex"
+      });
+      Object.assign(btnCancel.style, {
+        background: "#6C757D",
+        border: "none",
+        padding: "10px 0 10px 0",
+        borderTopLeftRadius: "4px",
+        borderBottomLeftRadius: "4px",
+        flex: "1 0 auto",
+        cursor: "pointer",
+        color: "#FFFFFF"
+      });
+      Object.assign(btnConfirm.style, {
+        background: "#F94336",
+        border: "none",
+        padding: "10px 0 10px 0",
+        borderTopRightRadius: "4px",
+        borderBottomRightRadius: "4px",
+        flex: "1 0 auto",
+        cursor: "pointer",
+        color: "#FFFFFF"
       });
       Object.assign(backDrop.style, {
         position: "fixed",
@@ -373,24 +431,42 @@ class Itemize {
         }
       }
       if (item.arrayPosition || item.arrayPosition === 0) {
-        if (this.globalOptions.beforeErase) {
-          let confirmErase = this.globalOptions.beforeErase(item);
-          if (typeof confirmErase.then === "function") {
-            confirmErase
-              .then(response => {
-                console.log(response);
-                if (item.parentNode.options.flipAnimation) {
-                  this.flipRead(this.items);
-                  this.flipRemove(item);
-                  this.items.splice(item.arrayPosition, 1);
-                  this.flipPlay(this.items);
-                } else {
-                  item.parentNode.removeChild(item);
-                  this.items.splice(item.arrayPosition, 1);
-                }
-              })
-              .catch(err => console.log(err));
-          } else if (confirmErase) {
+        if (!item.removeStatus || item.removeStatus !== "pending") {
+          if (this.globalOptions.beforeErase) {
+            item.removeStatus = "pending";
+            let confirmErase = this.globalOptions.beforeErase(item);
+            if (typeof confirmErase.then === "function") {
+              confirmErase
+                .then(response => {
+                  console.log(response);
+                  if (item.parentNode.options.flipAnimation) {
+                    this.flipRead(this.items);
+                    this.flipRemove(item);
+                    this.items.splice(item.arrayPosition, 1);
+                    this.flipPlay(this.items);
+                  } else {
+                    item.parentNode.removeChild(item);
+                    this.items.splice(item.arrayPosition, 1);
+                  }
+                  item.removeStatus = null;
+                })
+                .catch(err => {
+                  console.log(err);
+                  item.removeStatus = null;
+                });
+            } else if (confirmErase) {
+              if (item.parentNode.options.flipAnimation) {
+                this.flipRead(this.items);
+                this.flipRemove(item);
+                this.items.splice(item.arrayPosition, 1);
+                this.flipPlay(this.items);
+              } else {
+                item.parentNode.removeChild(item);
+                this.items.splice(item.arrayPosition, 1);
+              }
+              item.removeStatus = null;
+            }
+          } else {
             if (item.parentNode.options.flipAnimation) {
               this.flipRead(this.items);
               this.flipRemove(item);
@@ -400,16 +476,7 @@ class Itemize {
               item.parentNode.removeChild(item);
               this.items.splice(item.arrayPosition, 1);
             }
-          }
-        } else {
-          if (item.parentNode.options.flipAnimation) {
-            this.flipRead(this.items);
-            this.flipRemove(item);
-            this.items.splice(item.arrayPosition, 1);
-            this.flipPlay(this.items);
-          } else {
-            item.parentNode.removeChild(item);
-            this.items.splice(item.arrayPosition, 1);
+            item.removeStatus = null;
           }
         }
       } else {
@@ -488,6 +555,7 @@ class Itemize {
         eraseBtnHoverColor: "#000000",
         eraseBtnClass: null,
         modalConfirm: false,
+        customModalText: "Are you sure to remove this item?",
         flipAnimation: true,
         flipAnimDuration: 500,
         beforeErase: null
@@ -518,6 +586,9 @@ class Itemize {
     }
     if (options.eraseBtnClass && typeof options.eraseBtnClass !== "string") {
       error += "option 'buttonClass' must be a String\n";
+    }
+    if (typeof options.customModalText !== "string") {
+      error += "option 'customModalText' must be a String\n";
     }
     if (typeof options.flipAnimation !== "boolean") {
       error += "option 'flipAnimation' must be a Boolean\n";
