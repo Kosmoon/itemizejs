@@ -1,5 +1,6 @@
 [x] - attribut "notItemize" sur les items a ne pas itemizer
 [x] - ajouter proprietée "removeStatus" sur les items pour pas clicker pedant que la promise sexecute
+[ ] - alert: remove canceled a cause de la fonction, remove success,
 [ ] - cross close modal
 [ ] - investiguer sur la disconection des observer (memory leak?)
 [ ] - parent attributes -> options

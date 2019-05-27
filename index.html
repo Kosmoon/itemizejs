@@ -34,9 +34,10 @@
       test5
       <div class="close_btn">test</div>
     </li>
+
   </div>
 
-  <div class="closable_container2" itemize eraseBtn="true" eraseBtnWidth="10" modalConfirm="false">
+  <div class="closable_container2" itemize eraseBtn="true" eraseBtnWidth="30" modalConfirm="false">
     <li class="closable">
       test1
       <div class="close_btn">test2</div>
@@ -79,6 +80,7 @@
       test5
       <div class="close_btn">test</div>
     </li>
+
   </div>
   <script>
     let closableContainer = new Itemize({
@@ -88,15 +90,16 @@
       modalConfirm: true,
       customModalText: "T'es sur de toi, on supprime?",
       beforeErase: el => {
-        return new Promise((resolve, reject) => {
-          setTimeout(() => {
-            if (Math.random() > 0.5) {
-              resolve(el.itemizeId + " OUEP");
-            } else {
-              reject(el.itemizeId + " NOP");
-            }
-          }, 1000);
-        });
+        return true
+        // return new Promise((resolve, reject) => {
+        //   setTimeout(() => {
+        //     if (Math.random() > 0.5) {
+        //       resolve(el.itemizeId + " OUEP");
+        //     } else {
+        //       reject(el.itemizeId + " NOP");
+        //     }
+        //   }, 300);
+        // });
       }
     });
     console.log(closableContainer);

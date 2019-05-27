@@ -7,7 +7,7 @@ class Itemize {
   constructor(options) {
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
-
+    this.alertNb = 0;
     let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     if (optionCheckResult !== "valid") {
       // check: option type error
@@ -85,7 +85,7 @@ class Itemize {
         parent.classList.add(`itemize_parent_${parentItemizeId}`); // refresh parent with a new itemizeId class
         let options = Object.assign({}, this.globalOptions); // cloning options
         options = this.getOptionsFromAttributes(parent, options);
-        parent.options = options;
+        parent.itemizeOptions = options;
         // node added OBSERVER
         let config = { attributes: true, childList: true, subtree: true };
         let callback = function(mutationsList, observer) {
@@ -130,33 +130,36 @@ class Itemize {
         css.classList.add("itemize_style");
         css.type = "text/css";
         let styles = "";
-        if (parent.options.eraseBtn && !parent.options.eraseBtnClass) {
+        if (
+          parent.itemizeOptions.eraseBtn &&
+          !parent.itemizeOptions.eraseBtnClass
+        ) {
           styles += `.itemize_parent_${
             parent.itemizeId
           } .itemize_btn_close{position:absolute;top:0!important;right:0!important;width:${
-            parent.options.eraseBtnWidth
+            parent.itemizeOptions.eraseBtnWidth
           }px!important;height:${
-            parent.options.eraseBtnWidth
+            parent.itemizeOptions.eraseBtnWidth
           }px!important;overflow:hidden;cursor:pointer;margin-top:5px;margin-right:5px}.itemize_parent_${
             parent.itemizeId
           } .itemize_btn_close:hover::after,.itemize_parent_${
             parent.itemizeId
           } .itemize_btn_close:hover::before{background:${
-            parent.options.eraseBtnHoverColor
+            parent.itemizeOptions.eraseBtnHoverColor
           }}.itemize_parent_${
             parent.itemizeId
           } .itemize_btn_close::after,.itemize_parent_${
             parent.itemizeId
           } .itemize_btn_close::before{content:'';position:absolute;height:${
-            parent.options.eraseBtnThickness
+            parent.itemizeOptions.eraseBtnThickness
           }px;width:${
-            parent.options.eraseBtnWidth
+            parent.itemizeOptions.eraseBtnWidth
           }px;top:50%;left:0;margin-top:${
-            parent.options.eraseBtnThickness * 0.5 < 1
+            parent.itemizeOptions.eraseBtnThickness * 0.5 < 1
               ? -1
-              : -parent.options.eraseBtnThickness * 0.5
+              : -parent.itemizeOptions.eraseBtnThickness * 0.5
           }px;background:${
-            parent.options.eraseBtnColor
+            parent.itemizeOptions.eraseBtnColor
           };border-radius:100%}.itemize_parent_${
             parent.itemizeId
           } .itemize_btn_close::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
@@ -180,22 +183,22 @@ class Itemize {
             }
             this.items.push(child);
             child.classList.add("itemize_item_" + child.itemizeId);
-            if (!parent.options.eraseBtn) {
+            if (!parent.itemizeOptions.eraseBtn) {
               child.onclick = () => {
-                if (parent.options.modalConfirm) {
+                if (parent.itemizeOptions.modalConfirm) {
                   this.modalConfirm(child.itemizeId);
                 } else {
                   this.erase(child.itemizeId);
                 }
               };
             } else {
-              if (!parent.options.eraseBtnClass) {
+              if (!parent.itemizeOptions.eraseBtnClass) {
                 child.style.position = "relative";
                 const button = document.createElement("div");
                 button.classList.add("itemize_btn_" + child.itemizeId);
                 button.classList.add("itemize_btn_close");
                 button.onclick = () => {
-                  if (parent.options.modalConfirm) {
+                  if (parent.itemizeOptions.modalConfirm) {
                     console.log(child.itemizeId);
                     this.modalConfirm(child.itemizeId);
                   } else {
@@ -208,16 +211,16 @@ class Itemize {
                   ".itemize_item_" +
                     child.itemizeId +
                     " ." +
-                    parent.options.eraseBtnClass
+                    parent.itemizeOptions.eraseBtnClass
                 );
                 if (!button) {
                   knownErrors +=
                     "Cannot find specified class: " +
-                    parent.options.eraseBtnClass +
+                    parent.itemizeOptions.eraseBtnClass +
                     "\n";
                 }
                 button.onclick = () => {
-                  if (parent.options.modalConfirm) {
+                  if (parent.itemizeOptions.modalConfirm) {
                     this.modalConfirm(child.itemizeId);
                   } else {
                     this.erase(child.itemizeId);
@@ -278,28 +281,61 @@ class Itemize {
       alertText.classList.add("itemize_modal_text");
       btnConfirm.classList.add("itemize_modal_btnConfirm");
       btnCancel.classList.add("itemize_modal_btnCancel");
-      alertText.textContent = item.parentNode.options.customModalText;
+      alertText.textContent = item.parentNode.itemizeOptions.customModalText;
       btnConfirm.innerHTML = "Yes";
       btnCancel.innerHTML = "Cancel";
       btnContainer.appendChild(btnCancel);
       btnContainer.appendChild(btnConfirm);
       modal.appendChild(alertText);
       modal.appendChild(btnContainer);
+      let hideModal = (bdy, bckdrop, mdal) => {
+        bckdrop.animate(
+          [
+            {
+              opacity: 1
+            },
+            {
+              opacity: 0
+            }
+          ],
+          {
+            duration: 300,
+            easing: "ease-in-out",
+            fill: "both"
+          }
+        );
+        mdal.animate(
+          [
+            {
+              opacity: 1,
+              transform: "translateY(-50%) translateX(-50%)"
+            },
+            {
+              opacity: 0,
+              transform: "translateY(0%) translateX(-50%)"
+            }
+          ],
+          {
+            duration: 300,
+            easing: "cubic-bezier(.75,-0.5,0,1.75)",
+            fill: "both"
+          }
+        );
+        setTimeout(() => {
+          bdy.removeChild(bckdrop);
+          bdy.removeChild(mdal);
+          bdy.style.overflow = bodyInitialOverflow;
+        }, 300);
+      };
       backDrop.onclick = () => {
-        body.removeChild(backDrop);
-        body.removeChild(modal);
-        body.style.overflow = bodyInitialOverflow;
+        hideModal(body, backDrop, modal);
       };
       btnCancel.onclick = () => {
-        body.removeChild(backDrop);
-        body.removeChild(modal);
-        body.style.overflow = bodyInitialOverflow;
+        hideModal(body, backDrop, modal);
       };
       btnConfirm.onclick = () => {
+        hideModal(body, backDrop, modal);
         this.erase(el);
-        body.removeChild(backDrop);
-        body.removeChild(modal);
-        body.style.overflow = bodyInitialOverflow;
       };
 
       Object.assign(modal.style, {
@@ -376,20 +412,106 @@ class Itemize {
       modal.animate(
         [
           {
-            opacity: 0
+            opacity: 0,
+            transform: "translateY(-100%) translateX(-50%)"
           },
           {
-            opacity: 1
+            opacity: 1,
+            transform: "translateY(-50%) translateX(-50%)"
           }
         ],
         {
-          duration: 300,
-          easing: "ease-in-out",
+          duration: 400,
+          easing: "cubic-bezier(.75,-0.5,0,1.75)",
           fill: "both"
         }
       );
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + error);
+    }
+  }
+  showAlert(action, element) {
+    if (element.parentNode.itemizeOptions.showAlert) {
+      if (action === "removed") {
+        this.alertNb++;
+        let popAlert = document.createElement("div");
+        popAlert.alertNb = this.alertNb;
+        let alertTimer = document.createElement("div");
+        let alertText = document.createElement("div");
+        popAlert.classList.add("itemize_removed_alert");
+        alertText.classList.add("itemize_removed_alert_text");
+        alertText.textContent = "Item  successfully removed";
+        Object.assign(alertText.style, {
+          boxSizing: "border-box",
+          width: "100%",
+          height: "100%",
+          textAlign: "center",
+          padding: "10px 15px 10px 15px"
+        });
+        Object.assign(alertTimer.style, {
+          background: "#DEADAD",
+          width: "100%",
+          height: "5px",
+          transition: "width 4s"
+        });
+        Object.assign(popAlert.style, {
+          boxSizing: "border-box",
+          position: "fixed",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          top: "100%",
+          left: "50%",
+          transform: `translate(-50%, -${this.alertNb * 100}%)`,
+          fontFamily: "helvetica",
+          background: "#BD5B5B",
+          borderRadius: "2px",
+          color: "#FFFFFF",
+          zIndex: 100000
+        });
+        document.querySelector("body").appendChild(popAlert);
+        popAlert.appendChild(alertTimer);
+        popAlert.appendChild(alertText);
+        alertTimer.animate(
+          [
+            {
+              width: "100%"
+            },
+            {
+              width: "0%"
+            }
+          ],
+          {
+            duration: 4000,
+            easing: "linear",
+            fill: "both"
+          }
+        );
+        setTimeout(() => {
+          let alertList = document.querySelectorAll(".itemize_removed_alert");
+          for (let i = 0; i < alertList.length; i++) {
+            alertList[i].animate(
+              [
+                {
+                  transform: `translate(-50%, -${alertList[i].alertNb * 100}%)`
+                },
+                {
+                  transform: `translate(-50%, -${alertList[i].alertNb * 100 -
+                    100}%)`
+                }
+              ],
+              {
+                duration: 300,
+                easing: "ease-in-out",
+                fill: "both"
+              }
+            );
+            alertList[i].alertNb--;
+          }
+          this.alertNb--;
+          document.querySelector("body").removeChild(popAlert);
+        }, 4000);
+      }
     }
   }
   erase(el) {
@@ -439,44 +561,83 @@ class Itemize {
               confirmErase
                 .then(response => {
                   console.log(response);
-                  if (item.parentNode.options.flipAnimation) {
+                  if (item.parentNode.itemizeOptions.flipAnimation) {
+                    let closeBtn = item.querySelector(".itemize_btn_close");
+                    if (closeBtn) {
+                      closeBtn.onclick = null;
+                    } else {
+                      closeBtn = item.querySelector(
+                        "." + this.globalOptions.eraseBtnClass
+                      );
+                      if (closeBtn) {
+                        closeBtn.onclick = null;
+                      }
+                    }
+                    this.showAlert("removed", item);
                     this.flipRead(this.items);
                     this.flipRemove(item);
                     this.items.splice(item.arrayPosition, 1);
                     this.flipPlay(this.items);
                   } else {
+                    this.showAlert("removed", item);
+                    item.removeStatus = null;
                     item.parentNode.removeChild(item);
                     this.items.splice(item.arrayPosition, 1);
                   }
-                  item.removeStatus = null;
                 })
                 .catch(err => {
                   console.log(err);
                   item.removeStatus = null;
                 });
             } else if (confirmErase) {
-              if (item.parentNode.options.flipAnimation) {
+              if (item.parentNode.itemizeOptions.flipAnimation) {
+                let closeBtn = item.querySelector(".itemize_btn_close");
+                if (closeBtn) {
+                  closeBtn.onclick = null;
+                } else {
+                  closeBtn = item.querySelector(
+                    "." + this.globalOptions.eraseBtnClass
+                  );
+                  if (closeBtn) {
+                    closeBtn.onclick = null;
+                  }
+                }
+                this.showAlert("removed", item);
                 this.flipRead(this.items);
                 this.flipRemove(item);
                 this.items.splice(item.arrayPosition, 1);
                 this.flipPlay(this.items);
               } else {
+                this.showAlert("removed", item);
+                item.removeStatus = null;
                 item.parentNode.removeChild(item);
                 this.items.splice(item.arrayPosition, 1);
               }
-              item.removeStatus = null;
             }
           } else {
-            if (item.parentNode.options.flipAnimation) {
+            if (item.parentNode.itemizeOptions.flipAnimation) {
+              let closeBtn = item.querySelector(".itemize_btn_close");
+              if (closeBtn) {
+                closeBtn.onclick = null;
+              } else {
+                closeBtn = item.querySelector(
+                  "." + this.globalOptions.eraseBtnClass
+                );
+                if (closeBtn) {
+                  closeBtn.onclick = null;
+                }
+              }
+              this.showAlert("removed", item);
               this.flipRead(this.items);
               this.flipRemove(item);
               this.items.splice(item.arrayPosition, 1);
               this.flipPlay(this.items);
             } else {
+              this.showAlert("removed", item);
+              item.removeStatus = null;
               item.parentNode.removeChild(item);
               this.items.splice(item.arrayPosition, 1);
             }
-            item.removeStatus = null;
           }
         }
       } else {
@@ -504,14 +665,15 @@ class Itemize {
         }
       ],
       {
-        duration: elem.parentNode.options.flipAnimDuration,
+        duration: elem.parentNode.itemizeOptions.flipAnimDuration,
         easing: "ease-in-out",
         fill: "both"
       }
     );
     setTimeout(() => {
+      elem.removeStatus = null;
       elem.parentNode.removeChild(elem);
-    }, elem.parentNode.options.flipAnimDuration);
+    }, elem.parentNode.itemizeOptions.flipAnimDuration);
   }
   flipRead(elems) {
     this.elPos = {};
@@ -537,7 +699,7 @@ class Itemize {
           }
         ],
         {
-          duration: elems[i].parentNode.options.flipAnimDuration,
+          duration: elems[i].parentNode.itemizeOptions.flipAnimDuration,
           easing: "ease-in-out",
           fill: "both"
         }
@@ -554,6 +716,7 @@ class Itemize {
         eraseBtnColor: "#525252",
         eraseBtnHoverColor: "#000000",
         eraseBtnClass: null,
+        showAlert: true,
         modalConfirm: false,
         customModalText: "Are you sure to remove this item?",
         flipAnimation: true,
@@ -577,6 +740,9 @@ class Itemize {
     }
     if (typeof options.modalConfirm !== "boolean") {
       error += "option 'modalConfirm' must be a Boolean\n";
+    }
+    if (typeof options.showAlert !== "boolean") {
+      error += "option 'showAlert' must be a Boolean\n";
     }
     if (typeof options.eraseBtnWidth !== "number") {
       error += "option 'eraseBtnWidth' must be a Number\n";
