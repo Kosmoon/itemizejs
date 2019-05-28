@@ -34,10 +34,10 @@ class Itemize {
     }
   }
   getOptionsFromAttributes(parent, options) {
-    if (parent.getAttribute("eraseBtn") === "false") {
-      options.eraseBtn = false;
-    } else if (parent.getAttribute("eraseBtn") === "true") {
-      options.eraseBtn = true;
+    if (parent.getAttribute("removeBtn") === "false") {
+      options.removeBtn = false;
+    } else if (parent.getAttribute("removeBtn") === "true") {
+      options.removeBtn = true;
     }
     if (parent.getAttribute("modalConfirm") === "false") {
       options.modalConfirm = false;
@@ -50,13 +50,19 @@ class Itemize {
       options.flipAnimation = true;
     }
     if (
-      typeof parent.getAttribute("eraseBtnWidth") === "string" &&
-      parseInt(parent.getAttribute("eraseBtnWidth")) > 0
+      typeof parent.getAttribute("removeBtnWidth") === "string" &&
+      parseInt(parent.getAttribute("removeBtnWidth")) > 0
     ) {
-      options.eraseBtnWidth = parseInt(parent.getAttribute("eraseBtnWidth"));
+      options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
     }
-    if (typeof parent.getAttribute("customModalText") === "string") {
-      options.customModalText = parent.getAttribute("customModalText");
+    if (typeof parent.getAttribute("modalText") === "string") {
+      options.modalText = parent.getAttribute("modalText");
+    }
+    if (typeof parent.getAttribute("removeAlertText") === "string") {
+      options.removeAlertText = parent.getAttribute("removeAlertText");
+    }
+    if (typeof parent.getAttribute("addAlertText") === "string") {
+      options.removeAlertText = parent.getAttribute("addAlertText");
     }
     if (
       typeof parent.getAttribute("flipAnimDuration") === "string" &&
@@ -68,14 +74,13 @@ class Itemize {
     }
     return options;
   }
-  itemizeIt() {
+  itemizeIt(withoutObs) {
     let knownErrors = "";
     try {
       for (let i = 0; i < this.targetElements.length; i++) {
         let parent = this.targetElements[i];
         let parentItemizeId = this.makeId(8);
         parent.itemizeId = parentItemizeId;
-        parent.classList.add(`itemize_parent_${parentItemizeId}`);
         for (let i = parent.classList.length - 1; i >= 0; i--) {
           // cleaning parent of itemize_parent_xxxx classes
           if (parent.classList[i].indexOf("itemize_parent") !== -1) {
@@ -87,41 +92,36 @@ class Itemize {
         options = this.getOptionsFromAttributes(parent, options);
         parent.itemizeOptions = options;
         // node added OBSERVER
-        let config = { attributes: true, childList: true, subtree: true };
-        let callback = function(mutationsList, observer) {
-          for (var mutation of mutationsList) {
-            if (mutation.type == "childList") {
-              mutation.addedNodes.forEach(node => {
-                let newNode = true;
-                node.classList.forEach(className => {
-                  if (className.indexOf("itemize_") !== -1) {
-                    newNode = false;
+        if (!withoutObs) {
+          let config = { attributes: true, childList: true, subtree: true };
+          let scope = this;
+          let callback = function(mutationsList, observer) {
+            for (var mutation of mutationsList) {
+              if (mutation.type == "childList") {
+                mutation.addedNodes.forEach(node => {
+                  let newNode = true;
+                  node.classList.forEach(className => {
+                    if (className.indexOf("itemize_") !== -1) {
+                      // check si le child n'est pas in element deja added qui passe par un flipAnim
+                      newNode = false;
+                    }
+                  });
+                  if (newNode) {
+                    if (node.getAttribute("notItemize")) {
+                      console.log("nouvel element not itemize added");
+                    } else {
+                      scope.itemizeChild(node, node.parentNode, true);
+                    }
                   }
                 });
-                if (newNode) {
-                  console.log("nouvel element added");
-                  console.log(node);
-                }
-              });
-              mutation.removedNodes.forEach(node => {
-                let newNode = true;
-                node.classList.forEach(className => {
-                  if (className.indexOf("itemize_") !== -1) {
-                    newNode = false;
-                  }
-                });
-                if (newNode) {
-                  console.log("nouvel element removed");
-                  console.log(node);
-                }
-              });
+              }
             }
-          }
-        };
-        let observer = new MutationObserver(callback);
-        observer.observe(parent, config);
-        // Later, you can stop observing
-        // observer.disconnect();
+          };
+          let observer = new MutationObserver(callback);
+          observer.observe(parent, config);
+          // Later, you can stop observing
+          // observer.disconnect();
+        }
         let oldStyle = document.querySelector(this.target + " .itemize_style");
         if (oldStyle) {
           parent.querySelector(".itemize_style").remove();
@@ -131,40 +131,40 @@ class Itemize {
         css.type = "text/css";
         let styles = "";
         if (
-          parent.itemizeOptions.eraseBtn &&
-          !parent.itemizeOptions.eraseBtnClass
+          parent.itemizeOptions.removeBtn &&
+          !parent.itemizeOptions.removeBtnClass
         ) {
           styles += `.itemize_parent_${
             parent.itemizeId
-          } .itemize_btn_close{position:absolute;top:0!important;right:0!important;width:${
-            parent.itemizeOptions.eraseBtnWidth
+          } .itemize_btn_remove{position:absolute;top:0!important;right:0!important;width:${
+            parent.itemizeOptions.removeBtnWidth
           }px!important;height:${
-            parent.itemizeOptions.eraseBtnWidth
+            parent.itemizeOptions.removeBtnWidth
           }px!important;overflow:hidden;cursor:pointer;margin-top:5px;margin-right:5px}.itemize_parent_${
             parent.itemizeId
-          } .itemize_btn_close:hover::after,.itemize_parent_${
+          } .itemize_btn_remove:hover::after,.itemize_parent_${
             parent.itemizeId
-          } .itemize_btn_close:hover::before{background:${
-            parent.itemizeOptions.eraseBtnHoverColor
+          } .itemize_btn_remove:hover::before{background:${
+            parent.itemizeOptions.removeBtnHoverColor
           }}.itemize_parent_${
             parent.itemizeId
-          } .itemize_btn_close::after,.itemize_parent_${
+          } .itemize_btn_remove::after,.itemize_parent_${
             parent.itemizeId
-          } .itemize_btn_close::before{content:'';position:absolute;height:${
-            parent.itemizeOptions.eraseBtnThickness
+          } .itemize_btn_remove::before{content:'';position:absolute;height:${
+            parent.itemizeOptions.removeBtnThickness
           }px;width:${
-            parent.itemizeOptions.eraseBtnWidth
+            parent.itemizeOptions.removeBtnWidth
           }px;top:50%;left:0;margin-top:${
-            parent.itemizeOptions.eraseBtnThickness * 0.5 < 1
+            parent.itemizeOptions.removeBtnThickness * 0.5 < 1
               ? -1
-              : -parent.itemizeOptions.eraseBtnThickness * 0.5
+              : -parent.itemizeOptions.removeBtnThickness * 0.5
           }px;background:${
-            parent.itemizeOptions.eraseBtnColor
+            parent.itemizeOptions.removeBtnColor
           };border-radius:100%}.itemize_parent_${
             parent.itemizeId
-          } .itemize_btn_close::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
+          } .itemize_btn_remove::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
             parent.itemizeId
-          } .itemize_btn_close::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}`;
+          } .itemize_btn_remove::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}`;
         }
         if (css.styleSheet) {
           css.styleSheet.cssText = styles;
@@ -174,66 +174,72 @@ class Itemize {
         parent.appendChild(css);
         for (let z = 0; z < parent.children.length; z++) {
           let child = parent.children[z];
-          if (
-            child.type !== "text/css" &&
-            typeof child.getAttribute("notItemize") !== "string"
-          ) {
-            if (!child.itemizeId) {
-              child.itemizeId = this.makeId(8);
-            }
-            this.items.push(child);
-            child.classList.add("itemize_item_" + child.itemizeId);
-            if (!parent.itemizeOptions.eraseBtn) {
-              child.onclick = () => {
-                if (parent.itemizeOptions.modalConfirm) {
-                  this.modalConfirm(child.itemizeId);
-                } else {
-                  this.erase(child.itemizeId);
-                }
-              };
-            } else {
-              if (!parent.itemizeOptions.eraseBtnClass) {
-                child.style.position = "relative";
-                const button = document.createElement("div");
-                button.classList.add("itemize_btn_" + child.itemizeId);
-                button.classList.add("itemize_btn_close");
-                button.onclick = () => {
-                  if (parent.itemizeOptions.modalConfirm) {
-                    console.log(child.itemizeId);
-                    this.modalConfirm(child.itemizeId);
-                  } else {
-                    this.erase(child.itemizeId);
-                  }
-                };
-                child.appendChild(button);
-              } else {
-                const button = document.querySelector(
-                  ".itemize_item_" +
-                    child.itemizeId +
-                    " ." +
-                    parent.itemizeOptions.eraseBtnClass
-                );
-                if (!button) {
-                  knownErrors +=
-                    "Cannot find specified class: " +
-                    parent.itemizeOptions.eraseBtnClass +
-                    "\n";
-                }
-                button.onclick = () => {
-                  if (parent.itemizeOptions.modalConfirm) {
-                    this.modalConfirm(child.itemizeId);
-                  } else {
-                    this.erase(child.itemizeId);
-                  }
-                };
-              }
-            }
-          }
+          this.itemizeChild(child, parent);
         }
       }
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + knownErrors);
       console.error(error);
+    }
+  }
+  itemizeChild(child, parent, fromObserver) {
+    if (
+      child.type !== "text/css" &&
+      typeof child.getAttribute("notItemize") !== "string"
+    ) {
+      if (!child.itemizeId) {
+        child.itemizeId = this.makeId(8);
+      }
+      this.items.push(child);
+      child.classList.add("itemize_item_" + child.itemizeId);
+      if (!parent.itemizeOptions.removeBtn) {
+        child.onclick = () => {
+          if (parent.itemizeOptions.modalConfirm) {
+            this.modalConfirm(child.itemizeId);
+          } else {
+            this.remove(child.itemizeId);
+          }
+        };
+      } else {
+        if (!parent.itemizeOptions.removeBtnClass) {
+          child.style.position = "relative";
+          const button = document.createElement("div");
+          button.classList.add("itemize_btn_" + child.itemizeId);
+          button.classList.add("itemize_btn_remove");
+          button.onclick = () => {
+            if (parent.itemizeOptions.modalConfirm) {
+              console.log(child.itemizeId);
+              this.modalConfirm(child.itemizeId);
+            } else {
+              this.remove(child.itemizeId);
+            }
+          };
+          child.appendChild(button);
+        } else {
+          const button = document.querySelector(
+            ".itemize_item_" +
+              child.itemizeId +
+              " ." +
+              parent.itemizeOptions.removeBtnClass
+          );
+          if (!button) {
+            knownErrors +=
+              "Cannot find specified class: " +
+              parent.itemizeOptions.removeBtnClass +
+              "\n";
+          }
+          button.onclick = () => {
+            if (parent.itemizeOptions.modalConfirm) {
+              this.modalConfirm(child.itemizeId);
+            } else {
+              this.remove(child.itemizeId);
+            }
+          };
+        }
+      }
+      if (fromObserver) {
+        this.showAlert("added", child);
+      }
     }
   }
   modalConfirm(el) {
@@ -281,7 +287,7 @@ class Itemize {
       alertText.classList.add("itemize_modal_text");
       btnConfirm.classList.add("itemize_modal_btnConfirm");
       btnCancel.classList.add("itemize_modal_btnCancel");
-      alertText.textContent = item.parentNode.itemizeOptions.customModalText;
+      alertText.textContent = item.parentNode.itemizeOptions.modalText;
       btnConfirm.innerHTML = "Yes";
       btnCancel.innerHTML = "Cancel";
       btnContainer.appendChild(btnCancel);
@@ -335,11 +341,12 @@ class Itemize {
       };
       btnConfirm.onclick = () => {
         hideModal(body, backDrop, modal);
-        this.erase(el);
+        this.remove(el);
       };
 
       Object.assign(modal.style, {
-        position: "fixed",
+        display: "block",
+        position: "fixed ",
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
@@ -432,64 +439,83 @@ class Itemize {
   }
   showAlert(action, element) {
     if (element.parentNode.itemizeOptions.showAlert) {
+      let alertClassName = "";
+      let alertTextClassName = "";
+      let alertBackground = "";
+      let alertTimerColor = "";
+      let alertTextContent = "";
       if (action === "removed") {
-        this.alertNb++;
-        let popAlert = document.createElement("div");
-        popAlert.alertNb = this.alertNb;
-        let alertTimer = document.createElement("div");
-        let alertText = document.createElement("div");
-        popAlert.classList.add("itemize_removed_alert");
-        alertText.classList.add("itemize_removed_alert_text");
-        alertText.textContent = "Item  successfully removed";
-        Object.assign(alertText.style, {
-          boxSizing: "border-box",
-          width: "100%",
-          height: "100%",
-          textAlign: "center",
-          padding: "10px 15px 10px 15px"
-        });
-        Object.assign(alertTimer.style, {
-          background: "#DEADAD",
-          width: "100%",
-          height: "5px",
-          transition: "width 4s"
-        });
-        Object.assign(popAlert.style, {
-          boxSizing: "border-box",
-          position: "fixed",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          top: "100%",
-          left: "50%",
-          transform: `translate(-50%, -${this.alertNb * 100}%)`,
-          fontFamily: "helvetica",
-          background: "#BD5B5B",
-          borderRadius: "2px",
-          color: "#FFFFFF",
-          zIndex: 100000
-        });
-        document.querySelector("body").appendChild(popAlert);
-        popAlert.appendChild(alertTimer);
-        popAlert.appendChild(alertText);
-        alertTimer.animate(
-          [
-            {
-              width: "100%"
-            },
-            {
-              width: "0%"
-            }
-          ],
+        alertClassName = "itemize_remove_alert";
+        alertTextClassName = "itemize_remove_alert_text";
+        alertBackground = "#BD5B5B";
+        alertTimerColor = "#DEADAD";
+        alertTextContent = element.parentNode.itemizeOptions.removeAlertText;
+      } else if (action === "added") {
+        alertClassName = "itemize_add_alert";
+        alertTextClassName = "itemize_add_alert_text";
+        alertBackground = "#00AF66";
+        alertTimerColor = "#80D7B3";
+        alertTextContent = element.parentNode.itemizeOptions.addAlertText;
+      }
+      this.alertNb++;
+      let popAlert = document.createElement("div");
+      popAlert.alertNb = this.alertNb;
+      let alertTimer = document.createElement("div");
+      let alertText = document.createElement("div");
+      popAlert.classList.add(alertClassName);
+      popAlert.classList.add("itemize_alert");
+      alertText.classList.add(alertTextClassName);
+      alertText.textContent = alertTextContent;
+      Object.assign(alertText.style, {
+        boxSizing: "border-box",
+        width: "100%",
+        height: "100%",
+        textAlign: "center",
+        padding: "10px 15px 10px 15px"
+      });
+      Object.assign(alertTimer.style, {
+        background: alertTimerColor,
+        width: "100%",
+        height: "5px",
+        transition: "width 4s"
+      });
+      Object.assign(popAlert.style, {
+        boxSizing: "border-box",
+        position: "fixed",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        top: "100%",
+        left: "50%",
+        transform: `translate(-50%, -${this.alertNb * 100}%)`,
+        fontFamily: "helvetica",
+        background: alertBackground,
+        borderRadius: "2px",
+        color: "#FFFFFF",
+        zIndex: 100000
+      });
+      document.querySelector("body").appendChild(popAlert);
+      popAlert.appendChild(alertTimer);
+      popAlert.appendChild(alertText);
+      alertTimer.animate(
+        [
           {
-            duration: 4000,
-            easing: "linear",
-            fill: "both"
+            width: "100%"
+          },
+          {
+            width: "0%"
           }
-        );
-        setTimeout(() => {
-          let alertList = document.querySelectorAll(".itemize_removed_alert");
-          for (let i = 0; i < alertList.length; i++) {
+        ],
+        {
+          duration: 4000,
+          easing: "linear",
+          fill: "both"
+        }
+      );
+      setTimeout(() => {
+        let alertList = document.querySelectorAll(".itemize_alert");
+        for (let i = 0; i < alertList.length; i++) {
+          if (alertList[i].alertNb > 0) {
             alertList[i].animate(
               [
                 {
@@ -508,13 +534,15 @@ class Itemize {
             );
             alertList[i].alertNb--;
           }
-          this.alertNb--;
+        }
+        this.alertNb--;
+        setTimeout(() => {
           document.querySelector("body").removeChild(popAlert);
-        }, 4000);
-      }
+        }, 300);
+      }, 4000);
     }
   }
-  erase(el) {
+  remove(el) {
     try {
       let item = null;
       if (typeof el === "string") {
@@ -536,12 +564,12 @@ class Itemize {
           }
         }
         if (!item) {
-          throw new Error("No item found to erase");
+          throw new Error("No item found to remove");
         }
       } else {
         item = el;
         if (!item) {
-          throw new Error("No item found to erase");
+          throw new Error("No item found to remove");
         }
         if (!item.itemizeId) {
           throw new Error("Not a valid Itemize element");
@@ -554,20 +582,20 @@ class Itemize {
       }
       if (item.arrayPosition || item.arrayPosition === 0) {
         if (!item.removeStatus || item.removeStatus !== "pending") {
-          if (this.globalOptions.beforeErase) {
+          if (this.globalOptions.beforeRemove) {
             item.removeStatus = "pending";
-            let confirmErase = this.globalOptions.beforeErase(item);
-            if (typeof confirmErase.then === "function") {
-              confirmErase
+            let confirmRemove = this.globalOptions.beforeRemove(item);
+            if (typeof confirmRemove.then === "function") {
+              confirmRemove
                 .then(response => {
                   console.log(response);
                   if (item.parentNode.itemizeOptions.flipAnimation) {
-                    let closeBtn = item.querySelector(".itemize_btn_close");
+                    let closeBtn = item.querySelector(".itemize_btn_remove");
                     if (closeBtn) {
                       closeBtn.onclick = null;
                     } else {
                       closeBtn = item.querySelector(
-                        "." + this.globalOptions.eraseBtnClass
+                        "." + this.globalOptions.removeBtnClass
                       );
                       if (closeBtn) {
                         closeBtn.onclick = null;
@@ -589,14 +617,14 @@ class Itemize {
                   console.log(err);
                   item.removeStatus = null;
                 });
-            } else if (confirmErase) {
+            } else if (confirmRemove) {
               if (item.parentNode.itemizeOptions.flipAnimation) {
-                let closeBtn = item.querySelector(".itemize_btn_close");
+                let closeBtn = item.querySelector(".itemize_btn_remove");
                 if (closeBtn) {
                   closeBtn.onclick = null;
                 } else {
                   closeBtn = item.querySelector(
-                    "." + this.globalOptions.eraseBtnClass
+                    "." + this.globalOptions.removeBtnClass
                   );
                   if (closeBtn) {
                     closeBtn.onclick = null;
@@ -616,12 +644,12 @@ class Itemize {
             }
           } else {
             if (item.parentNode.itemizeOptions.flipAnimation) {
-              let closeBtn = item.querySelector(".itemize_btn_close");
+              let closeBtn = item.querySelector(".itemize_btn_remove");
               if (closeBtn) {
                 closeBtn.onclick = null;
               } else {
                 closeBtn = item.querySelector(
-                  "." + this.globalOptions.eraseBtnClass
+                  "." + this.globalOptions.removeBtnClass
                 );
                 if (closeBtn) {
                   closeBtn.onclick = null;
@@ -710,18 +738,20 @@ class Itemize {
   mergeOptions(newOptions) {
     try {
       const defaultOptions = {
-        eraseBtn: true,
-        eraseBtnWidth: 20,
-        eraseBtnThickness: 2,
-        eraseBtnColor: "#525252",
-        eraseBtnHoverColor: "#000000",
-        eraseBtnClass: null,
+        removeBtn: true,
+        removeBtnWidth: 20,
+        removeBtnThickness: 2,
+        removeBtnColor: "#525252",
+        removeBtnHoverColor: "#000000",
+        removeBtnClass: null,
         showAlert: true,
         modalConfirm: false,
-        customModalText: "Are you sure to remove this item?",
+        modalText: "Are you sure to remove this item?",
+        removeAlertText: "Item removed",
+        addAlertText: "Item added",
         flipAnimation: true,
         flipAnimDuration: 500,
-        beforeErase: null
+        beforeRemove: null
       };
       for (var key in newOptions) {
         if (newOptions.hasOwnProperty(key))
@@ -735,7 +765,7 @@ class Itemize {
 
   optionsTypeCheck(options) {
     let error = "";
-    if (typeof options.eraseBtn !== "boolean") {
+    if (typeof options.removeBtn !== "boolean") {
       error += "option 'button' must be a Boolean\n";
     }
     if (typeof options.modalConfirm !== "boolean") {
@@ -744,17 +774,23 @@ class Itemize {
     if (typeof options.showAlert !== "boolean") {
       error += "option 'showAlert' must be a Boolean\n";
     }
-    if (typeof options.eraseBtnWidth !== "number") {
-      error += "option 'eraseBtnWidth' must be a Number\n";
+    if (typeof options.removeBtnWidth !== "number") {
+      error += "option 'removeBtnWidth' must be a Number\n";
     }
-    if (typeof options.eraseBtnThickness !== "number") {
-      error += "option 'eraseBtnThickness' must be a Number\n";
+    if (typeof options.removeBtnThickness !== "number") {
+      error += "option 'removeBtnThickness' must be a Number\n";
     }
-    if (options.eraseBtnClass && typeof options.eraseBtnClass !== "string") {
+    if (options.removeBtnClass && typeof options.removeBtnClass !== "string") {
       error += "option 'buttonClass' must be a String\n";
     }
-    if (typeof options.customModalText !== "string") {
-      error += "option 'customModalText' must be a String\n";
+    if (typeof options.modalText !== "string") {
+      error += "option 'modalText' must be a String\n";
+    }
+    if (typeof options.removeAlertText !== "string") {
+      error += "option 'removeAlertText' must be a String\n";
+    }
+    if (typeof options.addAlertText !== "string") {
+      error += "option 'addAlertText' must be a String\n";
     }
     if (typeof options.flipAnimation !== "boolean") {
       error += "option 'flipAnimation' must be a Boolean\n";
@@ -762,8 +798,8 @@ class Itemize {
     if (typeof options.flipAnimDuration !== "number") {
       error += "option 'flipAnimDuration' must be a Number\n";
     }
-    if (options.beforeErase && typeof options.beforeErase !== "function") {
-      error += "option 'beforeErase' must be a Function\n";
+    if (options.beforeRemove && typeof options.beforeRemove !== "function") {
+      error += "option 'beforeRemove' must be a Function\n";
     }
     if (error === "") {
       return "valid";
