@@ -55,6 +55,16 @@ class Itemize {
     ) {
       options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
     }
+    if (typeof parent.getAttribute("removeBtnColor") === "string") {
+      options.removeBtnColor = parent.getAttribute("removeBtnColor");
+    }
+
+    if (typeof parent.getAttribute("removeBtnHoverColor") === "string") {
+      options.removeBtnHoverColor = parent.getAttribute("removeBtnHoverColor");
+    }
+    if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
+      options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
+    }
     if (typeof parent.getAttribute("modalText") === "string") {
       options.modalText = parent.getAttribute("modalText");
     }
@@ -64,12 +74,24 @@ class Itemize {
     if (typeof parent.getAttribute("addAlertText") === "string") {
       options.removeAlertText = parent.getAttribute("addAlertText");
     }
+
+    if (typeof parent.getAttribute("alertPosition") === "string") {
+      options.alertPosition = parent.getAttribute("alertPosition");
+    }
     if (
       typeof parent.getAttribute("flipAnimDuration") === "string" &&
       parseInt(parent.getAttribute("flipAnimDuration")) > 0
     ) {
       options.flipAnimDuration = parseInt(
         parent.getAttribute("flipAnimDuration")
+      );
+    }
+    if (
+      typeof parent.getAttribute("removeBtnThickness") === "string" &&
+      parseInt(parent.getAttribute("removeBtnThickness")) > 0
+    ) {
+      options.removeBtnThickness = parseInt(
+        parent.getAttribute("removeBtnThickness")
       );
     }
     return options;
@@ -160,7 +182,9 @@ class Itemize {
               : -parent.itemizeOptions.removeBtnThickness * 0.5
           }px;background:${
             parent.itemizeOptions.removeBtnColor
-          };border-radius:100%}.itemize_parent_${
+          };border-radius:${
+            parent.itemizeOptions.removeBtnSharpness
+          }}.itemize_parent_${
             parent.itemizeId
           } .itemize_btn_remove::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
             parent.itemizeId
@@ -444,6 +468,53 @@ class Itemize {
       let alertBackground = "";
       let alertTimerColor = "";
       let alertTextContent = "";
+      let alertLeftPos = "";
+      let alertTopPos = "";
+      let alertTranslateX = "";
+      let minusOrNothing = "-";
+      let alertIsTop = false;
+      let alertTimerDuration = element.parentNode.itemizeOptions.alertTimer;
+      if (element.parentNode.itemizeOptions.alertPosition === "bottom-center") {
+        alertLeftPos = "50%";
+        alertTopPos = "100%";
+        alertTranslateX = "-50%";
+      } else if (
+        element.parentNode.itemizeOptions.alertPosition === "bottom-right"
+      ) {
+        alertLeftPos = "100%";
+        alertTopPos = "100%";
+        alertTranslateX = "-100%";
+      } else if (
+        element.parentNode.itemizeOptions.alertPosition === "bottom-left"
+      ) {
+        alertLeftPos = "0%";
+        alertTopPos = "100%";
+        alertTranslateX = "0%";
+      } else if (
+        element.parentNode.itemizeOptions.alertPosition === "top-center"
+      ) {
+        alertLeftPos = "50%";
+        alertTopPos = "0%";
+        alertTranslateX = "-50%";
+        minusOrNothing = "";
+        alertIsTop = true;
+      } else if (
+        element.parentNode.itemizeOptions.alertPosition === "top-right"
+      ) {
+        alertLeftPos = "100%";
+        alertTopPos = "0%";
+        alertTranslateX = "-100%";
+        minusOrNothing = "";
+        alertIsTop = true;
+      } else if (
+        element.parentNode.itemizeOptions.alertPosition === "top-left"
+      ) {
+        alertLeftPos = "0%";
+        alertTopPos = "0%";
+        alertTranslateX = "0%";
+        minusOrNothing = "";
+        alertIsTop = true;
+      }
       if (action === "removed") {
         alertClassName = "itemize_remove_alert";
         alertTextClassName = "itemize_remove_alert_text";
@@ -471,13 +542,13 @@ class Itemize {
         width: "100%",
         height: "100%",
         textAlign: "center",
+        whiteSpace: "nowrap",
         padding: "10px 15px 10px 15px"
       });
       Object.assign(alertTimer.style, {
         background: alertTimerColor,
         width: "100%",
-        height: "5px",
-        transition: "width 4s"
+        height: "5px"
       });
       Object.assign(popAlert.style, {
         boxSizing: "border-box",
@@ -485,15 +556,20 @@ class Itemize {
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        top: "100%",
-        left: "50%",
-        transform: `translate(-50%, -${this.alertNb * 100}%)`,
+        top: alertTopPos,
+        left: alertLeftPos,
+        border: "solid 1px " + alertTimerColor,
+        borderRadius: "4px",
+        transform: `translate(${alertTranslateX}, ${minusOrNothing}${this
+          .alertNb *
+          100 -
+          (alertIsTop ? 100 : 0)}%)`,
         fontFamily: "helvetica",
         background: alertBackground,
-        borderRadius: "2px",
         color: "#FFFFFF",
         zIndex: 100000
       });
+      console.log(alertIsTop ? 100 : 0);
       document.querySelector("body").appendChild(popAlert);
       popAlert.appendChild(alertTimer);
       popAlert.appendChild(alertText);
@@ -507,7 +583,7 @@ class Itemize {
           }
         ],
         {
-          duration: 4000,
+          duration: alertTimerDuration,
           easing: "linear",
           fill: "both"
         }
@@ -519,10 +595,18 @@ class Itemize {
             alertList[i].animate(
               [
                 {
-                  transform: `translate(-50%, -${alertList[i].alertNb * 100}%)`
+                  transform: `translate(${alertTranslateX}, ${minusOrNothing}${alertList[
+                    i
+                  ].alertNb *
+                    100 -
+                    (alertIsTop ? 100 : 0)}%)`
                 },
                 {
-                  transform: `translate(-50%, -${alertList[i].alertNb * 100 -
+                  transform: `translate(${alertTranslateX}, ${minusOrNothing}${alertList[
+                    i
+                  ].alertNb *
+                    100 -
+                    (alertIsTop ? 100 : 0) -
                     100}%)`
                 }
               ],
@@ -539,7 +623,7 @@ class Itemize {
         setTimeout(() => {
           document.querySelector("body").removeChild(popAlert);
         }, 300);
-      }, 4000);
+      }, alertTimerDuration);
     }
   }
   remove(el) {
@@ -743,12 +827,15 @@ class Itemize {
         removeBtnThickness: 2,
         removeBtnColor: "#525252",
         removeBtnHoverColor: "#000000",
+        removeBtnSharpness: "100%",
         removeBtnClass: null,
         showAlert: true,
         modalConfirm: false,
         modalText: "Are you sure to remove this item?",
         removeAlertText: "Item removed",
         addAlertText: "Item added",
+        alertPosition: "bottom-center",
+        alertTimer: 4000,
         flipAnimation: true,
         flipAnimDuration: 500,
         beforeRemove: null
@@ -780,8 +867,17 @@ class Itemize {
     if (typeof options.removeBtnThickness !== "number") {
       error += "option 'removeBtnThickness' must be a Number\n";
     }
+    if (typeof options.alertTimer !== "number") {
+      error += "option 'alertTimer' must be a Number\n";
+    }
     if (options.removeBtnClass && typeof options.removeBtnClass !== "string") {
       error += "option 'buttonClass' must be a String\n";
+    }
+    if (typeof options.removeBtnHoverColor !== "string") {
+      error += "option 'removeBtnHoverColor' must be a String\n";
+    }
+    if (typeof options.removeBtnSharpness !== "string") {
+      error += "option 'removeBtnSharpness' must be a String\n";
     }
     if (typeof options.modalText !== "string") {
       error += "option 'modalText' must be a String\n";
@@ -791,6 +887,9 @@ class Itemize {
     }
     if (typeof options.addAlertText !== "string") {
       error += "option 'addAlertText' must be a String\n";
+    }
+    if (typeof options.alertPosition !== "string") {
+      error += "option 'alertPosition' must be a String\n";
     }
     if (typeof options.flipAnimation !== "boolean") {
       error += "option 'flipAnimation' must be a Boolean\n";

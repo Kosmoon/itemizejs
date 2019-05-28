@@ -16,8 +16,12 @@
       itemize
       removeBtn="true"
       removeBtnWidth="20"
-      flipAnimDuration="300"
-      modalText="AllO?"
+      flipAnimDuration="800"
+      modalText="Sure?"
+      removeBtnColor="#af0000"
+      removeBtnHoverColor="#000000"
+      removeBtnThickness="5"
+      removeBtnSharpness="0%"
     >
       <li class="closable" notItemize>
         test1
@@ -49,6 +53,8 @@
       removeBtnWidth="30"
       modalConfirm="false"
       removeAlertText="Test custom text"
+      removeBtnThickness="3"
+      removeBtnSharpness="50%"
     >
       <li class="closable">
         test1
@@ -102,17 +108,21 @@
       document.querySelector("#add_elem").onclick = () => {
         let go = document.createElement("div");
         go.classList.add("new_elem");
-        go.textContent = "BLABALBALBLBALBALABLBALL";
+        go.textContent = "BLABALBALBLBALBAL";
         let go2 = document.querySelector("[itemize]");
         go2.appendChild(go);
       };
       let closableContainer = new Itemize({
         removeBtnWidth: 20,
         removeBtnThickness: 1,
+        removeBtnSharpness: "0%",
         flipAnimation: true,
         modalConfirm: true,
-        modalText: "T'es sur de toi, on supprime?",
-        removeAlertText: "WESH c'est REMOVED WESH",
+        removeBtnHoverColor: "#af0000",
+        modalText: "Are you sure to remove this item?",
+        removeAlertText: "Item removed successfully",
+        alertTimer: 5000,
+        alertPosition: "bottom-right",
         beforeRemove: el => {
           return true;
           // return new Promise((resolve, reject) => {
