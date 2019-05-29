@@ -25,5 +25,6 @@
   "homepage": "https://github.com/Kosmoon/itemize#readme",
   "devDependencies": {
     "uglify-js": "^3.5.15"
-  }
+  },
+  "dependencies": {}
 }

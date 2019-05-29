@@ -1,5 +1,5 @@
 /*
- -- itemize.js v0.56 --
+ -- itemize.js v0.22 --
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -65,6 +65,17 @@ class Itemize {
     if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
       options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
     }
+    if (typeof parent.getAttribute("removeBtnPosition") === "string") {
+      options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
+    }
+    if (
+      typeof parent.getAttribute("removeBtnMargin") === "string" &&
+      parseInt(parent.getAttribute("removeBtnMargin")) !== NaN
+    ) {
+      options.removeBtnMargin = parseInt(
+        parent.getAttribute("removeBtnMargin")
+      );
+    }
     if (typeof parent.getAttribute("modalText") === "string") {
       options.modalText = parent.getAttribute("modalText");
     }
@@ -72,9 +83,18 @@ class Itemize {
       options.removeAlertText = parent.getAttribute("removeAlertText");
     }
     if (typeof parent.getAttribute("addAlertText") === "string") {
-      options.removeAlertText = parent.getAttribute("addAlertText");
+      options.addAlertText = parent.getAttribute("addAlertText");
     }
-
+    if (parent.getAttribute("showAddAlerts") === "true") {
+      options.showAddAlerts = true;
+    } else if (parent.getAttribute("showAddAlerts") === "false") {
+      options.showAddAlerts = false;
+    }
+    if (parent.getAttribute("showRemoveAlerts") === "true") {
+      options.showRemoveAlerts = true;
+    } else if (parent.getAttribute("showRemoveAlerts") === "false") {
+      options.showRemoveAlerts = false;
+    }
     if (typeof parent.getAttribute("alertPosition") === "string") {
       options.alertPosition = parent.getAttribute("alertPosition");
     }
@@ -130,7 +150,7 @@ class Itemize {
                   });
                   if (newNode) {
                     if (node.getAttribute("notItemize")) {
-                      console.log("nouvel element not itemize added");
+                      console.log("not itemize element added");
                     } else {
                       scope.itemizeChild(node, node.parentNode, true);
                     }
@@ -152,17 +172,94 @@ class Itemize {
         css.classList.add("itemize_style");
         css.type = "text/css";
         let styles = "";
+
         if (
           parent.itemizeOptions.removeBtn &&
           !parent.itemizeOptions.removeBtnClass
         ) {
+          let btnMargin = parent.itemizeOptions.removeBtnMargin + "px";
+          let btnPos = {
+            top: 0,
+            right: 0,
+            bottom: "auto",
+            left: "auto",
+            marginTop: btnMargin,
+            marginRight: btnMargin,
+            marginBottom: "0px",
+            marginLeft: "0px",
+            transform: "none"
+          };
+          switch (parent.itemizeOptions.removeBtnPosition) {
+            case "center-right":
+              btnPos.top = "50%";
+              btnPos.marginTop = "0px";
+              btnPos.transform = "translateY(-50%)";
+              break;
+            case "bottom-right":
+              btnPos.top = "auto";
+              btnPos.bottom = 0;
+              btnPos.marginTop = "0px";
+              btnPos.marginBottom = btnMargin;
+              break;
+            case "bottom-center":
+              btnPos.top = "auto";
+              btnPos.right = "auto";
+              btnPos.bottom = 0;
+              btnPos.left = "50%";
+              btnPos.marginTop = "0px";
+              btnPos.marginRight = "0px";
+              btnPos.marginBottom = btnMargin;
+              btnPos.transform = "translateX(-50%)";
+              break;
+            case "bottom-left":
+              btnPos.top = "auto";
+              btnPos.right = "auto";
+              btnPos.bottom = 0;
+              btnPos.left = 0;
+              btnPos.marginTop = "0px";
+              btnPos.marginRight = "0px";
+              btnPos.marginBottom = btnMargin;
+              btnPos.marginLeft = btnMargin;
+            case "center-left":
+              btnPos.top = "50%";
+              btnPos.right = "auto";
+              btnPos.left = 0;
+              btnPos.marginTop = "0px";
+              btnPos.marginRight = "0px";
+              btnPos.marginLeft = btnMargin;
+              btnPos.transform = "translateY(-50%)";
+              break;
+            case "top-left":
+              btnPos.right = "auto";
+              btnPos.left = 0;
+              btnPos.marginRight = "0px";
+              btnPos.marginLeft = btnMargin;
+              break;
+            case "top-center":
+              btnPos.right = "auto";
+              btnPos.left = "50%";
+              btnPos.marginRight = "0px";
+              btnPos.marginTop = btnMargin;
+              btnPos.transform = "translateX(-50%)";
+              break;
+            default:
+              break;
+          }
           styles += `.itemize_parent_${
             parent.itemizeId
-          } .itemize_btn_remove{position:absolute;top:0!important;right:0!important;width:${
+          } .itemize_btn_remove{position:absolute;top:${
+            btnPos.top
+          }!important;right:${btnPos.right}!important;bottom:${
+            btnPos.bottom
+          }!important;left:${btnPos.left}!important;width:${
             parent.itemizeOptions.removeBtnWidth
           }px!important;height:${
             parent.itemizeOptions.removeBtnWidth
-          }px!important;overflow:hidden;cursor:pointer;margin-top:5px;margin-right:5px}.itemize_parent_${
+          }px!important;overflow:hidden;cursor:pointer;margin:${
+            btnPos.marginTop
+          } ${btnPos.marginRight} ${btnPos.marginBottom} ${
+            btnPos.marginLeft
+          };transform:${btnPos.transform}}.itemize_parent_${
             parent.itemizeId
           } .itemize_btn_remove:hover::after,.itemize_parent_${
             parent.itemizeId
@@ -462,7 +559,11 @@ class Itemize {
     }
   }
   showAlert(action, element) {
-    if (element.parentNode.itemizeOptions.showAlert) {
+    if (
+      (element.parentNode.itemizeOptions.showAddAlerts && action === "added") ||
+      (element.parentNode.itemizeOptions.showRemoveAlerts &&
+        action === "removed")
+    ) {
       let alertClassName = "";
       let alertTextClassName = "";
       let alertBackground = "";
@@ -569,7 +670,6 @@ class Itemize {
         color: "#FFFFFF",
         zIndex: 100000
       });
-      console.log(alertIsTop ? 100 : 0);
       document.querySelector("body").appendChild(popAlert);
       popAlert.appendChild(alertTimer);
       popAlert.appendChild(alertText);
@@ -672,29 +772,31 @@ class Itemize {
             if (typeof confirmRemove.then === "function") {
               confirmRemove
                 .then(response => {
-                  console.log(response);
-                  if (item.parentNode.itemizeOptions.flipAnimation) {
-                    let closeBtn = item.querySelector(".itemize_btn_remove");
-                    if (closeBtn) {
-                      closeBtn.onclick = null;
-                    } else {
-                      closeBtn = item.querySelector(
-                        "." + this.globalOptions.removeBtnClass
-                      );
+                  if (response) {
+                    if (item.parentNode.itemizeOptions.flipAnimation) {
+                      let closeBtn = item.querySelector(".itemize_btn_remove");
                       if (closeBtn) {
                         closeBtn.onclick = null;
+                      } else {
+                        closeBtn = item.querySelector(
+                          "." + this.globalOptions.removeBtnClass
+                        );
+                        if (closeBtn) {
+                          closeBtn.onclick = null;
+                        }
                       }
+                      this.showAlert("removed", item);
+
+                      this.flipRead(this.items);
+                      this.flipRemove(item);
+                      this.items.splice(item.arrayPosition, 1);
+                      this.flipPlay(this.items);
+                    } else {
+                      this.showAlert("removed", item);
+                      item.removeStatus = null;
+                      item.parentNode.removeChild(item);
+                      this.items.splice(item.arrayPosition, 1);
                     }
-                    this.showAlert("removed", item);
-                    this.flipRead(this.items);
-                    this.flipRemove(item);
-                    this.items.splice(item.arrayPosition, 1);
-                    this.flipPlay(this.items);
-                  } else {
-                    this.showAlert("removed", item);
-                    item.removeStatus = null;
-                    item.parentNode.removeChild(item);
-                    this.items.splice(item.arrayPosition, 1);
                   }
                 })
                 .catch(err => {
@@ -828,13 +930,16 @@ class Itemize {
         removeBtnColor: "#525252",
         removeBtnHoverColor: "#000000",
         removeBtnSharpness: "100%",
+        removeBtnPosition: "top-right",
+        removeBtnMargin: 2,
         removeBtnClass: null,
-        showAlert: true,
         modalConfirm: false,
         modalText: "Are you sure to remove this item?",
         removeAlertText: "Item removed",
         addAlertText: "Item added",
-        alertPosition: "bottom-center",
+        showRemoveAlerts: false,
+        showAddAlerts: false,
+        alertPosition: "bottom-right",
         alertTimer: 4000,
         flipAnimation: true,
         flipAnimDuration: 500,
@@ -858,9 +963,6 @@ class Itemize {
     if (typeof options.modalConfirm !== "boolean") {
       error += "option 'modalConfirm' must be a Boolean\n";
     }
-    if (typeof options.showAlert !== "boolean") {
-      error += "option 'showAlert' must be a Boolean\n";
-    }
     if (typeof options.removeBtnWidth !== "number") {
       error += "option 'removeBtnWidth' must be a Number\n";
     }
@@ -879,6 +981,12 @@ class Itemize {
     if (typeof options.removeBtnSharpness !== "string") {
       error += "option 'removeBtnSharpness' must be a String\n";
     }
+    if (typeof options.removeBtnPosition !== "string") {
+      error += "option 'removeBtnPosition' must be a String\n";
+    }
+    if (typeof options.removeBtnMargin !== "number") {
+      error += "option 'removeBtnMargin' must be a Number\n";
+    }
     if (typeof options.modalText !== "string") {
       error += "option 'modalText' must be a String\n";
     }
@@ -887,6 +995,12 @@ class Itemize {
     }
     if (typeof options.addAlertText !== "string") {
       error += "option 'addAlertText' must be a String\n";
+    }
+    if (typeof options.showRemoveAlerts !== "boolean") {
+      error += "option 'showRemoveAlerts' must be a Boolean\n";
+    }
+    if (typeof options.showAddAlerts !== "boolean") {
+      error += "option 'showAddAlerts' must be a Boolean\n";
     }
     if (typeof options.alertPosition !== "string") {
       error += "option 'alertPosition' must be a String\n";

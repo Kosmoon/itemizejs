@@ -16,12 +16,17 @@
       itemize
       removeBtn="true"
       removeBtnWidth="20"
+      removeBtnMargin="-1"
       flipAnimDuration="800"
       modalText="Sure?"
       removeBtnColor="#af0000"
       removeBtnHoverColor="#000000"
       removeBtnThickness="5"
       removeBtnSharpness="0%"
+      showRemoveAlerts="false"
+      showAddAlerts="true"
+      addAlertText="Item added to closable1"
+      removeAlertText="Removed Closable1's item"
     >
       <li class="closable" notItemize>
         test1
@@ -105,35 +110,37 @@
       </li>
     </div>
     <script>
-      document.querySelector("#add_elem").onclick = () => {
-        let go = document.createElement("div");
+      document.querySelector("#add_elem").onclick = function() {
+        var go = document.createElement("div");
         go.classList.add("new_elem");
         go.textContent = "BLABALBALBLBALBAL";
-        let go2 = document.querySelector("[itemize]");
+        var go2 = document.querySelector("[itemize]");
         go2.appendChild(go);
       };
-      let closableContainer = new Itemize({
+      var closableContainer = new Itemize({
         removeBtnWidth: 20,
         removeBtnThickness: 1,
         removeBtnSharpness: "0%",
+        removeBtnMargin: -15,
         flipAnimation: true,
         modalConfirm: true,
         removeBtnHoverColor: "#af0000",
         modalText: "Are you sure to remove this item?",
-        removeAlertText: "Item removed successfully",
+        removeAlertText: "Item removed",
+        addAlertText: "Item added",
+        showRemoveAlerts: true,
+        showAddAlerts: true,
         alertTimer: 5000,
-        alertPosition: "bottom-right",
-        beforeRemove: el => {
+
+        beforeRemove: function(el) {
           return true;
-          // return new Promise((resolve, reject) => {
-          //   setTimeout(() => {
-          //     if (Math.random() > 0.5) {
-          //       resolve(el.itemizeId + " OUEP");
-          //     } else {
-          //       reject(el.itemizeId + " NOP");
+          // return fetch("https://jsonplaceholder.typicode.com/todos/1")
+          //   .then(response => response.json())
+          //   .then(json => {
+          //     if (json.userId === 2) {
+          //       return true;
           //     }
-          //   }, 300);
-          // });
+          //   });
         }
       });
       console.log(closableContainer);
