@@ -107,6 +107,22 @@ class Itemize {
       );
     }
     if (
+      typeof parent.getAttribute("flipRemoveTranslateX") === "string" &&
+      parseInt(parent.getAttribute("flipRemoveTranslateX")) !== NaN
+    ) {
+      options.flipRemoveTranslateX = parseInt(
+        parent.getAttribute("flipRemoveTranslateX")
+      );
+    }
+    if (
+      typeof parent.getAttribute("flipRemoveTranslateY") === "string" &&
+      parseInt(parent.getAttribute("flipRemoveTranslateY")) !== NaN
+    ) {
+      options.flipRemoveTranslateY = parseInt(
+        parent.getAttribute("flipRemoveTranslateY")
+      );
+    }
+    if (
       typeof parent.getAttribute("removeBtnThickness") === "string" &&
       parseInt(parent.getAttribute("removeBtnThickness")) > 0
     ) {
@@ -863,6 +879,7 @@ class Itemize {
   }
   flipRemove(elem) {
     elem.parentNode.appendChild(elem);
+    let options = elem.parentNode.itemizeOptions;
     const newPos = elem.getBoundingClientRect();
     const oldPos = this.elPos[elem.itemizeId];
     const deltaX = oldPos.x - newPos.x;
@@ -874,12 +891,14 @@ class Itemize {
           opacity: 1
         },
         {
-          transform: `translate(${deltaX + 50}px, ${deltaY}px)`,
+          transform: `translate(${deltaX +
+            options.flipRemoveTranslateX}px, ${deltaY +
+            options.flipRemoveTranslateY}px)`,
           opacity: 0
         }
       ],
       {
-        duration: elem.parentNode.itemizeOptions.flipAnimDuration,
+        duration: options.flipAnimDuration,
         easing: "ease-in-out",
         fill: "both"
       }
@@ -887,7 +906,7 @@ class Itemize {
     setTimeout(() => {
       elem.removeStatus = null;
       elem.parentNode.removeChild(elem);
-    }, elem.parentNode.itemizeOptions.flipAnimDuration);
+    }, options.flipAnimDuration);
   }
   flipRead(elems) {
     this.elPos = {};
@@ -942,6 +961,8 @@ class Itemize {
         alertPosition: "bottom-right",
         alertTimer: 4000,
         flipAnimation: true,
+        flipRemoveTranslateX: 0,
+        flipRemoveTranslateY: 0,
         flipAnimDuration: 500,
         beforeRemove: null
       };
@@ -1010,6 +1031,12 @@ class Itemize {
     }
     if (typeof options.flipAnimDuration !== "number") {
       error += "option 'flipAnimDuration' must be a Number\n";
+    }
+    if (typeof options.flipRemoveTranslateX !== "number") {
+      error += "option 'flipRemoveTranslateX' must be a Number\n";
+    }
+    if (typeof options.flipRemoveTranslateY !== "number") {
+      error += "option 'flipRemoveTranslateY' must be a Number\n";
     }
     if (options.beforeRemove && typeof options.beforeRemove !== "function") {
       error += "option 'beforeRemove' must be a Function\n";

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="stylesheet" href="src/index.css" />
+  <script src="src/itemize.js"></script>
+
+  <title>Itemize</title>
+</head>
+
+<body>
+  <div class="closable_container" itemize removeBtn="true" removeBtnWidth="20" removeBtnMargin="-1"
+    flipAnimDuration="800" modalText="Sure?" removeBtnColor="#af0000" removeBtnHoverColor="#000000"
+    removeBtnThickness="5" removeBtnSharpness="0%" showRemoveAlerts="false" showAddAlerts="true"
+    addAlertText="Item added to closable1" removeAlertText="Removed Closable1's item" flipRemoveTranslateY="-400"
+    flipRemoveTranslateX="-400">
+    <li class="closable" notItemize>
+      test1
+      <div class="remove_btn">test1</div>
+    </li>
+    <li class="closable">
+      test2
+      <div class="remove_btn">test1</div>
+    </li>
+    <li class="closable">
+      test3
+      <div class="remove_btn">test</div>
+    </li>
+    <li class="closable">
+      test4
+      <div class="remove_btn">test</div>
+    </li>
+    <li class="closable">
+      test5
+      <div class="remove_btn">test</div>
+    </li>
+    <button notItemize id="add_elem">ADD ELEM</button>
+  </div>
+
+  <div class="closable_container2" itemize removeBtn="true" removeBtnWidth="30" modalConfirm="false"
+    removeAlertText="Test custom text" removeBtnThickness="3" removeBtnSharpness="50%" flipRemoveTranslateX="-500">
+    <li class="closable">
+      test1
+      <div class="remove_btn">test2</div>
+    </li>
+    <li class="closable">
+      test2
+      <div class="remove_btn">test2</div>
+    </li>
+    <li class="closable">
+      test3
+      <div class="remove_btn">test</div>
+    </li>
+    <li class="closable">
+      test4
+      <div class="remove_btn">test</div>
+    </li>
+    <li class="closable">
+      test5
+      <div class="remove_btn">test</div>
+    </li>
+  </div>
+  <div class="closable_container3" itemize removeBtn="false" flipAnimation="false">
+    <li class="closable">
+      test1
+      <div class="remove_btn">test3</div>
+    </li>
+    <li class="closable">
+      test2
+      <div class="remove_btn">test3</div>
+    </li>
+    <li class="closable">
+      test3
+      <div class="remove_btn">test</div>
+    </li>
+    <li class="closable">
+      test4
+      <div class="remove_btn">test</div>
+    </li>
+    <li class="closable">
+      test5
+      <div class="remove_btn">test</div>
+    </li>
+  </div>
+  <script>
+    document.querySelector("#add_elem").onclick = function () {
+      var go = document.createElement("div");
+      go.classList.add("new_elem");
+      go.textContent = "BLABALBALBLBALBAL";
+      var go2 = document.querySelector("[itemize]");
+      go2.appendChild(go);
+    };
+    var closableContainer = new Itemize({
+      removeBtnWidth: 20,
+      removeBtnThickness: 1,
+      removeBtnSharpness: "0%",
+      removeBtnMargin: -15,
+      flipAnimation: true,
+
+      modalConfirm: true,
+      removeBtnHoverColor: "#af0000",
+      modalText: "Are you sure to remove this item?",
+      removeAlertText: "Item removed",
+      addAlertText: "Item added",
+      showRemoveAlerts: true,
+      showAddAlerts: true,
+      alertTimer: 5000,
+
+      beforeRemove: function (el) {
+        return true;
+        // return fetch("https://jsonplaceholder.typicode.com/todos/1")
+        //   .then(response => response.json())
+        //   .then(json => {
+        //     if (json.userId === 2) {
+        //       return true;
+        //     }
+        //   });
+      }
+    });
+    console.log(closableContainer);
+    console.log("L'execution à continué");
+  </script>
+</body>
+
+</html>
