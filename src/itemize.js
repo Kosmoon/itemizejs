@@ -126,7 +126,7 @@ class Itemize {
       typeof parent.getAttribute("animAddTranslateY") === "string" &&
       parseInt(parent.getAttribute("animAddTranslateY")) !== NaN
     ) {
-      options.animRemoveTranslateY = parseInt(
+      options.animAddTranslateY = parseInt(
         parent.getAttribute("animAddTranslateY")
       );
     }
@@ -134,7 +134,7 @@ class Itemize {
       typeof parent.getAttribute("animAddTranslateX") === "string" &&
       parseInt(parent.getAttribute("animAddTranslateX")) !== NaN
     ) {
-      options.animRemoveTranslateY = parseInt(
+      options.animAddTranslateX = parseInt(
         parent.getAttribute("animAddTranslateX")
       );
     }
@@ -215,6 +215,11 @@ class Itemize {
     }
   }
   itemizeChild(child, parent, fromObserver) {
+    window.requestAnimationFrame =
+      window.requestAnimationFrame ||
+      window.mozRequestAnimationFrame ||
+      window.webkitRequestAnimationFrame ||
+      window.msRequestAnimationFrame;
     if (
       child.type !== "text/css" &&
       typeof child.getAttribute("notItemize") !== "string" &&
@@ -911,27 +916,57 @@ class Itemize {
     let options = elem.parentElement.itemizeOptions;
     const newPos = elem.getBoundingClientRect();
     const oldPos = this.elPos[elem.itemizeId];
-    const deltaX = oldPos.x - newPos.x;
-    const deltaY = oldPos.y - newPos.y;
-    elem.animate(
-      [
+    const deltaX = oldPos.left - newPos.left;
+    const deltaY = oldPos.top - newPos.top;
+    if (elem.animate) {
+      elem.animate(
+        [
+          {
+            transform: `translate(${deltaX}px, ${deltaY}px)`,
+            opacity: 1
+          },
+          {
+            transform: `translate(${deltaX +
+              options.animRemoveTranslateX}px, ${deltaY +
+              options.animRemoveTranslateY}px)`,
+            opacity: 0
+          }
+        ],
         {
-          transform: `translate(${deltaX}px, ${deltaY}px)`,
-          opacity: 1
-        },
-        {
-          transform: `translate(${deltaX +
-            options.animRemoveTranslateX}px, ${deltaY +
-            options.animRemoveTranslateY}px)`,
-          opacity: 0
+          duration: options.flipAnimDuration,
+          easing: "ease-in-out",
+          fill: "both"
         }
-      ],
-      {
-        duration: options.flipAnimDuration,
-        easing: "ease-in-out",
-        fill: "both"
+      );
+    } else {
+      function animIt(timestamp) {
+        let progress;
+        let duration = options.flipAnimDuration;
+        if (!elem.startAnimTime) {
+          elem.startAnimTime = timestamp;
+          elem.animTicks = 0;
+          elem.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px)`;
+          elem.style.opacity = 1;
+        }
+        progress = timestamp - elem.startAnimTime;
+        elem.style.transform = `translate(${deltaX +
+          (options.animRemoveTranslateX / ((duration * 60) / 1000)) *
+            elem.animTicks}px, ${deltaY +
+          (options.animRemoveTranslateY / ((duration * 60) / 1000)) *
+            elem.animTicks}px)`;
+        elem.style.opacity =
+          1 - (1 / ((duration * 60) / 1000)) * elem.animTicks;
+        if (progress < duration) {
+          elem.animTicks++;
+          requestAnimationFrame(animIt);
+        } else {
+          elem.startAnimTime = null;
+          elem.animTicks = 0;
+        }
       }
-    );
+      requestAnimationFrame(animIt);
+    }
+
     setTimeout(() => {
       elem.removeStatus = null;
       elem.parentElement.removeChild(elem);
@@ -944,8 +979,8 @@ class Itemize {
     let options = elem.parentElement.itemizeOptions;
     const newPos = elem.getBoundingClientRect();
     const oldPos = elem.oldAddPos || this.elPos[elem.itemizeId];
-    const deltaX = oldPos.x - newPos.x;
-    const deltaY = oldPos.y - newPos.y;
+    const deltaX = oldPos.left - newPos.left;
+    const deltaY = oldPos.top - newPos.top;
     let deltaW = oldPos.width / newPos.width;
     let deltaH = oldPos.height / newPos.height;
     if (isNaN(deltaW)) {
@@ -993,11 +1028,10 @@ class Itemize {
       if (!elems[i].inAddAnim) {
         const newPos = elems[i].getBoundingClientRect();
         const oldPos = this.elPos[elems[i].itemizeId];
-        const deltaX = oldPos.x - newPos.x;
-        const deltaY = oldPos.y - newPos.y;
+        const deltaX = oldPos.left - newPos.left;
+        const deltaY = oldPos.top - newPos.top;
         let deltaW = oldPos.width / newPos.width;
         let deltaH = oldPos.height / newPos.height;
-
         if (isNaN(deltaW)) {
           deltaW = 1;
         }
@@ -1006,21 +1040,56 @@ class Itemize {
         }
         if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
           elems[i].inAnim = true;
-          elems[i].animate(
-            [
+          if (elems[i].animate) {
+            console.log("animate");
+            elems[i].animate(
+              [
+                {
+                  transform: `translate(${deltaX}px, ${deltaY}px) scale(${deltaW}, ${deltaH})`
+                },
+                {
+                  transform: "none"
+                }
+              ],
               {
-                transform: `translate(${deltaX}px, ${deltaY}px) scale(${deltaW}, ${deltaH})`
-              },
-              {
-                transform: "none"
+                duration:
+                  elems[i].parentElement.itemizeOptions.flipAnimDuration,
+                easing: "ease-in-out",
+                fill: "both"
               }
-            ],
-            {
-              duration: elems[i].parentElement.itemizeOptions.flipAnimDuration,
-              easing: "ease-in-out",
-              fill: "both"
+            );
+          } else {
+            console.log("animIT");
+            function animIt(timestamp) {
+              console.log(deltaX);
+              let progress;
+              let duration =
+                elems[i].parentElement.itemizeOptions.flipAnimDuration;
+              if (!elems[i].startAnimTime) {
+                elems[i].startAnimTime = timestamp;
+                elems[i].animTicks = 0;
+                elems[
+                  i
+                ].style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+              }
+              progress = timestamp - elems[i].startAnimTime;
+              elems[i].style.transform = `translate(${deltaX -
+                (deltaX / ((duration * 60) / 1000)) *
+                  elems[i].animTicks}px, ${deltaY -
+                (deltaY / ((duration * 60) / 1000)) * elems[i].animTicks}px) `;
+              console.log("progress:" + progress, duration);
+              if (progress < duration) {
+                elems[i].animTicks++;
+                requestAnimationFrame(animIt);
+              } else {
+                console.log("fini");
+                elems[i].startAnimTime = null;
+                elems[i].animTicks = 0;
+                elems[i].style.transform = "none";
+              }
             }
-          );
+            requestAnimationFrame(animIt);
+          }
           setTimeout(() => {
             elems[i].inAnim = false;
           }, elems[i].parentElement.itemizeOptions.flipAnimDuration);
@@ -1053,8 +1122,8 @@ class Itemize {
         animRemoveTranslateX: 0,
         animRemoveTranslateY: -100,
         animAddTranslateX: 0,
-        animAddTranslateY: -100,
-        flipAnimDuration: 500,
+        animAddTranslateY: 0,
+        flipAnimDuration: 400,
         beforeRemove: null
       };
       for (var key in newOptions) {

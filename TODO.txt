@@ -9,10 +9,10 @@
 [x] - removeBtn margin option et attributes
 [ ] - investiguer sur la disconection des observer (memory leak?)
 [ ] - parent attributes -> options
-[ ] - event listener sur parent pour gerer les add (pas oublier d'unscubscribe)
-[ ] - system d'alert avant suppression
+[x] - event listener sur parent pour gerer les add (pas oublier d'unscubscribe)
+[x] - system d'alert avant suppression
 [ ] - before erase async ou onErase async?
 [ ] - animate() browser compatibility
-[ ] - flip presset et duration
+[x] - flip presset et duration
 [ ] - flip presset dans les params de la function erase pour flip de la facon qu'on veux pour chaque erase
 [ ] - doc commentée avec @param (HTMLelement) etc..
