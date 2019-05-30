@@ -15,9 +15,9 @@
   <div class="closable_container" itemize removeBtn="true" removeBtnWidth="20" removeBtnMargin="-1"
     flipAnimDuration="800" modalText="Sure?" removeBtnColor="#af0000" removeBtnHoverColor="#000000"
     removeBtnThickness="5" removeBtnSharpness="0%" showRemoveAlerts="false" showAddAlerts="true"
-    addAlertText="Item added to closable1" removeAlertText="Removed Closable1's item" flipRemoveTranslateY="-400"
-    flipRemoveTranslateX="-400">
-    <li class="closable" notItemize>
+    addAlertText="Item added to closable1" removeAlertText="Removed Closable1's item" AnimRemoveTranslateY="-400"
+    animRemoveTranslateX="-400">
+    <li class="closable clsbl1" notItemize>
       test1
       <div class="remove_btn">test1</div>
     </li>
@@ -25,7 +25,7 @@
       test2
       <div class="remove_btn">test1</div>
     </li>
-    <li class="closable">
+    <li class="closable clsbl2">
       test3
       <div class="remove_btn">test</div>
     </li>
@@ -41,7 +41,7 @@
   </div>
 
   <div class="closable_container2" itemize removeBtn="true" removeBtnWidth="30" modalConfirm="false"
-    removeAlertText="Test custom text" removeBtnThickness="3" removeBtnSharpness="50%" flipRemoveTranslateX="-500">
+    removeAlertText="Test custom text" removeBtnThickness="3" removeBtnSharpness="50%" animRemoveTranslateX="-500">
     <li class="closable">
       test1
       <div class="remove_btn">test2</div>
@@ -90,16 +90,23 @@
       var go = document.createElement("div");
       go.classList.add("new_elem");
       go.textContent = "BLABALBALBLBALBAL";
+      var go5 = document.createElement("div");
+      go5.classList.add("new_elem");
+      go5.textContent = "BLABALBALBLBALBAL";
       var go2 = document.querySelector("[itemize]");
-      go2.appendChild(go);
+      var go3 = document.querySelector('.clsbl2');
+      var go4 = document.querySelector('.clsbl1');
+      go3.after(go);
+      // go3.after(go5);
+
     };
-    var closableContainer = new Itemize({
+    var itemized = new Itemize({
       removeBtnWidth: 20,
       removeBtnThickness: 1,
       removeBtnSharpness: "0%",
       removeBtnMargin: -15,
       flipAnimation: true,
-
+      flipAnimDuration: 800,
       modalConfirm: true,
       removeBtnHoverColor: "#af0000",
       modalText: "Are you sure to remove this item?",
@@ -120,7 +127,7 @@
         //   });
       }
     });
-    console.log(closableContainer);
+    console.log(itemized);
     console.log("L'execution à continué");
   </script>
 </body>

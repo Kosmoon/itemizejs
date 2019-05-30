@@ -107,19 +107,35 @@ class Itemize {
       );
     }
     if (
-      typeof parent.getAttribute("flipRemoveTranslateX") === "string" &&
-      parseInt(parent.getAttribute("flipRemoveTranslateX")) !== NaN
+      typeof parent.getAttribute("animRemoveTranslateX") === "string" &&
+      parseInt(parent.getAttribute("animRemoveTranslateX")) !== NaN
     ) {
-      options.flipRemoveTranslateX = parseInt(
-        parent.getAttribute("flipRemoveTranslateX")
+      options.animRemoveTranslateX = parseInt(
+        parent.getAttribute("animRemoveTranslateX")
       );
     }
     if (
-      typeof parent.getAttribute("flipRemoveTranslateY") === "string" &&
-      parseInt(parent.getAttribute("flipRemoveTranslateY")) !== NaN
+      typeof parent.getAttribute("animRemoveTranslateY") === "string" &&
+      parseInt(parent.getAttribute("animRemoveTranslateY")) !== NaN
     ) {
-      options.flipRemoveTranslateY = parseInt(
-        parent.getAttribute("flipRemoveTranslateY")
+      options.animRemoveTranslateY = parseInt(
+        parent.getAttribute("animRemoveTranslateY")
+      );
+    }
+    if (
+      typeof parent.getAttribute("animAddTranslateY") === "string" &&
+      parseInt(parent.getAttribute("animAddTranslateY")) !== NaN
+    ) {
+      options.animRemoveTranslateY = parseInt(
+        parent.getAttribute("animAddTranslateY")
+      );
+    }
+    if (
+      typeof parent.getAttribute("animAddTranslateX") === "string" &&
+      parseInt(parent.getAttribute("animAddTranslateX")) !== NaN
+    ) {
+      options.animRemoveTranslateY = parseInt(
+        parent.getAttribute("animAddTranslateX")
       );
     }
     if (
@@ -160,7 +176,7 @@ class Itemize {
                   let newNode = true;
                   node.classList.forEach(className => {
                     if (className.indexOf("itemize_") !== -1) {
-                      // check si le child n'est pas in element deja added qui passe par un flipAnim
+                      // check si le child n'est pas un element deja added qui passe par un flipAnim
                       newNode = false;
                     }
                   });
@@ -168,7 +184,15 @@ class Itemize {
                     if (node.getAttribute("notItemize")) {
                       console.log("not itemize element added");
                     } else {
-                      scope.itemizeChild(node, node.parentNode, true);
+                      if (node.parentElement.itemizeOptions.flipAnimation) {
+                        node.classList.add("itemize_hide");
+                        scope.itemizeChild(node, node.parentElement, true);
+                        scope.flipRead(scope.items);
+                        scope.flipAdd(node);
+                        scope.flipPlay(scope.items);
+                      } else {
+                        scope.itemizeChild(node, node.parentElement, true);
+                      }
                     }
                   }
                 });
@@ -177,138 +201,9 @@ class Itemize {
           };
           let observer = new MutationObserver(callback);
           observer.observe(parent, config);
-          // Later, you can stop observing
-          // observer.disconnect();
+          // observer.disconnect();  <--
         }
-        let oldStyle = document.querySelector(this.target + " .itemize_style");
-        if (oldStyle) {
-          parent.querySelector(".itemize_style").remove();
-        }
-        let css = document.createElement("style");
-        css.classList.add("itemize_style");
-        css.type = "text/css";
-        let styles = "";
-
-        if (
-          parent.itemizeOptions.removeBtn &&
-          !parent.itemizeOptions.removeBtnClass
-        ) {
-          let btnMargin = parent.itemizeOptions.removeBtnMargin + "px";
-          let btnPos = {
-            top: 0,
-            right: 0,
-            bottom: "auto",
-            left: "auto",
-            marginTop: btnMargin,
-            marginRight: btnMargin,
-            marginBottom: "0px",
-            marginLeft: "0px",
-            transform: "none"
-          };
-          switch (parent.itemizeOptions.removeBtnPosition) {
-            case "center-right":
-              btnPos.top = "50%";
-              btnPos.marginTop = "0px";
-              btnPos.transform = "translateY(-50%)";
-              break;
-            case "bottom-right":
-              btnPos.top = "auto";
-              btnPos.bottom = 0;
-              btnPos.marginTop = "0px";
-              btnPos.marginBottom = btnMargin;
-              break;
-            case "bottom-center":
-              btnPos.top = "auto";
-              btnPos.right = "auto";
-              btnPos.bottom = 0;
-              btnPos.left = "50%";
-              btnPos.marginTop = "0px";
-              btnPos.marginRight = "0px";
-              btnPos.marginBottom = btnMargin;
-              btnPos.transform = "translateX(-50%)";
-              break;
-            case "bottom-left":
-              btnPos.top = "auto";
-              btnPos.right = "auto";
-              btnPos.bottom = 0;
-              btnPos.left = 0;
-              btnPos.marginTop = "0px";
-              btnPos.marginRight = "0px";
-              btnPos.marginBottom = btnMargin;
-              btnPos.marginLeft = btnMargin;
-            case "center-left":
-              btnPos.top = "50%";
-              btnPos.right = "auto";
-              btnPos.left = 0;
-              btnPos.marginTop = "0px";
-              btnPos.marginRight = "0px";
-              btnPos.marginLeft = btnMargin;
-              btnPos.transform = "translateY(-50%)";
-              break;
-            case "top-left":
-              btnPos.right = "auto";
-              btnPos.left = 0;
-              btnPos.marginRight = "0px";
-              btnPos.marginLeft = btnMargin;
-              break;
-            case "top-center":
-              btnPos.right = "auto";
-              btnPos.left = "50%";
-              btnPos.marginRight = "0px";
-              btnPos.marginTop = btnMargin;
-              btnPos.transform = "translateX(-50%)";
-              break;
-            default:
-              break;
-          }
-          styles += `.itemize_parent_${
-            parent.itemizeId
-          } .itemize_btn_remove{position:absolute;top:${
-            btnPos.top
-          }!important;right:${btnPos.right}!important;bottom:${
-            btnPos.bottom
-          }!important;left:${btnPos.left}!important;width:${
-            parent.itemizeOptions.removeBtnWidth
-          }px!important;height:${
-            parent.itemizeOptions.removeBtnWidth
-          }px!important;overflow:hidden;cursor:pointer;margin:${
-            btnPos.marginTop
-          } ${btnPos.marginRight} ${btnPos.marginBottom} ${
-            btnPos.marginLeft
-          };transform:${btnPos.transform}}.itemize_parent_${
-            parent.itemizeId
-          } .itemize_btn_remove:hover::after,.itemize_parent_${
-            parent.itemizeId
-          } .itemize_btn_remove:hover::before{background:${
-            parent.itemizeOptions.removeBtnHoverColor
-          }}.itemize_parent_${
-            parent.itemizeId
-          } .itemize_btn_remove::after,.itemize_parent_${
-            parent.itemizeId
-          } .itemize_btn_remove::before{content:'';position:absolute;height:${
-            parent.itemizeOptions.removeBtnThickness
-          }px;width:${
-            parent.itemizeOptions.removeBtnWidth
-          }px;top:50%;left:0;margin-top:${
-            parent.itemizeOptions.removeBtnThickness * 0.5 < 1
-              ? -1
-              : -parent.itemizeOptions.removeBtnThickness * 0.5
-          }px;background:${
-            parent.itemizeOptions.removeBtnColor
-          };border-radius:${
-            parent.itemizeOptions.removeBtnSharpness
-          }}.itemize_parent_${
-            parent.itemizeId
-          } .itemize_btn_remove::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
-            parent.itemizeId
-          } .itemize_btn_remove::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}`;
-        }
-        if (css.styleSheet) {
-          css.styleSheet.cssText = styles;
-        } else {
-          css.appendChild(document.createTextNode(styles));
-        }
-        parent.appendChild(css);
+        this.applyCss(parent);
         for (let z = 0; z < parent.children.length; z++) {
           let child = parent.children[z];
           this.itemizeChild(child, parent);
@@ -322,11 +217,10 @@ class Itemize {
   itemizeChild(child, parent, fromObserver) {
     if (
       child.type !== "text/css" &&
-      typeof child.getAttribute("notItemize") !== "string"
+      typeof child.getAttribute("notItemize") !== "string" &&
+      !child.itemizeId
     ) {
-      if (!child.itemizeId) {
-        child.itemizeId = this.makeId(8);
-      }
+      child.itemizeId = this.makeId(8);
       this.items.push(child);
       child.classList.add("itemize_item_" + child.itemizeId);
       if (!parent.itemizeOptions.removeBtn) {
@@ -345,7 +239,6 @@ class Itemize {
           button.classList.add("itemize_btn_remove");
           button.onclick = () => {
             if (parent.itemizeOptions.modalConfirm) {
-              console.log(child.itemizeId);
               this.modalConfirm(child.itemizeId);
             } else {
               this.remove(child.itemizeId);
@@ -361,7 +254,7 @@ class Itemize {
           );
           if (!button) {
             knownErrors +=
-              "Cannot find specified class: " +
+              "Cannot find specified button's class: " +
               parent.itemizeOptions.removeBtnClass +
               "\n";
           }
@@ -378,6 +271,136 @@ class Itemize {
         this.showAlert("added", child);
       }
     }
+  }
+  applyCss(parent) {
+    let oldStyle = parent.querySelector(".itemize_style");
+    if (oldStyle) {
+      parent.querySelector(".itemize_style").remove();
+    }
+    let css = document.createElement("style");
+    css.classList.add("itemize_style");
+    css.type = "text/css";
+    let styles = "";
+    if (
+      parent.itemizeOptions.removeBtn &&
+      !parent.itemizeOptions.removeBtnClass
+    ) {
+      let btnMargin = parent.itemizeOptions.removeBtnMargin + "px";
+      let btnPos = {
+        top: 0,
+        right: 0,
+        bottom: "auto",
+        left: "auto",
+        marginTop: btnMargin,
+        marginRight: btnMargin,
+        marginBottom: "0px",
+        marginLeft: "0px",
+        transform: "none"
+      };
+      switch (parent.itemizeOptions.removeBtnPosition) {
+        case "center-right":
+          btnPos.top = "50%";
+          btnPos.marginTop = "0px";
+          btnPos.transform = "translateY(-50%)";
+          break;
+        case "bottom-right":
+          btnPos.top = "auto";
+          btnPos.bottom = 0;
+          btnPos.marginTop = "0px";
+          btnPos.marginBottom = btnMargin;
+          break;
+        case "bottom-center":
+          btnPos.top = "auto";
+          btnPos.right = "auto";
+          btnPos.bottom = 0;
+          btnPos.left = "50%";
+          btnPos.marginTop = "0px";
+          btnPos.marginRight = "0px";
+          btnPos.marginBottom = btnMargin;
+          btnPos.transform = "translateX(-50%)";
+          break;
+        case "bottom-left":
+          btnPos.top = "auto";
+          btnPos.right = "auto";
+          btnPos.bottom = 0;
+          btnPos.left = 0;
+          btnPos.marginTop = "0px";
+          btnPos.marginRight = "0px";
+          btnPos.marginBottom = btnMargin;
+          btnPos.marginLeft = btnMargin;
+        case "center-left":
+          btnPos.top = "50%";
+          btnPos.right = "auto";
+          btnPos.left = 0;
+          btnPos.marginTop = "0px";
+          btnPos.marginRight = "0px";
+          btnPos.marginLeft = btnMargin;
+          btnPos.transform = "translateY(-50%)";
+          break;
+        case "top-left":
+          btnPos.right = "auto";
+          btnPos.left = 0;
+          btnPos.marginRight = "0px";
+          btnPos.marginLeft = btnMargin;
+          break;
+        case "top-center":
+          btnPos.right = "auto";
+          btnPos.left = "50%";
+          btnPos.marginRight = "0px";
+          btnPos.marginTop = btnMargin;
+          btnPos.transform = "translateX(-50%)";
+          break;
+        default:
+          break;
+      }
+      styles += `.itemize_parent_${
+        parent.itemizeId
+      } .itemize_btn_remove{position:absolute;top:${
+        btnPos.top
+      }!important;right:${btnPos.right}!important;bottom:${
+        btnPos.bottom
+      }!important;left:${btnPos.left}!important;width:${
+        parent.itemizeOptions.removeBtnWidth
+      }px!important;height:${
+        parent.itemizeOptions.removeBtnWidth
+      }px!important;overflow:hidden;cursor:pointer;margin:${btnPos.marginTop} ${
+        btnPos.marginRight
+      } ${btnPos.marginBottom} ${btnPos.marginLeft};transform:${
+        btnPos.transform
+      }}.itemize_parent_${
+        parent.itemizeId
+      } .itemize_btn_remove:hover::after,.itemize_parent_${
+        parent.itemizeId
+      } .itemize_btn_remove:hover::before{background:${
+        parent.itemizeOptions.removeBtnHoverColor
+      }}.itemize_parent_${
+        parent.itemizeId
+      } .itemize_btn_remove::after,.itemize_parent_${
+        parent.itemizeId
+      } .itemize_btn_remove::before{content:'';position:absolute;height:${
+        parent.itemizeOptions.removeBtnThickness
+      }px;width:${
+        parent.itemizeOptions.removeBtnWidth
+      }px;top:50%;left:0;margin-top:${
+        parent.itemizeOptions.removeBtnThickness * 0.5 < 1
+          ? -1
+          : -parent.itemizeOptions.removeBtnThickness * 0.5
+      }px;background:${parent.itemizeOptions.removeBtnColor};border-radius:${
+        parent.itemizeOptions.removeBtnSharpness
+      }}.itemize_parent_${
+        parent.itemizeId
+      } .itemize_btn_remove::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
+        parent.itemizeId
+      } .itemize_btn_remove::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}.itemize_parent_${
+        parent.itemizeId
+      } .itemize_hide{display:none}`;
+    }
+    if (css.styleSheet) {
+      css.styleSheet.cssText = styles;
+    } else {
+      css.appendChild(document.createTextNode(styles));
+    }
+    parent.appendChild(css);
   }
   modalConfirm(el) {
     try {
@@ -424,7 +447,7 @@ class Itemize {
       alertText.classList.add("itemize_modal_text");
       btnConfirm.classList.add("itemize_modal_btnConfirm");
       btnCancel.classList.add("itemize_modal_btnCancel");
-      alertText.textContent = item.parentNode.itemizeOptions.modalText;
+      alertText.textContent = item.parentElement.itemizeOptions.modalText;
       btnConfirm.innerHTML = "Yes";
       btnCancel.innerHTML = "Cancel";
       btnContainer.appendChild(btnCancel);
@@ -574,10 +597,12 @@ class Itemize {
       console.error("- Itemize - ERROR:\n" + error);
     }
   }
+
   showAlert(action, element) {
     if (
-      (element.parentNode.itemizeOptions.showAddAlerts && action === "added") ||
-      (element.parentNode.itemizeOptions.showRemoveAlerts &&
+      (element.parentElement.itemizeOptions.showAddAlerts &&
+        action === "added") ||
+      (element.parentElement.itemizeOptions.showRemoveAlerts &&
         action === "removed")
     ) {
       let alertClassName = "";
@@ -590,25 +615,27 @@ class Itemize {
       let alertTranslateX = "";
       let minusOrNothing = "-";
       let alertIsTop = false;
-      let alertTimerDuration = element.parentNode.itemizeOptions.alertTimer;
-      if (element.parentNode.itemizeOptions.alertPosition === "bottom-center") {
+      let alertTimerDuration = element.parentElement.itemizeOptions.alertTimer;
+      if (
+        element.parentElement.itemizeOptions.alertPosition === "bottom-center"
+      ) {
         alertLeftPos = "50%";
         alertTopPos = "100%";
         alertTranslateX = "-50%";
       } else if (
-        element.parentNode.itemizeOptions.alertPosition === "bottom-right"
+        element.parentElement.itemizeOptions.alertPosition === "bottom-right"
       ) {
         alertLeftPos = "100%";
         alertTopPos = "100%";
         alertTranslateX = "-100%";
       } else if (
-        element.parentNode.itemizeOptions.alertPosition === "bottom-left"
+        element.parentElement.itemizeOptions.alertPosition === "bottom-left"
       ) {
         alertLeftPos = "0%";
         alertTopPos = "100%";
         alertTranslateX = "0%";
       } else if (
-        element.parentNode.itemizeOptions.alertPosition === "top-center"
+        element.parentElement.itemizeOptions.alertPosition === "top-center"
       ) {
         alertLeftPos = "50%";
         alertTopPos = "0%";
@@ -616,7 +643,7 @@ class Itemize {
         minusOrNothing = "";
         alertIsTop = true;
       } else if (
-        element.parentNode.itemizeOptions.alertPosition === "top-right"
+        element.parentElement.itemizeOptions.alertPosition === "top-right"
       ) {
         alertLeftPos = "100%";
         alertTopPos = "0%";
@@ -624,7 +651,7 @@ class Itemize {
         minusOrNothing = "";
         alertIsTop = true;
       } else if (
-        element.parentNode.itemizeOptions.alertPosition === "top-left"
+        element.parentElement.itemizeOptions.alertPosition === "top-left"
       ) {
         alertLeftPos = "0%";
         alertTopPos = "0%";
@@ -637,13 +664,13 @@ class Itemize {
         alertTextClassName = "itemize_remove_alert_text";
         alertBackground = "#BD5B5B";
         alertTimerColor = "#DEADAD";
-        alertTextContent = element.parentNode.itemizeOptions.removeAlertText;
+        alertTextContent = element.parentElement.itemizeOptions.removeAlertText;
       } else if (action === "added") {
         alertClassName = "itemize_add_alert";
         alertTextClassName = "itemize_add_alert_text";
         alertBackground = "#00AF66";
         alertTimerColor = "#80D7B3";
-        alertTextContent = element.parentNode.itemizeOptions.addAlertText;
+        alertTextContent = element.parentElement.itemizeOptions.addAlertText;
       }
       this.alertNb++;
       let popAlert = document.createElement("div");
@@ -742,6 +769,7 @@ class Itemize {
       }, alertTimerDuration);
     }
   }
+
   remove(el) {
     try {
       let item = null;
@@ -789,7 +817,7 @@ class Itemize {
               confirmRemove
                 .then(response => {
                   if (response) {
-                    if (item.parentNode.itemizeOptions.flipAnimation) {
+                    if (item.parentElement.itemizeOptions.flipAnimation) {
                       let closeBtn = item.querySelector(".itemize_btn_remove");
                       if (closeBtn) {
                         closeBtn.onclick = null;
@@ -810,7 +838,7 @@ class Itemize {
                     } else {
                       this.showAlert("removed", item);
                       item.removeStatus = null;
-                      item.parentNode.removeChild(item);
+                      item.parentElement.removeChild(item);
                       this.items.splice(item.arrayPosition, 1);
                     }
                   }
@@ -820,7 +848,7 @@ class Itemize {
                   item.removeStatus = null;
                 });
             } else if (confirmRemove) {
-              if (item.parentNode.itemizeOptions.flipAnimation) {
+              if (item.parentElement.itemizeOptions.flipAnimation) {
                 let closeBtn = item.querySelector(".itemize_btn_remove");
                 if (closeBtn) {
                   closeBtn.onclick = null;
@@ -840,12 +868,12 @@ class Itemize {
               } else {
                 this.showAlert("removed", item);
                 item.removeStatus = null;
-                item.parentNode.removeChild(item);
+                item.parentElement.removeChild(item);
                 this.items.splice(item.arrayPosition, 1);
               }
             }
           } else {
-            if (item.parentNode.itemizeOptions.flipAnimation) {
+            if (item.parentElement.itemizeOptions.flipAnimation) {
               let closeBtn = item.querySelector(".itemize_btn_remove");
               if (closeBtn) {
                 closeBtn.onclick = null;
@@ -865,7 +893,7 @@ class Itemize {
             } else {
               this.showAlert("removed", item);
               item.removeStatus = null;
-              item.parentNode.removeChild(item);
+              item.parentElement.removeChild(item);
               this.items.splice(item.arrayPosition, 1);
             }
           }
@@ -877,9 +905,10 @@ class Itemize {
       console.error("- Itemize - ERROR:\n" + error);
     }
   }
+
   flipRemove(elem) {
-    elem.parentNode.appendChild(elem);
-    let options = elem.parentNode.itemizeOptions;
+    elem.parentElement.appendChild(elem);
+    let options = elem.parentElement.itemizeOptions;
     const newPos = elem.getBoundingClientRect();
     const oldPos = this.elPos[elem.itemizeId];
     const deltaX = oldPos.x - newPos.x;
@@ -892,8 +921,8 @@ class Itemize {
         },
         {
           transform: `translate(${deltaX +
-            options.flipRemoveTranslateX}px, ${deltaY +
-            options.flipRemoveTranslateY}px)`,
+            options.animRemoveTranslateX}px, ${deltaY +
+            options.animRemoveTranslateY}px)`,
           opacity: 0
         }
       ],
@@ -905,38 +934,98 @@ class Itemize {
     );
     setTimeout(() => {
       elem.removeStatus = null;
-      elem.parentNode.removeChild(elem);
+      elem.parentElement.removeChild(elem);
+    }, options.flipAnimDuration);
+  }
+  flipAdd(elem) {
+    elem.classList.remove("itemize_hide");
+    elem.inAddAnim = true;
+    this.elPos[elem.itemizeId] = elem.oldAddPos || elem.getBoundingClientRect();
+    let options = elem.parentElement.itemizeOptions;
+    const newPos = elem.getBoundingClientRect();
+    const oldPos = elem.oldAddPos || this.elPos[elem.itemizeId];
+    const deltaX = oldPos.x - newPos.x;
+    const deltaY = oldPos.y - newPos.y;
+    let deltaW = oldPos.width / newPos.width;
+    let deltaH = oldPos.height / newPos.height;
+    if (isNaN(deltaW)) {
+      deltaW = 1;
+    }
+    if (isNaN(deltaH)) {
+      deltaH = 1;
+    }
+    elem.newAddPos = newPos;
+    elem.oldAddPos = oldPos;
+    elem.animate(
+      [
+        {
+          transform: `translate(${deltaX +
+            options.animAddTranslateX}px, ${deltaY +
+            options.animAddTranslateY}px) scale(${deltaW}, ${deltaH})`,
+          opacity: 0
+        },
+        {
+          transform: "none",
+          opacity: 1
+        }
+      ],
+      {
+        duration: options.flipAnimDuration,
+        easing: "ease-in-out",
+        fill: "both"
+      }
+    );
+    setTimeout(() => {
+      elem.inAddAnim = false;
+      elem.newAddPos = null;
+      elem.oldPos = null;
     }, options.flipAnimDuration);
   }
   flipRead(elems) {
-    this.elPos = {};
+    // this.elPos = {};
     for (let i = 0; i < elems.length; i++) {
       this.elPos[elems[i].itemizeId] = elems[i].getBoundingClientRect();
     }
   }
+
   flipPlay(elems) {
     for (let i = 0; i < elems.length; i++) {
-      const newPos = elems[i].getBoundingClientRect();
-      const oldPos = this.elPos[elems[i].itemizeId];
-      const deltaX = oldPos.x - newPos.x;
-      const deltaY = oldPos.y - newPos.y;
-      const deltaW = oldPos.width / newPos.width;
-      const deltaH = oldPos.height / newPos.height;
-      elems[i].animate(
-        [
-          {
-            transform: `translate(${deltaX}px, ${deltaY}px) scale(${deltaW}, ${deltaH})`
-          },
-          {
-            transform: "none"
-          }
-        ],
-        {
-          duration: elems[i].parentNode.itemizeOptions.flipAnimDuration,
-          easing: "ease-in-out",
-          fill: "both"
+      if (!elems[i].inAddAnim) {
+        const newPos = elems[i].getBoundingClientRect();
+        const oldPos = this.elPos[elems[i].itemizeId];
+        const deltaX = oldPos.x - newPos.x;
+        const deltaY = oldPos.y - newPos.y;
+        let deltaW = oldPos.width / newPos.width;
+        let deltaH = oldPos.height / newPos.height;
+
+        if (isNaN(deltaW)) {
+          deltaW = 1;
         }
-      );
+        if (isNaN(deltaH)) {
+          deltaH = 1;
+        }
+        if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
+          elems[i].inAnim = true;
+          elems[i].animate(
+            [
+              {
+                transform: `translate(${deltaX}px, ${deltaY}px) scale(${deltaW}, ${deltaH})`
+              },
+              {
+                transform: "none"
+              }
+            ],
+            {
+              duration: elems[i].parentElement.itemizeOptions.flipAnimDuration,
+              easing: "ease-in-out",
+              fill: "both"
+            }
+          );
+          setTimeout(() => {
+            elems[i].inAnim = false;
+          }, elems[i].parentElement.itemizeOptions.flipAnimDuration);
+        }
+      }
     }
   }
 
@@ -961,8 +1050,10 @@ class Itemize {
         alertPosition: "bottom-right",
         alertTimer: 4000,
         flipAnimation: true,
-        flipRemoveTranslateX: 0,
-        flipRemoveTranslateY: 0,
+        animRemoveTranslateX: 0,
+        animRemoveTranslateY: -100,
+        animAddTranslateX: 0,
+        animAddTranslateY: -100,
         flipAnimDuration: 500,
         beforeRemove: null
       };
@@ -1032,11 +1123,17 @@ class Itemize {
     if (typeof options.flipAnimDuration !== "number") {
       error += "option 'flipAnimDuration' must be a Number\n";
     }
-    if (typeof options.flipRemoveTranslateX !== "number") {
-      error += "option 'flipRemoveTranslateX' must be a Number\n";
+    if (typeof options.animRemoveTranslateX !== "number") {
+      error += "option 'animRemoveTranslateX' must be a Number\n";
     }
-    if (typeof options.flipRemoveTranslateY !== "number") {
-      error += "option 'flipRemoveTranslateY' must be a Number\n";
+    if (typeof options.animRemoveTranslateY !== "number") {
+      error += "option 'animRemoveTranslateY' must be a Number\n";
+    }
+    if (typeof options.animAddTranslateY !== "number") {
+      error += "option 'animAddTranslateY' must be a Number\n";
+    }
+    if (typeof options.animAddTranslateX !== "number") {
+      error += "option 'animAddTranslateX' must be a Number\n";
     }
     if (options.beforeRemove && typeof options.beforeRemove !== "function") {
       error += "option 'beforeRemove' must be a Function\n";
@@ -1047,6 +1144,7 @@ class Itemize {
       return error;
     }
   }
+
   makeId(length) {
     var result = "";
     var characters =

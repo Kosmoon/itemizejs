@@ -55,6 +55,14 @@ body {
     word-break: break-all
 }
 
+#add_elem {
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 40px;
+
+}
+
 /* .close_btn {
     width: 50px;
     height: 50px;
