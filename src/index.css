@@ -9,10 +9,12 @@ body {
 
 * {
     box-sizing: border-box;
+    /* -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale; */
 }
 
 .closable_container {
-    background: rgb(194, 194, 202);
+    background: rgb(202, 194, 194);
     width: 100%;
     display: flex;
     flex-direction: row;
@@ -24,7 +26,8 @@ body {
     width: 100%;
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap
+    flex-wrap: wrap;
+    color: #4a5055
 }
 
 .closable {
@@ -62,6 +65,14 @@ body {
     height: 40px;
 
 }
+
+/* .remove_btn {
+    background: blue
+} */
+
+/* .itemize_btn_remove {
+    background: #57a300;
+} */
 
 /* .close_btn {
     width: 50px;

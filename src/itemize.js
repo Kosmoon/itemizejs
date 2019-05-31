@@ -8,6 +8,7 @@ class Itemize {
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
     this.alertNb = 0;
+    this.modalDisappearTimeout = null;
     let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     if (optionCheckResult !== "valid") {
       // check: option type error
@@ -49,6 +50,13 @@ class Itemize {
     } else if (parent.getAttribute("flipAnimation") === "true") {
       options.flipAnimation = true;
     }
+    if (typeof parent.getAttribute("removeBtnClass") === "string") {
+      if (parent.getAttribute("removeBtnClass") === "false") {
+        options.removeBtnClass = null;
+      } else {
+        options.removeBtnClass = parent.getAttribute("removeBtnClass");
+      }
+    }
     if (
       typeof parent.getAttribute("removeBtnWidth") === "string" &&
       parseInt(parent.getAttribute("removeBtnWidth")) > 0
@@ -67,6 +75,14 @@ class Itemize {
     }
     if (typeof parent.getAttribute("removeBtnPosition") === "string") {
       options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
+    }
+    if (typeof parent.getAttribute("removeBtnBgColor") === "string") {
+      options.removeBtnBgColor = parent.getAttribute("removeBtnBgColor");
+    }
+    if (typeof parent.getAttribute("removeBtnBgHoverColor") === "string") {
+      options.removeBtnBgHoverColor = parent.getAttribute(
+        "removeBtnBgHoverColor"
+      );
     }
     if (
       typeof parent.getAttribute("removeBtnMargin") === "string" &&
@@ -94,6 +110,11 @@ class Itemize {
       options.showRemoveAlerts = true;
     } else if (parent.getAttribute("showRemoveAlerts") === "false") {
       options.showRemoveAlerts = false;
+    }
+    if (parent.getAttribute("removeBtnCircle") === "true") {
+      options.removeBtnCircle = true;
+    } else if (parent.getAttribute("removeBtnCircle") === "false") {
+      options.removeBtnCircle = false;
     }
     if (typeof parent.getAttribute("alertPosition") === "string") {
       options.alertPosition = parent.getAttribute("alertPosition");
@@ -241,7 +262,7 @@ class Itemize {
           child.style.position = "relative";
           const button = document.createElement("div");
           button.classList.add("itemize_btn_" + child.itemizeId);
-          button.classList.add("itemize_btn_remove");
+          button.classList.add("itemize_remove_btn");
           button.onclick = () => {
             if (parent.itemizeOptions.modalConfirm) {
               this.modalConfirm(child.itemizeId);
@@ -278,6 +299,7 @@ class Itemize {
     }
   }
   applyCss(parent) {
+    let options = parent.itemizeOptions;
     let oldStyle = parent.querySelector(".itemize_style");
     if (oldStyle) {
       parent.querySelector(".itemize_style").remove();
@@ -286,11 +308,9 @@ class Itemize {
     css.classList.add("itemize_style");
     css.type = "text/css";
     let styles = "";
-    if (
-      parent.itemizeOptions.removeBtn &&
-      !parent.itemizeOptions.removeBtnClass
-    ) {
-      let btnMargin = parent.itemizeOptions.removeBtnMargin + "px";
+    if (options.removeBtn && !options.removeBtnClass) {
+      // remove btn styles
+      let btnMargin = options.removeBtnMargin + "px";
       let btnPos = {
         top: 0,
         right: 0,
@@ -302,7 +322,7 @@ class Itemize {
         marginLeft: "0px",
         transform: "none"
       };
-      switch (parent.itemizeOptions.removeBtnPosition) {
+      switch (options.removeBtnPosition) {
         case "center-right":
           btnPos.top = "50%";
           btnPos.marginTop = "0px";
@@ -360,43 +380,53 @@ class Itemize {
       }
       styles += `.itemize_parent_${
         parent.itemizeId
-      } .itemize_btn_remove{position:absolute;top:${
+      } .itemize_remove_btn{position:absolute;top:${
         btnPos.top
       }!important;right:${btnPos.right}!important;bottom:${
         btnPos.bottom
       }!important;left:${btnPos.left}!important;width:${
-        parent.itemizeOptions.removeBtnWidth
+        options.removeBtnWidth
       }px!important;height:${
-        parent.itemizeOptions.removeBtnWidth
+        options.removeBtnWidth
       }px!important;overflow:hidden;cursor:pointer;margin:${btnPos.marginTop} ${
         btnPos.marginRight
       } ${btnPos.marginBottom} ${btnPos.marginLeft};transform:${
         btnPos.transform
+      };border-radius:${
+        options.removeBtnCircle ? "50%" : "0%"
+      };background-color:${
+        options.removeBtnBgColor
+      }}.itemize_remove_btn:hover{background-color:${
+        options.removeBtnBgHoverColor
       }}.itemize_parent_${
         parent.itemizeId
-      } .itemize_btn_remove:hover::after,.itemize_parent_${
+      } .itemize_remove_btn:hover::after,.itemize_parent_${
         parent.itemizeId
-      } .itemize_btn_remove:hover::before{background:${
-        parent.itemizeOptions.removeBtnHoverColor
+      } .itemize_remove_btn:hover::before{transition:background 0.2s ease-in-out;background:${
+        options.removeBtnHoverColor
       }}.itemize_parent_${
         parent.itemizeId
-      } .itemize_btn_remove::after,.itemize_parent_${
+      } .itemize_remove_btn::after,.itemize_parent_${
         parent.itemizeId
-      } .itemize_btn_remove::before{content:'';position:absolute;height:${
-        parent.itemizeOptions.removeBtnThickness
-      }px;width:${
-        parent.itemizeOptions.removeBtnWidth
-      }px;top:50%;left:0;margin-top:${
-        parent.itemizeOptions.removeBtnThickness * 0.5 < 1
+      } .itemize_remove_btn::before{content:'';position:absolute;height:${
+        options.removeBtnThickness
+      }px;transition:background 0.2s ease-in-out;width:${options.removeBtnWidth /
+        (options.removeBtnCircle ? 2 : 1)}px;top:50%;left:${
+        options.removeBtnCircle ? "25%" : 0
+      };margin-top:${
+        options.removeBtnThickness * 0.5 < 1
           ? -1
-          : -parent.itemizeOptions.removeBtnThickness * 0.5
-      }px;background:${parent.itemizeOptions.removeBtnColor};border-radius:${
-        parent.itemizeOptions.removeBtnSharpness
+          : -options.removeBtnThickness * 0.5
+      }px;background:${options.removeBtnColor};border-radius:${
+        options.removeBtnSharpness
       }}.itemize_parent_${
         parent.itemizeId
-      } .itemize_btn_remove::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
+      } .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
         parent.itemizeId
-      } .itemize_btn_remove::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}.itemize_parent_${
+      } .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}`;
+    } else {
+      // global parent styles
+      styles += `.itemize_parent_${
         parent.itemizeId
       } .itemize_hide{display:none}`;
     }
@@ -444,14 +474,16 @@ class Itemize {
       const btnContainer = document.createElement("div");
       const btnConfirm = document.createElement("button");
       const btnCancel = document.createElement("button");
+      const crossClose = document.createElement("div");
       const body = document.querySelector("body");
-      const bodyInitialOverflow = body.style.overflow;
-      body.style.overflow = "hidden";
+      // const bodyInitialOverflow = body.style.overflow;
+      // body.style.overflow = "hidden";
       backDrop.classList.add("itemize_modal_backdrop");
       modal.classList.add("itemize_modal");
       alertText.classList.add("itemize_modal_text");
       btnConfirm.classList.add("itemize_modal_btnConfirm");
       btnCancel.classList.add("itemize_modal_btnCancel");
+      crossClose.classList.add("itemize_modal_cross");
       alertText.textContent = item.parentElement.itemizeOptions.modalText;
       btnConfirm.innerHTML = "Yes";
       btnCancel.innerHTML = "Cancel";
@@ -459,6 +491,7 @@ class Itemize {
       btnContainer.appendChild(btnConfirm);
       modal.appendChild(alertText);
       modal.appendChild(btnContainer);
+      modal.appendChild(crossClose);
       let hideModal = (bdy, bckdrop, mdal) => {
         bckdrop.animate(
           [
@@ -492,21 +525,37 @@ class Itemize {
             fill: "both"
           }
         );
-        setTimeout(() => {
+        clearTimeout(this.modalDisappearTimeout);
+        this.modalDisappearTimeout = setTimeout(() => {
           bdy.removeChild(bckdrop);
           bdy.removeChild(mdal);
-          bdy.style.overflow = bodyInitialOverflow;
+          // bdy.style.overflow = bodyInitialOverflow;
         }, 300);
       };
       backDrop.onclick = () => {
-        hideModal(body, backDrop, modal);
+        if (!backDrop.hiding) {
+          hideModal(body, backDrop, modal);
+        }
+        backDrop.hiding = true;
       };
       btnCancel.onclick = () => {
-        hideModal(body, backDrop, modal);
+        if (!btnCancel.clicked) {
+          hideModal(body, backDrop, modal);
+        }
+        btnCancel.clicked = true;
       };
       btnConfirm.onclick = () => {
-        hideModal(body, backDrop, modal);
-        this.remove(el);
+        if (!btnConfirm.clicked) {
+          hideModal(body, backDrop, modal);
+          this.remove(el);
+        }
+        btnConfirm.clicked = true;
+      };
+      crossClose.onclick = () => {
+        if (!crossClose.clicked) {
+          hideModal(body, backDrop, modal);
+        }
+        crossClose.clicked = true;
       };
 
       Object.assign(modal.style, {
@@ -528,6 +577,18 @@ class Itemize {
         fontFamily: "helvetica",
         zIndex: 1000000
       });
+
+      let modalCss =
+        ".itemize_modal_btnConfirm:hover{ background-color: #c83e34 !important; transition: background-color 0.3s ease-in-out }.itemize_modal_btnCancel:hover{ background-color: #4a5055 !important; transition: background-color 0.3s ease-in-out }.itemize_modal_cross {cursor:pointer;position: absolute;right: 5px;top: 5px;width: 18px;height:18px;opacity:0.3;}.itemize_modal_cross:hover{opacity:1;}.itemize_modal_cross:before,.itemize_modal_cross:after{position:absolute;left:9px;content:' ';height: 19px;width:2px;background-color:#333;}.itemize_modal_cross:before{transform:rotate(45deg);}.itemize_modal_cross:after{transform:rotate(-45deg);}";
+      let styleEl = document.createElement("style");
+
+      if (styleEl.styleSheet) {
+        styleEl.styleSheet.cssText = modalCss;
+      } else {
+        styleEl.appendChild(document.createTextNode(modalCss));
+      }
+      modal.appendChild(styleEl);
+
       Object.assign(alertText.style, {
         marginBottom: "25px"
       });
@@ -543,7 +604,8 @@ class Itemize {
         borderBottomLeftRadius: "4px",
         flex: "1 0 auto",
         cursor: "pointer",
-        color: "#FFFFFF"
+        color: "#FFFFFF",
+        transition: "background-color 0.3s ease-in-out"
       });
       Object.assign(btnConfirm.style, {
         background: "#F94336",
@@ -553,7 +615,8 @@ class Itemize {
         borderBottomRightRadius: "4px",
         flex: "1 0 auto",
         cursor: "pointer",
-        color: "#FFFFFF"
+        color: "#FFFFFF",
+        transition: "background-color 0.3s ease-in-out"
       });
       Object.assign(backDrop.style, {
         position: "fixed",
@@ -561,7 +624,7 @@ class Itemize {
         left: "0",
         width: "100%",
         height: "100%",
-        background: "rgba(0, 0, 0,0.5)",
+        background: "rgba(0, 0, 0,0.7)",
         zIndex: 100000
       });
       body.prepend(modal);
@@ -823,7 +886,7 @@ class Itemize {
                 .then(response => {
                   if (response) {
                     if (item.parentElement.itemizeOptions.flipAnimation) {
-                      let closeBtn = item.querySelector(".itemize_btn_remove");
+                      let closeBtn = item.querySelector(".itemize_remove_btn");
                       if (closeBtn) {
                         closeBtn.onclick = null;
                       } else {
@@ -835,7 +898,6 @@ class Itemize {
                         }
                       }
                       this.showAlert("removed", item);
-
                       this.flipRead(this.items);
                       this.flipRemove(item);
                       this.items.splice(item.arrayPosition, 1);
@@ -854,7 +916,7 @@ class Itemize {
                 });
             } else if (confirmRemove) {
               if (item.parentElement.itemizeOptions.flipAnimation) {
-                let closeBtn = item.querySelector(".itemize_btn_remove");
+                let closeBtn = item.querySelector(".itemize_remove_btn");
                 if (closeBtn) {
                   closeBtn.onclick = null;
                 } else {
@@ -879,7 +941,7 @@ class Itemize {
             }
           } else {
             if (item.parentElement.itemizeOptions.flipAnimation) {
-              let closeBtn = item.querySelector(".itemize_btn_remove");
+              let closeBtn = item.querySelector(".itemize_remove_btn");
               if (closeBtn) {
                 closeBtn.onclick = null;
               } else {
@@ -1041,7 +1103,6 @@ class Itemize {
         if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
           elems[i].inAnim = true;
           if (elems[i].animate) {
-            console.log("animate");
             elems[i].animate(
               [
                 {
@@ -1059,9 +1120,7 @@ class Itemize {
               }
             );
           } else {
-            console.log("animIT");
             function animIt(timestamp) {
-              console.log(deltaX);
               let progress;
               let duration =
                 elems[i].parentElement.itemizeOptions.flipAnimDuration;
@@ -1077,12 +1136,10 @@ class Itemize {
                 (deltaX / ((duration * 60) / 1000)) *
                   elems[i].animTicks}px, ${deltaY -
                 (deltaY / ((duration * 60) / 1000)) * elems[i].animTicks}px) `;
-              console.log("progress:" + progress, duration);
               if (progress < duration) {
                 elems[i].animTicks++;
                 requestAnimationFrame(animIt);
               } else {
-                console.log("fini");
                 elems[i].startAnimTime = null;
                 elems[i].animTicks = 0;
                 elems[i].style.transform = "none";
@@ -1102,13 +1159,16 @@ class Itemize {
     try {
       const defaultOptions = {
         removeBtn: true,
-        removeBtnWidth: 20,
+        removeBtnWidth: 18,
         removeBtnThickness: 2,
-        removeBtnColor: "#525252",
+        removeBtnColor: "#696969",
         removeBtnHoverColor: "#000000",
-        removeBtnSharpness: "100%",
+        removeBtnSharpness: "0px",
         removeBtnPosition: "top-right",
         removeBtnMargin: 2,
+        removeBtnCircle: false,
+        removeBtnBgColor: "none",
+        removeBtnBgHoverColor: "none",
         removeBtnClass: null,
         modalConfirm: false,
         modalText: "Are you sure to remove this item?",
@@ -1164,6 +1224,15 @@ class Itemize {
     }
     if (typeof options.removeBtnPosition !== "string") {
       error += "option 'removeBtnPosition' must be a String\n";
+    }
+    if (typeof options.removeBtnBgColor !== "string") {
+      error += "option 'removeBtnBgColor' must be a String\n";
+    }
+    if (typeof options.removeBtnBgHoverColor !== "string") {
+      error += "option 'removeBtnBgHoverColor' must be a String\n";
+    }
+    if (typeof options.removeBtnCircle !== "boolean") {
+      error += "option 'removeBtnCircle' must be a Boolean\n";
     }
     if (typeof options.removeBtnMargin !== "number") {
       error += "option 'removeBtnMargin' must be a Number\n";

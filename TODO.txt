@@ -1,6 +1,10 @@
 [x] - attribut "notItemize" sur les items a ne pas itemizer
 [x] - ajouter proprietée "removeStatus" sur les items pour pas clicker pedant que la promise sexecute
 [x] - option et attribut: showAddAlert showRemoveAlert
+[ ] - check si le custom bouton class est pris en compte meme dans un sous child
+[ ] - modal btn hover color
+[ ] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
+[ ] - removeBtnBackgroundHoverCOlor
 [ ] - itemizeId sur le btnClose pour selec l'item facilement et exec .remove()
 [ ] - alert: remove canceled a cause de la fonction, remove success,
 [x] - alert presset: "bottom right" "bottom left" bottom center etc..
