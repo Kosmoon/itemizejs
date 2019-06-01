@@ -1,5 +1,5 @@
 /*
- -- itemize.js v0.22 --
+ -- itemize.js v0.32 --
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
