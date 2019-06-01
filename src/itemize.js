@@ -3,32 +3,37 @@
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
+
 class Itemize {
-  constructor(options) {
+  constructor(options, target) {
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
     this.alertNb = 0;
+    this.target = target;
     this.modalDisappearTimeout = null;
     let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     if (optionCheckResult !== "valid") {
       // check: option type error
       console.error("- Itemize - TYPE ERROR:\n" + optionCheckResult);
     } else {
-      this.targetElements = this.getTargetElements();
+      this.targetElements = this.getTargetElements(this.target);
       if (this.targetElements && this.targetElements.length > 0) {
+        this.clearObservers();
         this.itemizeIt();
       } else {
-        console.error(
-          "- Itemize - ERROR:\n Cannot find any DOM elements with the attribute 'itemize' \n"
-        );
+        console.error("- Itemize - ERROR:\n Cannot find any valid target\n");
       }
     }
     this.elPos = {};
   }
 
-  getTargetElements() {
+  getTargetElements(target) {
     try {
-      return document.querySelectorAll("[itemize]");
+      if (!target) {
+        return document.querySelectorAll("[itemize]");
+      } else {
+        return document.querySelectorAll(target);
+      }
     } catch (error) {
       console.error(error);
       return null;
@@ -169,6 +174,14 @@ class Itemize {
     }
     return options;
   }
+  clearObservers() {
+    if (window.itemizeObservers) {
+      for (let i = window.itemizeObservers.length - 1; i >= 0; i--) {
+        window.itemizeObservers[i].disconnect();
+        window.itemizeObservers.splice(i, 1);
+      }
+    }
+  }
   itemizeIt(withoutObs) {
     let knownErrors = "";
     try {
@@ -220,9 +233,19 @@ class Itemize {
               }
             }
           };
-          let observer = new MutationObserver(callback);
-          observer.observe(parent, config);
-          // observer.disconnect();  <--
+          if (window.itemizeObservers) {
+            // ajout des observer de facon global et suppression/deconnection quand parent n'est plus present
+            window.itemizeObservers.push(new MutationObserver(callback));
+          } else {
+            window.itemizeObservers = [new MutationObserver(callback)];
+          }
+          window.itemizeObservers[window.itemizeObservers.length - 1].observe(
+            parent,
+            config
+          );
+          window.itemizeObservers[
+            window.itemizeObservers.length - 1
+          ].itemizeId = parent.itemizeId;
         }
         this.applyCss(parent);
         for (let z = 0; z < parent.children.length; z++) {
@@ -881,33 +904,36 @@ class Itemize {
           if (this.globalOptions.beforeRemove) {
             item.removeStatus = "pending";
             let confirmRemove = this.globalOptions.beforeRemove(item);
+            if (confirmRemove == undefined) {
+              throw new Error(
+                'The function "beforeErase" must return a Boolean or a Promise'
+              );
+            }
             if (typeof confirmRemove.then === "function") {
               confirmRemove
                 .then(response => {
-                  if (response) {
-                    if (item.parentElement.itemizeOptions.flipAnimation) {
-                      let closeBtn = item.querySelector(".itemize_remove_btn");
+                  if (item.parentElement.itemizeOptions.flipAnimation) {
+                    let closeBtn = item.querySelector(".itemize_remove_btn");
+                    if (closeBtn) {
+                      closeBtn.onclick = null;
+                    } else {
+                      closeBtn = item.querySelector(
+                        "." + this.globalOptions.removeBtnClass
+                      );
                       if (closeBtn) {
                         closeBtn.onclick = null;
-                      } else {
-                        closeBtn = item.querySelector(
-                          "." + this.globalOptions.removeBtnClass
-                        );
-                        if (closeBtn) {
-                          closeBtn.onclick = null;
-                        }
                       }
-                      this.showAlert("removed", item);
-                      this.flipRead(this.items);
-                      this.flipRemove(item);
-                      this.items.splice(item.arrayPosition, 1);
-                      this.flipPlay(this.items);
-                    } else {
-                      this.showAlert("removed", item);
-                      item.removeStatus = null;
-                      item.parentElement.removeChild(item);
-                      this.items.splice(item.arrayPosition, 1);
                     }
+                    this.showAlert("removed", item);
+                    this.flipRead(this.items);
+                    this.flipRemove(item);
+                    this.items.splice(item.arrayPosition, 1);
+                    this.flipPlay(this.items);
+                  } else {
+                    this.showAlert("removed", item);
+                    item.removeStatus = null;
+                    item.parentElement.removeChild(item);
+                    this.items.splice(item.arrayPosition, 1);
                   }
                 })
                 .catch(err => {

@@ -1,18 +1,18 @@
 [x] - attribut "notItemize" sur les items a ne pas itemizer
 [x] - ajouter proprietée "removeStatus" sur les items pour pas clicker pedant que la promise sexecute
 [x] - option et attribut: showAddAlert showRemoveAlert
-[ ] - check si le custom bouton class est pris en compte meme dans un sous child
-[ ] - modal btn hover color
-[ ] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
-[ ] - removeBtnBackgroundHoverCOlor
+[x] - check si le custom bouton class est pris en compte meme dans un sous child
+[x] - modal btn hover color
+[x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
+[x] - removeBtnBackgroundHoverCOlor
 [ ] - itemizeId sur le btnClose pour selec l'item facilement et exec .remove()
 [ ] - alert: remove canceled a cause de la fonction, remove success,
 [x] - alert presset: "bottom right" "bottom left" bottom center etc..
 [ ] - donner la possibilité a l'user de specifier un selector pour une custom modal
-[ ] - cross close modal
+[x] - cross close modal
 [x] - removeBtn margin option et attributes
-[ ] - investiguer sur la disconection des observer (memory leak?)
-[ ] - parent attributes -> options
+[x] - investiguer sur la disconection des observer (memory leak?)
+[x] - parent attributes -> options
 [x] - event listener sur parent pour gerer les add (pas oublier d'unscubscribe)
 [x] - system d'alert avant suppression
 [ ] - before erase async ou onErase async?
