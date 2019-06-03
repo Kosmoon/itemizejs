@@ -5,6 +5,8 @@
 [x] - modal btn hover color
 [x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
 [x] - removeBtnBackgroundHoverCOlor
+[ ] - removeBtnWith 18,16 etc. -> decalage bizarre a coriger
+[ ] - flipAnim easing dans options et attribute
 [ ] - itemizeId sur le btnClose pour selec l'item facilement et exec .remove()
 [ ] - alert: remove canceled a cause de la fonction, remove success,
 [x] - alert presset: "bottom right" "bottom left" bottom center etc..
@@ -17,6 +19,7 @@
 [x] - system d'alert avant suppression
 [ ] - before erase async ou onErase async?
 [ ] - animate() browser compatibility
+[ ] - flip remove control de l'opacity avec une options
 [x] - flip presset et duration
 [ ] - flip presset dans les params de la function erase pour flip de la facon qu'on veux pour chaque erase
 [ ] - doc commentée avec @param (HTMLelement) etc..

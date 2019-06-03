@@ -10,6 +10,7 @@ class Itemize {
     this.globalOptions = this.mergeOptions(options);
     this.alertNb = 0;
     this.target = target;
+    this.flipPlayIds = {};
     this.modalDisappearTimeout = null;
     let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     if (optionCheckResult !== "valid") {
@@ -121,9 +122,6 @@ class Itemize {
     } else if (parent.getAttribute("removeBtnCircle") === "false") {
       options.removeBtnCircle = false;
     }
-    if (typeof parent.getAttribute("alertPosition") === "string") {
-      options.alertPosition = parent.getAttribute("alertPosition");
-    }
     if (
       typeof parent.getAttribute("flipAnimDuration") === "string" &&
       parseInt(parent.getAttribute("flipAnimDuration")) > 0
@@ -223,7 +221,10 @@ class Itemize {
                         scope.itemizeChild(node, node.parentElement, true);
                         scope.flipRead(scope.items);
                         scope.flipAdd(node);
-                        scope.flipPlay(scope.items);
+                        scope.flipPlay(
+                          scope.items,
+                          node.parentElement.itemizeOptions.flipAnimDuration
+                        );
                       } else {
                         scope.itemizeChild(node, node.parentElement, true);
                       }
@@ -264,6 +265,7 @@ class Itemize {
       window.mozRequestAnimationFrame ||
       window.webkitRequestAnimationFrame ||
       window.msRequestAnimationFrame;
+
     if (
       child.type !== "text/css" &&
       typeof child.getAttribute("notItemize") !== "string" &&
@@ -331,8 +333,10 @@ class Itemize {
     css.classList.add("itemize_style");
     css.type = "text/css";
     let styles = "";
+    // parent global styles
+    styles += `.itemize_parent_${parent.itemizeId} .itemize_hide{display:none}`;
+    // remove btn styles
     if (options.removeBtn && !options.removeBtnClass) {
-      // remove btn styles
       let btnMargin = options.removeBtnMargin + "px";
       let btnPos = {
         top: 0,
@@ -434,9 +438,7 @@ class Itemize {
       } .itemize_remove_btn::before{content:'';position:absolute;height:${
         options.removeBtnThickness
       }px;transition:background 0.2s ease-in-out;width:${options.removeBtnWidth /
-        (options.removeBtnCircle ? 2 : 1)}px;top:50%;left:${
-        options.removeBtnCircle ? "25%" : 0
-      };margin-top:${
+        2}px;top:50%;left:25%;margin-top:${
         options.removeBtnThickness * 0.5 < 1
           ? -1
           : -options.removeBtnThickness * 0.5
@@ -447,11 +449,6 @@ class Itemize {
       } .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
         parent.itemizeId
       } .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}`;
-    } else {
-      // global parent styles
-      styles += `.itemize_parent_${
-        parent.itemizeId
-      } .itemize_hide{display:none}`;
     }
     if (css.styleSheet) {
       css.styleSheet.cssText = styles;
@@ -473,24 +470,25 @@ class Itemize {
           item = document.querySelector(el);
           if (!item || !item.itemizeId) {
             throw new Error(
-              "Not a valid Itemize element1, cannot create a confirm modal."
+              "Not a valid Itemize element, cannot create a confirm modal."
             );
           }
         }
         if (!item) {
-          throw new Error("No item found2, cannot create a confirm modal.");
+          throw new Error("No item found, cannot create a confirm modal.");
         }
       } else {
         item = elem;
         if (!item) {
-          throw new Error("No item found3, cannot create a confirm modal.");
+          throw new Error("No item found, cannot create a confirm modal.");
         }
         if (!item.itemizeId) {
           throw new Error(
-            "Not a valid Itemize element4, cannot create a confirm modal."
+            "Not a valid Itemize element, cannot create a confirm modal."
           );
         }
       }
+      const modalAnimDuration = 150;
       const backDrop = document.createElement("div");
       const modal = document.createElement("div");
       const alertText = document.createElement("div");
@@ -516,44 +514,120 @@ class Itemize {
       modal.appendChild(btnContainer);
       modal.appendChild(crossClose);
       let hideModal = (bdy, bckdrop, mdal) => {
-        bckdrop.animate(
-          [
+        bckdrop.onclick = null;
+        mdal.onclick = null;
+        if (bckdrop.animate) {
+          bckdrop.animate(
+            [
+              {
+                opacity: 1
+              },
+              {
+                opacity: 0
+              }
+            ],
             {
-              opacity: 1
-            },
-            {
-              opacity: 0
+              duration: modalAnimDuration,
+              easing: "ease-in-out",
+              fill: "both"
             }
-          ],
-          {
-            duration: 300,
-            easing: "ease-in-out",
-            fill: "both"
-          }
-        );
-        mdal.animate(
-          [
+          );
+        } else {
+          this.animateRAF(
+            bckdrop,
+            [{ opacity: 1 }],
+            [{ opacity: 0 }],
+            modalAnimDuration
+          );
+          // function animBckdrop(timestamp) {
+          //   let progress;
+          //   let duration = modalAnimDuration;
+          //   if (!modal.startAnimTime) {
+          //     modal.startAnimTime = timestamp;
+          //     modal.animTicks = 0;
+          //     modal.style.opacity = 1;
+          //   }
+          //   progress = timestamp - modal.startAnimTime;
+          //   modal.style.opacity =
+          //     1 - (1 / ((duration * 60) / 1000)) * modal.animTicks;
+
+          //   if (progress < duration) {
+          //     modal.animTicks++;
+          //     requestAnimationFrame(animBckdrop);
+          //   } else {
+          //     modal.startAnimTime = null;
+          //     modal.animTicks = 0;
+          //   }
+          // }
+          // requestAnimationFrame(animBckdrop);
+        }
+        if (mdal.animate) {
+          mdal.animate(
+            [
+              {
+                opacity: 1,
+                transform: "translateY(-50%) translateX(-50%)"
+              },
+              {
+                opacity: 0,
+                transform: "translateY(0%) translateX(-50%)"
+              }
+            ],
             {
-              opacity: 1,
-              transform: "translateY(-50%) translateX(-50%)"
-            },
-            {
-              opacity: 0,
-              transform: "translateY(0%) translateX(-50%)"
+              duration: modalAnimDuration,
+              easing: "ease-in-out",
+              fill: "both"
             }
-          ],
-          {
-            duration: 300,
-            easing: "cubic-bezier(.75,-0.5,0,1.75)",
-            fill: "both"
-          }
-        );
+          );
+        } else {
+          this.animateRAF(
+            mdal,
+            [
+              {
+                opacity: 1,
+                transform: { translateX: -50, translateY: -50, unit: "%" }
+              }
+            ],
+            [
+              {
+                opacity: 0,
+                transform: { translateX: -50, translateY: 0, unit: "%" }
+              }
+            ],
+            modalAnimDuration
+          );
+          // function animMdal(timestamp) {
+          //   let progress;
+          //   let duration = modalAnimDuration;
+          //   if (!mdal.startAnimTime) {
+          //     mdal.startAnimTime = timestamp;
+          //     mdal.animTicks = 0;
+          //     mdal.style.opacity = 1;
+          //     mdal.style.transform = "translateY(-50%) translateX(-50%)";
+          //   }
+          //   progress = timestamp - mdal.startAnimTime;
+          //   mdal.style.opacity =
+          //     1 - (1 / ((duration * 60) / 1000)) * mdal.animTicks;
+          //   mdal.style.transform = `translateY(-${50 -
+          //     (50 / ((duration * 60) / 1000)) *
+          //       mdal.animTicks}%) translateX(-50%)`;
+          //   if (progress < duration) {
+          //     mdal.animTicks++;
+          //     requestAnimationFrame(animMdal);
+          //   } else {
+          //     mdal.startAnimTime = null;
+          //     mdal.animTicks = 0;
+          //   }
+          // }
+          // requestAnimationFrame(animMdal);
+        }
+
         clearTimeout(this.modalDisappearTimeout);
         this.modalDisappearTimeout = setTimeout(() => {
           bdy.removeChild(bckdrop);
           bdy.removeChild(mdal);
           // bdy.style.overflow = bodyInitialOverflow;
-        }, 300);
+        }, modalAnimDuration);
       };
       backDrop.onclick = () => {
         if (!backDrop.hiding) {
@@ -652,38 +726,118 @@ class Itemize {
       });
       body.prepend(modal);
       body.prepend(backDrop);
-      backDrop.animate(
-        [
+      if (backDrop.animate) {
+        backDrop.animate(
+          [
+            {
+              opacity: 0
+            },
+            {
+              opacity: 1
+            }
+          ],
           {
-            opacity: 0
-          },
-          {
-            opacity: 1
+            duration: 300,
+            easing: "ease-out",
+            fill: "both"
           }
-        ],
-        {
-          duration: 300,
-          easing: "ease-in-out",
-          fill: "both"
-        }
-      );
-      modal.animate(
-        [
+        );
+      } else {
+        this.animateRAF(
+          backDrop,
+          [
+            {
+              opacity: 0
+            }
+          ],
+          [
+            {
+              opacity: 1
+            }
+          ],
+          modalAnimDuration
+        );
+        // function animBackDrop(timestamp) {
+        //   let progress;
+        //   let duration = modalAnimDuration;
+        //   if (!backDrop.startAnimTime) {
+        //     backDrop.startAnimTime = timestamp;
+        //     backDrop.animTicks = 0;
+        //     backDrop.style.opacity = 0;
+        //   }
+        //   progress = timestamp - backDrop.startAnimTime;
+        //   backDrop.style.opacity =
+        //     0 + (1 / ((duration * 60) / 1000)) * backDrop.animTicks;
+        //   if (progress < duration) {
+        //     backDrop.animTicks++;
+        //     requestAnimationFrame(animBackDrop);
+        //   } else {
+        //     backDrop.startAnimTime = null;
+        //     backDrop.animTicks = 0;
+        //   }
+        // }
+        // requestAnimationFrame(animBackDrop);
+      }
+      if (modal.animate) {
+        modal.animate(
+          [
+            {
+              opacity: 0,
+              transform: "translateY(-100%) translateX(-50%)"
+            },
+            {
+              opacity: 1,
+              transform: "translateY(-50%) translateX(-50%)"
+            }
+          ],
           {
-            opacity: 0,
-            transform: "translateY(-100%) translateX(-50%)"
-          },
-          {
-            opacity: 1,
-            transform: "translateY(-50%) translateX(-50%)"
+            duration: modalAnimDuration,
+            easing: "ease-in",
+            fill: "both"
           }
-        ],
-        {
-          duration: 400,
-          easing: "cubic-bezier(.75,-0.5,0,1.75)",
-          fill: "both"
-        }
-      );
+        );
+      } else {
+        this.animateRAF(
+          modal,
+          [
+            {
+              opacity: 0,
+              transform: { translateX: -50, translateY: -100, unit: "%" }
+            }
+          ],
+          [
+            {
+              opacity: 1,
+              transform: { translateX: -50, translateY: -50, unit: "%" }
+            }
+          ],
+          modalAnimDuration
+        );
+        // function animModal(timestamp) {
+        //   let progress;
+        //   let duration = modalAnimDuration;
+        //   if (!modal.startAnimTime) {
+        //     modal.startAnimTime = timestamp;
+        //     modal.animTicks = 0;
+        //     modal.style.opacity = 0;
+        //     modal.style.transform = "translateY(-100%) translateX(-50%)";
+        //   }
+        //   progress = timestamp - modal.startAnimTime;
+        //   modal.style.opacity =
+        //     0 + (1 / ((duration * 60) / 1000)) * modal.animTicks;
+        //   modal.style.transform = `translateY(-${100 -
+        //     (50 / ((duration * 60) / 1000)) *
+        //       modal.animTicks}%) translateX(-50%)`;
+        //   if (progress < duration) {
+        //     modal.animTicks++;
+        //     requestAnimationFrame(animModal);
+        //   } else {
+        //     modal.startAnimTime = null;
+        //     modal.animTicks = 0;
+        //   }
+        // }
+        // requestAnimationFrame(animModal);
+      }
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + error);
     }
@@ -765,7 +919,7 @@ class Itemize {
       }
       this.alertNb++;
       let popAlert = document.createElement("div");
-      popAlert.alertNb = this.alertNb;
+      popAlert.alertId = this.alertNb;
       let alertTimer = document.createElement("div");
       let alertText = document.createElement("div");
       popAlert.classList.add(alertClassName);
@@ -807,50 +961,138 @@ class Itemize {
       document.querySelector("body").appendChild(popAlert);
       popAlert.appendChild(alertTimer);
       popAlert.appendChild(alertText);
-      alertTimer.animate(
-        [
+      if (alertTimer.animate) {
+        alertTimer.animate(
+          [
+            {
+              width: "100%"
+            },
+            {
+              width: "0%"
+            }
+          ],
           {
-            width: "100%"
-          },
-          {
-            width: "0%"
+            duration: alertTimerDuration,
+            easing: "linear",
+            fill: "both"
           }
-        ],
-        {
-          duration: alertTimerDuration,
-          easing: "linear",
-          fill: "both"
-        }
-      );
+        );
+      } else {
+        this.animateRAF(
+          alertTimer,
+          [
+            {
+              width: { value: 100, unit: "%" }
+            }
+          ],
+          [
+            {
+              width: { value: 0, unit: "%" }
+            }
+          ],
+          alertTimerDuration
+        );
+        // function animAlertTimer(timestamp) {
+        //   let progress;
+        //   let duration = alertTimerDuration;
+        //   if (!alertTimer.startAnimTime) {
+        //     alertTimer.startAnimTime = timestamp;
+        //     alertTimer.animTicks = 0;
+        //     alertTimer.style.width = "100%";
+        //   }
+        //   progress = timestamp - alertTimer.startAnimTime;
+        //   alertTimer.style.width = `${100 -
+        //     (100 / ((duration * 60) / 1000)) * alertTimer.animTicks}%`;
+        //   if (progress < duration) {
+        //     alertTimer.animTicks++;
+        //     requestAnimationFrame(animAlertTimer);
+        //   } else {
+        //     alertTimer.startAnimTime = null;
+        //     alertTimer.animTicks = 0;
+        //   }
+        // }
+        // requestAnimationFrame(animAlertTimer);
+      }
       setTimeout(() => {
         let alertList = document.querySelectorAll(".itemize_alert");
         for (let i = 0; i < alertList.length; i++) {
-          if (alertList[i].alertNb > 0) {
-            alertList[i].animate(
-              [
-                {
-                  transform: `translate(${alertTranslateX}, ${minusOrNothing}${alertList[
-                    i
-                  ].alertNb *
-                    100 -
-                    (alertIsTop ? 100 : 0)}%)`
-                },
-                {
-                  transform: `translate(${alertTranslateX}, ${minusOrNothing}${alertList[
-                    i
-                  ].alertNb *
-                    100 -
-                    (alertIsTop ? 100 : 0) -
-                    100}%)`
-                }
-              ],
-              {
-                duration: 300,
-                easing: "ease-in-out",
-                fill: "both"
-              }
+          if (alertList[i].alertId > 0) {
+            let translateYStart = parseInt(
+              `${minusOrNothing}${alertList[i].alertId * 100 -
+                (alertIsTop ? 100 : 0)}`
             );
-            alertList[i].alertNb--;
+            let translateYEnd = parseInt(
+              `${minusOrNothing}${alertList[i].alertId * 100 -
+                (alertIsTop ? 100 : 0) -
+                100}`
+            );
+            if (alertList[i].animate) {
+              alertList[i].animate(
+                [
+                  {
+                    transform: `translate(${alertTranslateX}, ${translateYStart}%)`
+                  },
+                  {
+                    transform: `translate(${alertTranslateX}, ${translateYEnd}%)`
+                  }
+                ],
+                {
+                  duration: 150,
+                  easing: "ease-in-out",
+                  fill: "both"
+                }
+              );
+            } else {
+              this.animateRAF(
+                alertList[i],
+                [
+                  {
+                    transform: {
+                      translateX: parseInt(alertTranslateX),
+                      translateY: translateYStart,
+                      unit: "%"
+                    }
+                  }
+                ],
+                [
+                  {
+                    transform: {
+                      translateX: parseInt(alertTranslateX),
+                      translateY: translateYEnd,
+                      unit: "%"
+                    }
+                  }
+                ],
+                150
+              );
+              // function animAlertHide(timestamp) {
+              //   let progress;
+              //   let duration = 300;
+              //   if (!alertList[i].startAnimTime) {
+              //     alertList[i].startAnimTime = timestamp;
+              //     alertList[i].animTicks = 0;
+              //     alertList[
+              //       i
+              //     ].style.transform = `translate(${alertTranslateX}, ${translateYStart}%)`;
+              //   }
+              //   progress = timestamp - alertList[i].startAnimTime;
+              //   alertList[
+              //     i
+              //   ].style.transform = `translate(${alertTranslateX}, ${translateYStart -
+              //     ((translateYStart - translateYEnd) /
+              //       ((duration * 60) / 1000)) *
+              //       alertList[i].animTicks}%)`;
+              //   if (progress < duration) {
+              //     alertList[i].animTicks++;
+              //     requestAnimationFrame(animAlertHide);
+              //   } else {
+              //     alertList[i].startAnimTime = null;
+              //     alertList[i].animTicks = 0;
+              //   }
+              // }
+              // requestAnimationFrame(animAlertHide);
+            }
+            alertList[i].alertId--;
           }
         }
         this.alertNb--;
@@ -910,6 +1152,10 @@ class Itemize {
               );
             }
             if (typeof confirmRemove.then === "function") {
+              let animDuration =
+                item.parentElement.itemizeOptions.flipAnimDuration;
+              let onClickFn = item.onclick;
+              item.onclick = null;
               confirmRemove
                 .then(response => {
                   if (item.parentElement.itemizeOptions.flipAnimation) {
@@ -928,7 +1174,9 @@ class Itemize {
                     this.flipRead(this.items);
                     this.flipRemove(item);
                     this.items.splice(item.arrayPosition, 1);
-                    this.flipPlay(this.items);
+                    setTimeout(() => {
+                      this.flipPlay(this.items, animDuration);
+                    }, animDuration);
                   } else {
                     this.showAlert("removed", item);
                     item.removeStatus = null;
@@ -938,11 +1186,15 @@ class Itemize {
                 })
                 .catch(err => {
                   console.log(err);
+                  item.onclick = onClickFn;
                   item.removeStatus = null;
                 });
             } else if (confirmRemove) {
               if (item.parentElement.itemizeOptions.flipAnimation) {
+                let animDuration =
+                  item.parentElement.itemizeOptions.flipAnimDuration;
                 let closeBtn = item.querySelector(".itemize_remove_btn");
+                item.onclick = null;
                 if (closeBtn) {
                   closeBtn.onclick = null;
                 } else {
@@ -957,7 +1209,9 @@ class Itemize {
                 this.flipRead(this.items);
                 this.flipRemove(item);
                 this.items.splice(item.arrayPosition, 1);
-                this.flipPlay(this.items);
+                setTimeout(() => {
+                  this.flipPlay(this.items, animDuration);
+                }, animDuration);
               } else {
                 this.showAlert("removed", item);
                 item.removeStatus = null;
@@ -967,6 +1221,8 @@ class Itemize {
             }
           } else {
             if (item.parentElement.itemizeOptions.flipAnimation) {
+              let animDuration =
+                item.parentElement.itemizeOptions.flipAnimDuration;
               let closeBtn = item.querySelector(".itemize_remove_btn");
               if (closeBtn) {
                 closeBtn.onclick = null;
@@ -982,7 +1238,9 @@ class Itemize {
               this.flipRead(this.items);
               this.flipRemove(item);
               this.items.splice(item.arrayPosition, 1);
-              this.flipPlay(this.items);
+              setTimeout(() => {
+                this.flipPlay(this.items, animDuration * 0.5);
+              }, animDuration * 0.5);
             } else {
               this.showAlert("removed", item);
               item.removeStatus = null;
@@ -998,9 +1256,69 @@ class Itemize {
       console.error("- Itemize - ERROR:\n" + error);
     }
   }
-
+  animateRAF(elem, from, to, duration) {
+    function anim(timestamp) {
+      let progress;
+      if (!elem.startAnimTime) {
+        elem.startAnimTime = timestamp;
+        elem.animTicks = 0;
+        for (let i = 0; i < from.length; i++) {
+          for (const key in from[i]) {
+            if (from[i].hasOwnProperty(key)) {
+              if (key === "transform") {
+                elem.style.transform = `translateX(${from[i][key].translateX}${
+                  from[i][key].unit
+                }) translateY(${from[i][key].translateY}${from[i][key].unit})`;
+              } else if (key === "opacity") {
+                elem.style.opacity = from[i][key];
+              } else {
+                elem.style[key] = `${from[i][key].value}${from[i][key].unit}`;
+              }
+            }
+          }
+        }
+      }
+      progress = timestamp - elem.startAnimTime;
+      for (let i = 0; i < to.length; i++) {
+        for (const key in to[i]) {
+          if (to[i].hasOwnProperty(key)) {
+            if (key === "transform") {
+              elem.style.transform = `translateX(${from[i][key].translateX -
+                ((from[i][key].translateX - to[i][key].translateX) /
+                  ((duration * 60) / 1000)) *
+                  elem.animTicks}${to[i][key].unit}) translateY(${from[i][key]
+                .translateY -
+                ((from[i][key].translateY - to[i][key].translateY) /
+                  ((duration * 60) / 1000)) *
+                  elem.animTicks}${to[i][key].unit})`;
+            } else if (key === "opacity") {
+              elem.style.opacity =
+                from[i][key] -
+                ((from[i][key] - to[i][key]) / ((duration * 60) / 1000)) *
+                  elem.animTicks;
+            } else {
+              elem.style[key] = `${from[i][key].value -
+                ((from[i][key].value - to[i][key].value) /
+                  ((duration * 60) / 1000)) *
+                  elem.animTicks}${to[i][key].unit}`;
+            }
+          }
+        }
+      }
+      console.log(duration);
+      if (progress < duration - 1) {
+        elem.animTicks++;
+        requestAnimationFrame(anim);
+      } else {
+        elem.startAnimTime = null;
+        elem.animTicks = 0;
+      }
+    }
+    requestAnimationFrame(anim);
+  }
   flipRemove(elem) {
-    elem.parentElement.appendChild(elem);
+    elem.onclick = null;
+    // elem.parentElement.appendChild(elem);
     let options = elem.parentElement.itemizeOptions;
     const newPos = elem.getBoundingClientRect();
     const oldPos = this.elPos[elem.itemizeId];
@@ -1021,44 +1339,62 @@ class Itemize {
           }
         ],
         {
-          duration: options.flipAnimDuration,
+          duration: options.flipAnimDuration * 0.5,
           easing: "ease-in-out",
           fill: "both"
         }
       );
     } else {
-      function animIt(timestamp) {
-        let progress;
-        let duration = options.flipAnimDuration;
-        if (!elem.startAnimTime) {
-          elem.startAnimTime = timestamp;
-          elem.animTicks = 0;
-          elem.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px)`;
-          elem.style.opacity = 1;
-        }
-        progress = timestamp - elem.startAnimTime;
-        elem.style.transform = `translate(${deltaX +
-          (options.animRemoveTranslateX / ((duration * 60) / 1000)) *
-            elem.animTicks}px, ${deltaY +
-          (options.animRemoveTranslateY / ((duration * 60) / 1000)) *
-            elem.animTicks}px)`;
-        elem.style.opacity =
-          1 - (1 / ((duration * 60) / 1000)) * elem.animTicks;
-        if (progress < duration) {
-          elem.animTicks++;
-          requestAnimationFrame(animIt);
-        } else {
-          elem.startAnimTime = null;
-          elem.animTicks = 0;
-        }
-      }
-      requestAnimationFrame(animIt);
+      this.animateRAF(
+        elem,
+        [
+          { opacity: 1 },
+          { transform: { translateX: deltaX, translateY: deltaY, unit: "px" } }
+        ],
+        [
+          { opacity: 0 },
+          {
+            transform: {
+              translateX: deltaX + options.animRemoveTranslateX,
+              translateY: deltaY + options.animRemoveTranslateY,
+              unit: "px"
+            }
+          }
+        ],
+        options.flipAnimDuration * 0.5
+      );
+      // function flipRemoveRAF(timestamp) {
+      //   let progress;
+      //   let duration = options.flipAnimDuration;
+      //   if (!elem.startAnimTime) {
+      //     elem.startAnimTime = timestamp;
+      //     elem.animTicks = 0;
+      //     elem.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px)`;
+      //     elem.style.opacity = 1;
+      //   }
+      //   progress = timestamp - elem.startAnimTime;
+      //   elem.style.transform = `translate(${deltaX +
+      //     (options.animRemoveTranslateX / ((duration * 60) / 1000)) *
+      //       elem.animTicks}px, ${deltaY +
+      //     (options.animRemoveTranslateY / ((duration * 60) / 1000)) *
+      //       elem.animTicks}px)`;
+      //   elem.style.opacity =
+      //     1 - (1 / ((duration * 60) / 1000)) * elem.animTicks;
+      //   if (progress < duration) {
+      //     elem.animTicks++;
+      //     requestAnimationFrame(flipRemoveRAF);
+      //   } else {
+      //     elem.startAnimTime = null;
+      //     elem.animTicks = 0;
+      //   }
+      // }
+      // requestAnimationFrame(flipRemoveRAF);
     }
 
     setTimeout(() => {
       elem.removeStatus = null;
       elem.parentElement.removeChild(elem);
-    }, options.flipAnimDuration);
+    }, options.flipAnimDuration * 0.5);
   }
   flipAdd(elem) {
     elem.classList.remove("itemize_hide");
@@ -1079,25 +1415,55 @@ class Itemize {
     }
     elem.newAddPos = newPos;
     elem.oldAddPos = oldPos;
-    elem.animate(
-      [
+    let translateXStart = deltaX + options.animAddTranslateX;
+    let translateYStart = deltaY + options.animAddTranslateY;
+
+    if (elem.animate) {
+      elem.animate(
+        [
+          {
+            transform: `translate(${translateXStart}px, ${translateYStart}px) scale(${deltaW}, ${deltaH})`,
+            opacity: 0
+          },
+          {
+            transform: "none",
+            opacity: 1
+          }
+        ],
         {
-          transform: `translate(${deltaX +
-            options.animAddTranslateX}px, ${deltaY +
-            options.animAddTranslateY}px) scale(${deltaW}, ${deltaH})`,
-          opacity: 0
-        },
-        {
-          transform: "none",
-          opacity: 1
+          duration: options.flipAnimDuration,
+          easing: "ease-in-out",
+          fill: "both"
         }
-      ],
-      {
-        duration: options.flipAnimDuration,
-        easing: "ease-in-out",
-        fill: "both"
+      );
+    } else {
+      function flipAddRAF(timestamp) {
+        let progress;
+        let duration = options.flipAnimDuration;
+        if (!elem.startAnimTime) {
+          elem.startAnimTime = timestamp;
+          elem.animTicks = 0;
+          elem.style.opacity = 0;
+          elem.style.transform = `translate(${translateXStart}px, ${translateYStart}px)`;
+        }
+        progress = timestamp - elem.startAnimTime;
+        elem.style.opacity = `${(1 / ((duration * 60) / 1000)) *
+          elem.animTicks}`;
+        elem.style.transform = `translate(${translateXStart -
+          (translateXStart / ((duration * 60) / 1000)) *
+            elem.animTicks}px, ${translateYStart -
+          (translateYStart / ((duration * 60) / 1000)) * elem.animTicks}px)`;
+        if (progress < duration) {
+          elem.animTicks++;
+          requestAnimationFrame(flipAddRAF);
+        } else {
+          elem.startAnimTime = null;
+          elem.animTicks = 0;
+        }
       }
-    );
+      requestAnimationFrame(flipAddRAF);
+    }
+
     setTimeout(() => {
       elem.inAddAnim = false;
       elem.newAddPos = null;
@@ -1111,7 +1477,7 @@ class Itemize {
     }
   }
 
-  flipPlay(elems) {
+  flipPlay(elems, duration) {
     for (let i = 0; i < elems.length; i++) {
       if (!elems[i].inAddAnim) {
         const newPos = elems[i].getBoundingClientRect();
@@ -1139,17 +1505,14 @@ class Itemize {
                 }
               ],
               {
-                duration:
-                  elems[i].parentElement.itemizeOptions.flipAnimDuration,
+                duration: duration,
                 easing: "ease-in-out",
                 fill: "both"
               }
             );
           } else {
-            function animIt(timestamp) {
+            function flipPlayRAF(timestamp) {
               let progress;
-              let duration =
-                elems[i].parentElement.itemizeOptions.flipAnimDuration;
               if (!elems[i].startAnimTime) {
                 elems[i].startAnimTime = timestamp;
                 elems[i].animTicks = 0;
@@ -1164,18 +1527,19 @@ class Itemize {
                 (deltaY / ((duration * 60) / 1000)) * elems[i].animTicks}px) `;
               if (progress < duration) {
                 elems[i].animTicks++;
-                requestAnimationFrame(animIt);
+                requestAnimationFrame(flipPlayRAF);
               } else {
+                this.currentFlipPlayRAF = null;
                 elems[i].startAnimTime = null;
                 elems[i].animTicks = 0;
                 elems[i].style.transform = "none";
               }
             }
-            requestAnimationFrame(animIt);
+            requestAnimationFrame(flipPlayRAF);
           }
           setTimeout(() => {
             elems[i].inAnim = false;
-          }, elems[i].parentElement.itemizeOptions.flipAnimDuration);
+          }, duration);
         }
       }
     }
@@ -1185,16 +1549,16 @@ class Itemize {
     try {
       const defaultOptions = {
         removeBtn: true,
-        removeBtnWidth: 18,
+        removeBtnWidth: 20,
         removeBtnThickness: 2,
-        removeBtnColor: "#696969",
-        removeBtnHoverColor: "#000000",
+        removeBtnColor: "#565C67",
+        removeBtnHoverColor: "#ffffff",
         removeBtnSharpness: "0px",
         removeBtnPosition: "top-right",
         removeBtnMargin: 2,
-        removeBtnCircle: false,
-        removeBtnBgColor: "none",
-        removeBtnBgHoverColor: "none",
+        removeBtnCircle: true,
+        removeBtnBgColor: "#d1cfcf",
+        removeBtnBgHoverColor: "#959595",
         removeBtnClass: null,
         modalConfirm: false,
         modalText: "Are you sure to remove this item?",
@@ -1209,7 +1573,7 @@ class Itemize {
         animRemoveTranslateY: -100,
         animAddTranslateX: 0,
         animAddTranslateY: 0,
-        flipAnimDuration: 400,
+        flipAnimDuration: 500,
         beforeRemove: null
       };
       for (var key in newOptions) {

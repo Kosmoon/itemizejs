@@ -27,7 +27,7 @@ body {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    color: #4a5055
+    color: #d1cfcf
 }
 
 .closable {
@@ -44,6 +44,21 @@ body {
 .closable div {
     height: 200px;
     width: 100px;
+}
+
+.testul {
+    padding-top: 50px;
+    width: 50%;
+    margin: 5px
+}
+
+.testul li {
+    margin: 10px;
+    background: #d1cfcf;
+    -webkit-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    padding: 10px;
 }
 
 .new_elem {
