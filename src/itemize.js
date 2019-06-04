@@ -1,33 +1,45 @@
 /*
- -- itemize.js v0.32 --
+ -- itemize.js v0.40--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
 
 class Itemize {
-  constructor(options, target) {
+  constructor(options) {
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
     this.alertNb = 0;
-    this.target = target;
-    this.flipPlayIds = {};
     this.modalDisappearTimeout = null;
+    this.elPos = {};
+    this.targetElements = null;
     let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     if (optionCheckResult !== "valid") {
-      // check: option type error
       console.error("- Itemize - TYPE ERROR:\n" + optionCheckResult);
-    } else {
-      this.targetElements = this.getTargetElements(this.target);
-      if (this.targetElements && this.targetElements.length > 0) {
-        this.clearObservers();
-        this.itemizeIt();
-      } else {
-        console.error("- Itemize - ERROR:\n Cannot find any valid target\n");
-      }
     }
-    this.elPos = {};
   }
-
+  apply(target) {
+    this.targetElements = this.getTargetElements(target);
+    if (this.targetElements && this.targetElements.length > 0) {
+      // this.clearObservers();
+      this.applyItemize();
+    } else {
+      console.error("- Itemize - ERROR:\n no valid target found.\n");
+    }
+  }
+  cancel(target) {
+    if (target) {
+      this.targetElements = this.getTargetElements(target);
+      if (this.targetElements && this.targetElements.length > 0) {
+        // this.clearObservers();
+        this.cancelItemize();
+      } else {
+        console.error("- Itemize - ERROR:\n no valid target found.\n");
+      }
+    } else {
+      this.clearObservers();
+      this.cancelItemize("all");
+    }
+  }
   getTargetElements(target) {
     try {
       if (!target) {
@@ -40,139 +52,8 @@ class Itemize {
       return null;
     }
   }
-  getOptionsFromAttributes(parent, options) {
-    if (parent.getAttribute("removeBtn") === "false") {
-      options.removeBtn = false;
-    } else if (parent.getAttribute("removeBtn") === "true") {
-      options.removeBtn = true;
-    }
-    if (parent.getAttribute("modalConfirm") === "false") {
-      options.modalConfirm = false;
-    } else if (parent.getAttribute("modalConfirm") === "true") {
-      options.modalConfirm = true;
-    }
-    if (parent.getAttribute("flipAnimation") === "false") {
-      options.flipAnimation = false;
-    } else if (parent.getAttribute("flipAnimation") === "true") {
-      options.flipAnimation = true;
-    }
-    if (typeof parent.getAttribute("removeBtnClass") === "string") {
-      if (parent.getAttribute("removeBtnClass") === "false") {
-        options.removeBtnClass = null;
-      } else {
-        options.removeBtnClass = parent.getAttribute("removeBtnClass");
-      }
-    }
-    if (
-      typeof parent.getAttribute("removeBtnWidth") === "string" &&
-      parseInt(parent.getAttribute("removeBtnWidth")) > 0
-    ) {
-      options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
-    }
-    if (typeof parent.getAttribute("removeBtnColor") === "string") {
-      options.removeBtnColor = parent.getAttribute("removeBtnColor");
-    }
 
-    if (typeof parent.getAttribute("removeBtnHoverColor") === "string") {
-      options.removeBtnHoverColor = parent.getAttribute("removeBtnHoverColor");
-    }
-    if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
-      options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
-    }
-    if (typeof parent.getAttribute("removeBtnPosition") === "string") {
-      options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
-    }
-    if (typeof parent.getAttribute("removeBtnBgColor") === "string") {
-      options.removeBtnBgColor = parent.getAttribute("removeBtnBgColor");
-    }
-    if (typeof parent.getAttribute("removeBtnBgHoverColor") === "string") {
-      options.removeBtnBgHoverColor = parent.getAttribute(
-        "removeBtnBgHoverColor"
-      );
-    }
-    if (
-      typeof parent.getAttribute("removeBtnMargin") === "string" &&
-      parseInt(parent.getAttribute("removeBtnMargin")) !== NaN
-    ) {
-      options.removeBtnMargin = parseInt(
-        parent.getAttribute("removeBtnMargin")
-      );
-    }
-    if (typeof parent.getAttribute("modalText") === "string") {
-      options.modalText = parent.getAttribute("modalText");
-    }
-    if (typeof parent.getAttribute("removeAlertText") === "string") {
-      options.removeAlertText = parent.getAttribute("removeAlertText");
-    }
-    if (typeof parent.getAttribute("addAlertText") === "string") {
-      options.addAlertText = parent.getAttribute("addAlertText");
-    }
-    if (parent.getAttribute("showAddAlerts") === "true") {
-      options.showAddAlerts = true;
-    } else if (parent.getAttribute("showAddAlerts") === "false") {
-      options.showAddAlerts = false;
-    }
-    if (parent.getAttribute("showRemoveAlerts") === "true") {
-      options.showRemoveAlerts = true;
-    } else if (parent.getAttribute("showRemoveAlerts") === "false") {
-      options.showRemoveAlerts = false;
-    }
-    if (parent.getAttribute("removeBtnCircle") === "true") {
-      options.removeBtnCircle = true;
-    } else if (parent.getAttribute("removeBtnCircle") === "false") {
-      options.removeBtnCircle = false;
-    }
-    if (
-      typeof parent.getAttribute("flipAnimDuration") === "string" &&
-      parseInt(parent.getAttribute("flipAnimDuration")) > 0
-    ) {
-      options.flipAnimDuration = parseInt(
-        parent.getAttribute("flipAnimDuration")
-      );
-    }
-    if (
-      typeof parent.getAttribute("animRemoveTranslateX") === "string" &&
-      parseInt(parent.getAttribute("animRemoveTranslateX")) !== NaN
-    ) {
-      options.animRemoveTranslateX = parseInt(
-        parent.getAttribute("animRemoveTranslateX")
-      );
-    }
-    if (
-      typeof parent.getAttribute("animRemoveTranslateY") === "string" &&
-      parseInt(parent.getAttribute("animRemoveTranslateY")) !== NaN
-    ) {
-      options.animRemoveTranslateY = parseInt(
-        parent.getAttribute("animRemoveTranslateY")
-      );
-    }
-    if (
-      typeof parent.getAttribute("animAddTranslateY") === "string" &&
-      parseInt(parent.getAttribute("animAddTranslateY")) !== NaN
-    ) {
-      options.animAddTranslateY = parseInt(
-        parent.getAttribute("animAddTranslateY")
-      );
-    }
-    if (
-      typeof parent.getAttribute("animAddTranslateX") === "string" &&
-      parseInt(parent.getAttribute("animAddTranslateX")) !== NaN
-    ) {
-      options.animAddTranslateX = parseInt(
-        parent.getAttribute("animAddTranslateX")
-      );
-    }
-    if (
-      typeof parent.getAttribute("removeBtnThickness") === "string" &&
-      parseInt(parent.getAttribute("removeBtnThickness")) > 0
-    ) {
-      options.removeBtnThickness = parseInt(
-        parent.getAttribute("removeBtnThickness")
-      );
-    }
-    return options;
-  }
-  clearObservers() {
+  clearObservers(itemizeIds) {
     if (window.itemizeObservers) {
       for (let i = window.itemizeObservers.length - 1; i >= 0; i--) {
         window.itemizeObservers[i].disconnect();
@@ -180,9 +61,80 @@ class Itemize {
       }
     }
   }
-  itemizeIt(withoutObs) {
-    let knownErrors = "";
+  cancelItemize(allOrSpecific) {
     try {
+      let targets = this.targetElements.length;
+      if (allOrSpecific == "all") {
+        targets = this.items;
+      }
+      for (let i = 0; i < this.targetElements.length; i++) {
+        let parent = this.targetElements[i];
+        if (parent.itemizeId) {
+          if (window.itemizeObservers) {
+            for (let z = window.itemizeObservers.length - 1; z >= 0; z--) {
+              if (window.itemizeObservers[z].itemizeId === parent.itemizeId) {
+                window.itemizeObservers[z].disconnect();
+                window.itemizeObservers.splice(z, 1);
+              }
+            }
+          }
+          for (let j = 0; j < parent.children.length; j++) {
+            this.cancelItemizeChild(parent.children[j], parent);
+          }
+          for (let k = parent.classList.length - 1; k >= 0; k--) {
+            if (parent.classList[k].indexOf("itemize_parent") !== -1) {
+              parent.classList.remove(parent.classList[k]);
+            }
+          }
+          parent.itemizeId = null;
+          parent.itemizeOptions = null;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  cancelItemizeChild(child, parent) {
+    for (let r = this.items.length - 1; r >= 0; r--) {
+      if (this.items[r] === child) {
+        this.items.splice(r, 1);
+      }
+    }
+
+    if (!parent.itemizeOptions.removeBtn) {
+      child.onclick = null;
+    } else {
+      if (!parent.itemizeOptions.removeBtnClass) {
+        let btn = child.querySelector(".itemize_remove_btn");
+        if (btn) {
+          btn.remove();
+        }
+      } else {
+        const button = parent.querySelector(
+          ".itemize_item_" +
+            child.itemizeId +
+            " ." +
+            parent.itemizeOptions.removeBtnClass
+        );
+        if (button) {
+          button.onclick = null;
+        }
+      }
+    }
+    let oldStyle = parent.querySelector(".itemize_style");
+    if (oldStyle) {
+      parent.querySelector(".itemize_style").remove();
+    }
+    for (let s = child.classList.length - 1; s >= 0; s--) {
+      if (child.classList[s].indexOf("itemize_item_") !== -1) {
+        child.classList.remove(child.classList[s]);
+      }
+    }
+    child.itemizeId = null;
+  }
+  applyItemize(withoutObs) {
+    try {
+      let knownErrors = "";
       for (let i = 0; i < this.targetElements.length; i++) {
         let parent = this.targetElements[i];
         let parentItemizeId = this.makeId(8);
@@ -308,14 +260,15 @@ class Itemize {
               "Cannot find specified button's class: " +
               parent.itemizeOptions.removeBtnClass +
               "\n";
+          } else {
+            button.onclick = () => {
+              if (parent.itemizeOptions.modalConfirm) {
+                this.modalConfirm(child.itemizeId);
+              } else {
+                this.remove(child.itemizeId);
+              }
+            };
           }
-          button.onclick = () => {
-            if (parent.itemizeOptions.modalConfirm) {
-              this.modalConfirm(child.itemizeId);
-            } else {
-              this.remove(child.itemizeId);
-            }
-          };
         }
       }
       if (fromObserver) {
@@ -470,21 +423,25 @@ class Itemize {
           item = document.querySelector(el);
           if (!item || !item.itemizeId) {
             throw new Error(
-              "Not a valid Itemize element, cannot create a confirm modal."
+              "- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal."
             );
           }
         }
         if (!item) {
-          throw new Error("No item found, cannot create a confirm modal.");
+          throw new Error(
+            "- Itemize - ERROR:\n No item found, cannot create a confirm modal."
+          );
         }
       } else {
         item = elem;
         if (!item) {
-          throw new Error("No item found, cannot create a confirm modal.");
+          throw new Error(
+            "- Itemize - ERROR:\n No item found, cannot create a confirm modal."
+          );
         }
         if (!item.itemizeId) {
           throw new Error(
-            "Not a valid Itemize element, cannot create a confirm modal."
+            "- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal."
           );
         }
       }
@@ -539,27 +496,6 @@ class Itemize {
             [{ opacity: 0 }],
             modalAnimDuration
           );
-          // function animBckdrop(timestamp) {
-          //   let progress;
-          //   let duration = modalAnimDuration;
-          //   if (!modal.startAnimTime) {
-          //     modal.startAnimTime = timestamp;
-          //     modal.animTicks = 0;
-          //     modal.style.opacity = 1;
-          //   }
-          //   progress = timestamp - modal.startAnimTime;
-          //   modal.style.opacity =
-          //     1 - (1 / ((duration * 60) / 1000)) * modal.animTicks;
-
-          //   if (progress < duration) {
-          //     modal.animTicks++;
-          //     requestAnimationFrame(animBckdrop);
-          //   } else {
-          //     modal.startAnimTime = null;
-          //     modal.animTicks = 0;
-          //   }
-          // }
-          // requestAnimationFrame(animBckdrop);
         }
         if (mdal.animate) {
           mdal.animate(
@@ -596,30 +532,6 @@ class Itemize {
             ],
             modalAnimDuration
           );
-          // function animMdal(timestamp) {
-          //   let progress;
-          //   let duration = modalAnimDuration;
-          //   if (!mdal.startAnimTime) {
-          //     mdal.startAnimTime = timestamp;
-          //     mdal.animTicks = 0;
-          //     mdal.style.opacity = 1;
-          //     mdal.style.transform = "translateY(-50%) translateX(-50%)";
-          //   }
-          //   progress = timestamp - mdal.startAnimTime;
-          //   mdal.style.opacity =
-          //     1 - (1 / ((duration * 60) / 1000)) * mdal.animTicks;
-          //   mdal.style.transform = `translateY(-${50 -
-          //     (50 / ((duration * 60) / 1000)) *
-          //       mdal.animTicks}%) translateX(-50%)`;
-          //   if (progress < duration) {
-          //     mdal.animTicks++;
-          //     requestAnimationFrame(animMdal);
-          //   } else {
-          //     mdal.startAnimTime = null;
-          //     mdal.animTicks = 0;
-          //   }
-          // }
-          // requestAnimationFrame(animMdal);
         }
 
         clearTimeout(this.modalDisappearTimeout);
@@ -757,26 +669,6 @@ class Itemize {
           ],
           modalAnimDuration
         );
-        // function animBackDrop(timestamp) {
-        //   let progress;
-        //   let duration = modalAnimDuration;
-        //   if (!backDrop.startAnimTime) {
-        //     backDrop.startAnimTime = timestamp;
-        //     backDrop.animTicks = 0;
-        //     backDrop.style.opacity = 0;
-        //   }
-        //   progress = timestamp - backDrop.startAnimTime;
-        //   backDrop.style.opacity =
-        //     0 + (1 / ((duration * 60) / 1000)) * backDrop.animTicks;
-        //   if (progress < duration) {
-        //     backDrop.animTicks++;
-        //     requestAnimationFrame(animBackDrop);
-        //   } else {
-        //     backDrop.startAnimTime = null;
-        //     backDrop.animTicks = 0;
-        //   }
-        // }
-        // requestAnimationFrame(animBackDrop);
       }
       if (modal.animate) {
         modal.animate(
@@ -813,30 +705,6 @@ class Itemize {
           ],
           modalAnimDuration
         );
-        // function animModal(timestamp) {
-        //   let progress;
-        //   let duration = modalAnimDuration;
-        //   if (!modal.startAnimTime) {
-        //     modal.startAnimTime = timestamp;
-        //     modal.animTicks = 0;
-        //     modal.style.opacity = 0;
-        //     modal.style.transform = "translateY(-100%) translateX(-50%)";
-        //   }
-        //   progress = timestamp - modal.startAnimTime;
-        //   modal.style.opacity =
-        //     0 + (1 / ((duration * 60) / 1000)) * modal.animTicks;
-        //   modal.style.transform = `translateY(-${100 -
-        //     (50 / ((duration * 60) / 1000)) *
-        //       modal.animTicks}%) translateX(-50%)`;
-        //   if (progress < duration) {
-        //     modal.animTicks++;
-        //     requestAnimationFrame(animModal);
-        //   } else {
-        //     modal.startAnimTime = null;
-        //     modal.animTicks = 0;
-        //   }
-        // }
-        // requestAnimationFrame(animModal);
       }
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + error);
@@ -992,26 +860,6 @@ class Itemize {
           ],
           alertTimerDuration
         );
-        // function animAlertTimer(timestamp) {
-        //   let progress;
-        //   let duration = alertTimerDuration;
-        //   if (!alertTimer.startAnimTime) {
-        //     alertTimer.startAnimTime = timestamp;
-        //     alertTimer.animTicks = 0;
-        //     alertTimer.style.width = "100%";
-        //   }
-        //   progress = timestamp - alertTimer.startAnimTime;
-        //   alertTimer.style.width = `${100 -
-        //     (100 / ((duration * 60) / 1000)) * alertTimer.animTicks}%`;
-        //   if (progress < duration) {
-        //     alertTimer.animTicks++;
-        //     requestAnimationFrame(animAlertTimer);
-        //   } else {
-        //     alertTimer.startAnimTime = null;
-        //     alertTimer.animTicks = 0;
-        //   }
-        // }
-        // requestAnimationFrame(animAlertTimer);
       }
       setTimeout(() => {
         let alertList = document.querySelectorAll(".itemize_alert");
@@ -1065,32 +913,6 @@ class Itemize {
                 ],
                 150
               );
-              // function animAlertHide(timestamp) {
-              //   let progress;
-              //   let duration = 300;
-              //   if (!alertList[i].startAnimTime) {
-              //     alertList[i].startAnimTime = timestamp;
-              //     alertList[i].animTicks = 0;
-              //     alertList[
-              //       i
-              //     ].style.transform = `translate(${alertTranslateX}, ${translateYStart}%)`;
-              //   }
-              //   progress = timestamp - alertList[i].startAnimTime;
-              //   alertList[
-              //     i
-              //   ].style.transform = `translate(${alertTranslateX}, ${translateYStart -
-              //     ((translateYStart - translateYEnd) /
-              //       ((duration * 60) / 1000)) *
-              //       alertList[i].animTicks}%)`;
-              //   if (progress < duration) {
-              //     alertList[i].animTicks++;
-              //     requestAnimationFrame(animAlertHide);
-              //   } else {
-              //     alertList[i].startAnimTime = null;
-              //     alertList[i].animTicks = 0;
-              //   }
-              // }
-              // requestAnimationFrame(animAlertHide);
             }
             alertList[i].alertId--;
           }
@@ -1116,7 +938,7 @@ class Itemize {
         if (!item) {
           item = document.querySelector(el);
           if (!item || !item.itemizeId) {
-            throw new Error("Not a valid Itemize element");
+            throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
           }
           for (let i = 0; i < this.items.length; i++) {
             if (this.items[i].itemizeId === item.itemizeId) {
@@ -1125,15 +947,15 @@ class Itemize {
           }
         }
         if (!item) {
-          throw new Error("No item found to remove");
+          throw new Error("- Itemize - ERROR:\nNo item found to remove");
         }
       } else {
         item = el;
         if (!item) {
-          throw new Error("No item found to remove");
+          throw new Error("- Itemize - ERROR:\nNo item found to remove");
         }
         if (!item.itemizeId) {
-          throw new Error("Not a valid Itemize element");
+          throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
         }
         for (let i = 0; i < this.items.length; i++) {
           if (item.itemizeId === this.items[i].itemizeId) {
@@ -1148,7 +970,7 @@ class Itemize {
             let confirmRemove = this.globalOptions.beforeRemove(item);
             if (confirmRemove == undefined) {
               throw new Error(
-                'The function "beforeErase" must return a Boolean or a Promise'
+                '- Itemize - ERROR:\n The function "beforeErase" must return a Boolean or a Promise'
               );
             }
             if (typeof confirmRemove.then === "function") {
@@ -1250,7 +1072,9 @@ class Itemize {
           }
         }
       } else {
-        throw new Error("this element has an invalid itemizeId");
+        throw new Error(
+          "- Itemize - ERROR:\n this element has an invalid itemizeId"
+        );
       }
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + error);
@@ -1305,7 +1129,6 @@ class Itemize {
           }
         }
       }
-      console.log(duration);
       if (progress < duration - 1) {
         elem.animTicks++;
         requestAnimationFrame(anim);
@@ -1340,7 +1163,7 @@ class Itemize {
         ],
         {
           duration: options.flipAnimDuration * 0.5,
-          easing: "ease-in-out",
+          easing: options.flipAnimEasing,
           fill: "both"
         }
       );
@@ -1363,32 +1186,6 @@ class Itemize {
         ],
         options.flipAnimDuration * 0.5
       );
-      // function flipRemoveRAF(timestamp) {
-      //   let progress;
-      //   let duration = options.flipAnimDuration;
-      //   if (!elem.startAnimTime) {
-      //     elem.startAnimTime = timestamp;
-      //     elem.animTicks = 0;
-      //     elem.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px)`;
-      //     elem.style.opacity = 1;
-      //   }
-      //   progress = timestamp - elem.startAnimTime;
-      //   elem.style.transform = `translate(${deltaX +
-      //     (options.animRemoveTranslateX / ((duration * 60) / 1000)) *
-      //       elem.animTicks}px, ${deltaY +
-      //     (options.animRemoveTranslateY / ((duration * 60) / 1000)) *
-      //       elem.animTicks}px)`;
-      //   elem.style.opacity =
-      //     1 - (1 / ((duration * 60) / 1000)) * elem.animTicks;
-      //   if (progress < duration) {
-      //     elem.animTicks++;
-      //     requestAnimationFrame(flipRemoveRAF);
-      //   } else {
-      //     elem.startAnimTime = null;
-      //     elem.animTicks = 0;
-      //   }
-      // }
-      // requestAnimationFrame(flipRemoveRAF);
     }
 
     setTimeout(() => {
@@ -1432,36 +1229,35 @@ class Itemize {
         ],
         {
           duration: options.flipAnimDuration,
-          easing: "ease-in-out",
+          easing: options.flipAnimEasing,
           fill: "both"
         }
       );
     } else {
-      function flipAddRAF(timestamp) {
-        let progress;
-        let duration = options.flipAnimDuration;
-        if (!elem.startAnimTime) {
-          elem.startAnimTime = timestamp;
-          elem.animTicks = 0;
-          elem.style.opacity = 0;
-          elem.style.transform = `translate(${translateXStart}px, ${translateYStart}px)`;
-        }
-        progress = timestamp - elem.startAnimTime;
-        elem.style.opacity = `${(1 / ((duration * 60) / 1000)) *
-          elem.animTicks}`;
-        elem.style.transform = `translate(${translateXStart -
-          (translateXStart / ((duration * 60) / 1000)) *
-            elem.animTicks}px, ${translateYStart -
-          (translateYStart / ((duration * 60) / 1000)) * elem.animTicks}px)`;
-        if (progress < duration) {
-          elem.animTicks++;
-          requestAnimationFrame(flipAddRAF);
-        } else {
-          elem.startAnimTime = null;
-          elem.animTicks = 0;
-        }
-      }
-      requestAnimationFrame(flipAddRAF);
+      this.animateRAF(
+        elem,
+        [
+          { opacity: 0 },
+          {
+            transform: {
+              translateX: translateXStart,
+              translateY: translateYStart,
+              unit: "px"
+            }
+          }
+        ],
+        [
+          { opacity: 1 },
+          {
+            transform: {
+              translateX: 0,
+              translateY: 0,
+              unit: "px"
+            }
+          }
+        ],
+        options.flipAnimDuration
+      );
     }
 
     setTimeout(() => {
@@ -1506,36 +1302,33 @@ class Itemize {
               ],
               {
                 duration: duration,
-                easing: "ease-in-out",
+                easing: elems[i].parentNode.itemizeOptions.flipAnimEasing,
                 fill: "both"
               }
             );
           } else {
-            function flipPlayRAF(timestamp) {
-              let progress;
-              if (!elems[i].startAnimTime) {
-                elems[i].startAnimTime = timestamp;
-                elems[i].animTicks = 0;
-                elems[
-                  i
-                ].style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-              }
-              progress = timestamp - elems[i].startAnimTime;
-              elems[i].style.transform = `translate(${deltaX -
-                (deltaX / ((duration * 60) / 1000)) *
-                  elems[i].animTicks}px, ${deltaY -
-                (deltaY / ((duration * 60) / 1000)) * elems[i].animTicks}px) `;
-              if (progress < duration) {
-                elems[i].animTicks++;
-                requestAnimationFrame(flipPlayRAF);
-              } else {
-                this.currentFlipPlayRAF = null;
-                elems[i].startAnimTime = null;
-                elems[i].animTicks = 0;
-                elems[i].style.transform = "none";
-              }
-            }
-            requestAnimationFrame(flipPlayRAF);
+            this.animateRAF(
+              elems[i],
+              [
+                {
+                  transform: {
+                    translateX: deltaX,
+                    translateY: deltaY,
+                    unit: "px"
+                  }
+                }
+              ],
+              [
+                {
+                  transform: {
+                    translateX: 0,
+                    translateY: 0,
+                    unit: "px"
+                  }
+                }
+              ],
+              duration
+            );
           }
           setTimeout(() => {
             elems[i].inAnim = false;
@@ -1569,11 +1362,12 @@ class Itemize {
         alertPosition: "bottom-right",
         alertTimer: 4000,
         flipAnimation: true,
+        flipAnimEasing: "ease-in-out",
+        flipAnimDuration: 500,
         animRemoveTranslateX: 0,
         animRemoveTranslateY: -100,
         animAddTranslateX: 0,
-        animAddTranslateY: 0,
-        flipAnimDuration: 500,
+        animAddTranslateY: -100,
         beforeRemove: null
       };
       for (var key in newOptions) {
@@ -1651,6 +1445,19 @@ class Itemize {
     if (typeof options.flipAnimDuration !== "number") {
       error += "option 'flipAnimDuration' must be a Number\n";
     }
+    if (typeof options.flipAnimEasing !== "string") {
+      error += "option 'flipAnimEasing' must be a String\n";
+    } else if (
+      options.flipAnimEasing !== "linear" &&
+      options.flipAnimEasing !== "ease" &&
+      options.flipAnimEasing !== "ease-in-out" &&
+      options.flipAnimEasing !== "ease-in" &&
+      options.flipAnimEasing !== "ease-out" &&
+      options.flipAnimEasing.indexOf("cubic-bezier(") === -1
+    ) {
+      error +=
+        "option 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n";
+    }
     if (typeof options.animRemoveTranslateX !== "number") {
       error += "option 'animRemoveTranslateX' must be a Number\n";
     }
@@ -1672,7 +1479,155 @@ class Itemize {
       return error;
     }
   }
+  getOptionsFromAttributes(parent, options) {
+    if (parent.getAttribute("removeBtn") === "false") {
+      options.removeBtn = false;
+    } else if (parent.getAttribute("removeBtn") === "true") {
+      options.removeBtn = true;
+    }
+    if (parent.getAttribute("modalConfirm") === "false") {
+      options.modalConfirm = false;
+    } else if (parent.getAttribute("modalConfirm") === "true") {
+      options.modalConfirm = true;
+    }
+    if (parent.getAttribute("flipAnimation") === "false") {
+      options.flipAnimation = false;
+    } else if (parent.getAttribute("flipAnimation") === "true") {
+      options.flipAnimation = true;
+    }
+    if (typeof parent.getAttribute("removeBtnClass") === "string") {
+      if (parent.getAttribute("removeBtnClass") === "false") {
+        options.removeBtnClass = null;
+      } else {
+        options.removeBtnClass = parent.getAttribute("removeBtnClass");
+      }
+    }
+    if (
+      typeof parent.getAttribute("removeBtnWidth") === "string" &&
+      parseInt(parent.getAttribute("removeBtnWidth")) > 0
+    ) {
+      options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
+    }
+    if (typeof parent.getAttribute("removeBtnColor") === "string") {
+      options.removeBtnColor = parent.getAttribute("removeBtnColor");
+    }
 
+    if (typeof parent.getAttribute("removeBtnHoverColor") === "string") {
+      options.removeBtnHoverColor = parent.getAttribute("removeBtnHoverColor");
+    }
+    if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
+      options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
+    }
+    if (typeof parent.getAttribute("removeBtnPosition") === "string") {
+      options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
+    }
+    if (typeof parent.getAttribute("removeBtnBgColor") === "string") {
+      options.removeBtnBgColor = parent.getAttribute("removeBtnBgColor");
+    }
+    if (typeof parent.getAttribute("removeBtnBgHoverColor") === "string") {
+      options.removeBtnBgHoverColor = parent.getAttribute(
+        "removeBtnBgHoverColor"
+      );
+    }
+    if (
+      typeof parent.getAttribute("removeBtnMargin") === "string" &&
+      parseInt(parent.getAttribute("removeBtnMargin")) !== NaN
+    ) {
+      options.removeBtnMargin = parseInt(
+        parent.getAttribute("removeBtnMargin")
+      );
+    }
+    if (typeof parent.getAttribute("modalText") === "string") {
+      options.modalText = parent.getAttribute("modalText");
+    }
+    if (typeof parent.getAttribute("removeAlertText") === "string") {
+      options.removeAlertText = parent.getAttribute("removeAlertText");
+    }
+    if (typeof parent.getAttribute("addAlertText") === "string") {
+      options.addAlertText = parent.getAttribute("addAlertText");
+    }
+    if (parent.getAttribute("showAddAlerts") === "true") {
+      options.showAddAlerts = true;
+    } else if (parent.getAttribute("showAddAlerts") === "false") {
+      options.showAddAlerts = false;
+    }
+    if (parent.getAttribute("showRemoveAlerts") === "true") {
+      options.showRemoveAlerts = true;
+    } else if (parent.getAttribute("showRemoveAlerts") === "false") {
+      options.showRemoveAlerts = false;
+    }
+    if (parent.getAttribute("removeBtnCircle") === "true") {
+      options.removeBtnCircle = true;
+    } else if (parent.getAttribute("removeBtnCircle") === "false") {
+      options.removeBtnCircle = false;
+    }
+    if (
+      typeof parent.getAttribute("flipAnimDuration") === "string" &&
+      parseInt(parent.getAttribute("flipAnimDuration")) > 0
+    ) {
+      options.flipAnimDuration = parseInt(
+        parent.getAttribute("flipAnimDuration")
+      );
+    }
+    let easeAttr = parent.getAttribute("flipAnimEasing");
+    if (typeof easeAttr === "string") {
+      if (
+        easeAttr !== "linear" &&
+        easeAttr !== "ease" &&
+        easeAttr !== "ease-in-out" &&
+        easeAttr !== "ease-in" &&
+        easeAttr !== "ease-out" &&
+        easeAttr.indexOf("cubic-bezier(") === -1
+      ) {
+        console.error(
+          "- Itemize - ERROR:\n 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n"
+        );
+      } else {
+        options.flipAnimEasing = easeAttr;
+      }
+    }
+    if (
+      typeof parent.getAttribute("animRemoveTranslateX") === "string" &&
+      parseInt(parent.getAttribute("animRemoveTranslateX")) !== NaN
+    ) {
+      options.animRemoveTranslateX = parseInt(
+        parent.getAttribute("animRemoveTranslateX")
+      );
+    }
+    if (
+      typeof parent.getAttribute("animRemoveTranslateY") === "string" &&
+      parseInt(parent.getAttribute("animRemoveTranslateY")) !== NaN
+    ) {
+      options.animRemoveTranslateY = parseInt(
+        parent.getAttribute("animRemoveTranslateY")
+      );
+    }
+    if (
+      typeof parent.getAttribute("animAddTranslateY") === "string" &&
+      parseInt(parent.getAttribute("animAddTranslateY")) !== NaN
+    ) {
+      options.animAddTranslateY = parseInt(
+        parent.getAttribute("animAddTranslateY")
+      );
+    }
+    if (
+      typeof parent.getAttribute("animAddTranslateX") === "string" &&
+      parseInt(parent.getAttribute("animAddTranslateX")) !== NaN
+    ) {
+      options.animAddTranslateX = parseInt(
+        parent.getAttribute("animAddTranslateX")
+      );
+    }
+    if (
+      typeof parent.getAttribute("removeBtnThickness") === "string" &&
+      parseInt(parent.getAttribute("removeBtnThickness")) > 0
+    ) {
+      options.removeBtnThickness = parseInt(
+        parent.getAttribute("removeBtnThickness")
+      );
+    }
+    return options;
+  }
   makeId(length) {
     var result = "";
     var characters =
