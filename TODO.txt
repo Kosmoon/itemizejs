@@ -5,25 +5,26 @@
 [x] - modal btn hover color
 [x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
 [x] - removeBtnBackgroundHoverCOlor
-[ ] - ajouter une variable global de la class: this.parents ou this.containers
-[ ] - cancel et apply -> single target ou array of target
-[ ] - le clearObserver a revoir car si on apply sur une simple target ca annule tout les autres observer
+[ ] - options perso dans apply()
+([ ]) - ajouter une variable global de la class: this.parents ou this.containers
+[x] - cancel et apply -> single target ou array of target
+[x] - le clearObserver a revoir car si on apply sur une simple target ca annule tout les autres observer
+[ ] - gerer le fait qu'un item peu etre au prealable ne position abosolute, dans ce cas on ne peu pas appliquer la position relative (trouver la soluce)
 [ ] - collect errors dans getOptionsFromAttributes (error += ...) et les compiler dans un  console.error a la fin de la fonction
 [ ] - removeBtnWith 18,16 etc. -> decalage bizarre a coriger
 [x] - flipAnim easing dans options et attribute
-[ ] - itemizeId sur le btnClose pour selec l'item facilement et exec .remove()
-[ ] - alert: remove canceled a cause de la fonction, remove success,
+([ ]) - itemizeId sur le btnClose pour selec l'item facilement et exec .remove()
+([ ]) - alert: remove canceled a cause de la fonction, remove success,
 [x] - alert presset: "bottom right" "bottom left" bottom center etc..
-[ ] - donner la possibilité a l'user de specifier un selector pour une custom modal
 [x] - cross close modal
 [x] - removeBtn margin option et attributes
 [x] - investiguer sur la disconection des observer (memory leak?)
 [x] - parent attributes -> options
 [x] - event listener sur parent pour gerer les add (pas oublier d'unscubscribe)
 [x] - system d'alert avant suppression
-[ ] - before erase async ou onErase async?
+[x] - before erase async ou onErase async?
 [x] - animate() browser compatibility
-[ ] - flip remove control de l'opacity avec une options
+([ ]) - flip remove control de l'opacity avec une options
 [x] - flip presset et duration
-[ ] - flip presset dans les params de la function erase pour flip de la facon qu'on veux pour chaque erase
+([ ]) - flip presset dans les params de la function erase pour flip de la facon qu'on veux pour chaque erase
 [ ] - doc commentée avec @param (HTMLelement) etc..

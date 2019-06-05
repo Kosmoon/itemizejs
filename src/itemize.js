@@ -1,17 +1,18 @@
 /*
- -- itemize.js v0.37--
+ -- itemize.js v0.40--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
 
 class Itemize {
   constructor(options) {
+    this.containers = [];
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
     this.alertNb = 0;
     this.modalDisappearTimeout = null;
     this.elPos = {};
-    this.lastTargets = null;
+    this.lastTargetedContainers = null;
     let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     if (optionCheckResult !== "valid") {
       console.error("- Itemize - TYPE ERROR:\n" + optionCheckResult);
@@ -23,13 +24,16 @@ class Itemize {
       target = [target];
     }
     for (let i = 0; i < target.length; i++) {
-      this.lastTargets = this.getTargetElements(target[i]);
-      if (this.lastTargets && this.lastTargets.length > 0) {
+      this.lastTargetedContainers = this.getTargetElements(target[i]);
+      if (
+        this.lastTargetedContainers &&
+        this.lastTargetedContainers.length > 0
+      ) {
         // this.clearObservers();
         childItemizedNb += this.applyItemize();
       } else {
         console.error(
-          "- Itemize - ERROR:\n " + target[i] + " is not a valid target.\n"
+          "- Itemize - ERROR:\n " + target[i] + " not found.\n"
         );
       }
     }
@@ -42,13 +46,15 @@ class Itemize {
         target = [target];
       }
       for (let i = 0; i < target.length; i++) {
-        this.lastTargets = this.getTargetElements(target[i]);
-        if (this.lastTargets && this.lastTargets.length > 0) {
-          // this.clearObservers();
+        this.lastTargetedContainers = this.getTargetElements(target[i]);
+        if (
+          this.lastTargetedContainers &&
+          this.lastTargetedContainers.length > 0
+        ) {
           unItemizedNb += this.cancelItemize();
         } else {
           console.error(
-            "- Itemize - ERROR:\n " + target[i] + " is not a valid target.\n"
+            "- Itemize - ERROR:\n " + target[i] + " not found.\n"
           );
         }
       }
@@ -91,27 +97,37 @@ class Itemize {
   cancelItemize(allOrSpecific) {
     let unItemizedNb = 0;
     try {
-      let targets = this.lastTargets.length;
-      if (allOrSpecific == "all") {
-        targets = this.items;
+      let parentTargets = [];
+      if (allOrSpecific === "all") {
+        parentTargets = this.containers.splice(0);
+      } else {
+        parentTargets = this.lastTargetedContainers;
       }
-      for (let i = 0; i < this.lastTargets.length; i++) {
-        let parent = this.lastTargets[i];
+      for (let z = 0; z < parentTargets.length; z++) {
+        let parent = parentTargets[z];
+        let targetItems = parent.querySelectorAll(".itmz_item");
+        for (let j = 0; j < targetItems.length; j++) {
+          if (targetItems[j].itemizeId) {
+            this.cancelItemizeChild(targetItems[j], targetItems[j].parentNode);
+            unItemizedNb++;
+          }
+        }
         if (parent.itemizeId) {
           this.clearObservers(parent.itemizeId);
-          for (let j = 0; j < parent.children.length; j++) {
-            if (parent.children[j].itemizeId) {
-              this.cancelItemizeChild(parent.children[j], parent);
-              unItemizedNb++;
-            }
-          }
           for (let k = parent.classList.length - 1; k >= 0; k--) {
             if (parent.classList[k].indexOf("itemize_parent") !== -1) {
               parent.classList.remove(parent.classList[k]);
+              break;
             }
           }
           parent.itemizeId = null;
           parent.itemizeOptions = null;
+          for (let i = 0; i < this.containers.length; i++) {
+            if (this.containers[i] === parent){
+              this.containers.splice(i,1);
+              break;
+            }
+          }
         }
       }
       return unItemizedNb;
@@ -122,10 +138,11 @@ class Itemize {
   cancelItemizeChild(child, parent) {
     for (let r = this.items.length - 1; r >= 0; r--) {
       if (this.items[r] === child) {
+        this.cleanItem(this.items[r]);
         this.items.splice(r, 1);
+        break;
       }
     }
-
     if (!parent.itemizeOptions.removeBtn) {
       child.onclick = null;
     } else {
@@ -135,12 +152,11 @@ class Itemize {
           btn.remove();
         }
       } else {
-        const button = parent.querySelector(
-          ".itemize_item_" +
-            child.itemizeId +
-            " ." +
-            parent.itemizeOptions.removeBtnClass
+        console.log("y");
+        const button = child.querySelector(
+          "." + parent.itemizeOptions.removeBtnClass
         );
+        console.log(button);
         if (button) {
           button.onclick = null;
         }
@@ -153,16 +169,20 @@ class Itemize {
     for (let s = child.classList.length - 1; s >= 0; s--) {
       if (child.classList[s].indexOf("itemize_item_") !== -1) {
         child.classList.remove(child.classList[s]);
+        break;
       }
     }
     child.itemizeId = null;
   }
   applyItemize(withoutObs) {
     let childItemizedNb = 0;
+    let knownErrors = "";
     try {
-      let knownErrors = "";
-      for (let i = 0; i < this.lastTargets.length; i++) {
-        let parent = this.lastTargets[i];
+      for (let i = 0; i < this.lastTargetedContainers.length; i++) {
+        let parent = this.lastTargetedContainers[i];
+        if (!(parent in this.containers)) {
+          this.containers.push(parent);
+        }
         if (parent.itemizeId) {
           this.clearObservers(parent.itemizeId);
         }
@@ -172,6 +192,7 @@ class Itemize {
           // cleaning parent of itemize_parent_xxxx classes
           if (parent.classList[i].indexOf("itemize_parent") !== -1) {
             parent.classList.remove(parent.classList[i]);
+            break;
           }
         }
         parent.classList.add(`itemize_parent_${parentItemizeId}`); // refresh parent with a new itemizeId class
@@ -184,30 +205,35 @@ class Itemize {
           let scope = this;
           let callback = function(mutationsList, observer) {
             for (var mutation of mutationsList) {
-              if (mutation.type == "childList") {
+              if (
+                mutation.type === "childList" &&
+                mutation.addedNodes.length > 0
+              ) {
                 mutation.addedNodes.forEach(node => {
                   let newNode = true;
-                  node.classList.forEach(className => {
-                    if (className.indexOf("itemize_") !== -1) {
-                      // check si le child n'est pas un element deja added qui passe par un flipAnim
-                      newNode = false;
-                    }
-                  });
-                  if (newNode) {
-                    if (node.getAttribute("notItemize")) {
-                      console.log("not itemize element added");
-                    } else {
-                      if (node.parentElement.itemizeOptions.flipAnimation) {
-                        node.classList.add("itemize_hide");
-                        scope.itemizeChild(node, node.parentElement, true);
-                        scope.flipRead(scope.items);
-                        scope.flipAdd(node);
-                        scope.flipPlay(
-                          scope.items,
-                          node.parentElement.itemizeOptions.flipAnimDuration
-                        );
-                      } else {
-                        scope.itemizeChild(node, node.parentElement, true);
+                  if (node.classList) {
+                    node.classList.forEach(className => {
+                      if (className.indexOf("itemize_") !== -1) {
+                        // check si le child n'est pas un element deja added qui passe par un flipAnim
+                        newNode = false;
+                      }
+                    });
+                    if (newNode) {
+                      if (node.getAttribute("notItemize")) {
+                        console.log("not itemize element added");
+                      } else if (node.type !== "text/css" && node.tagName !== "BR"){
+                        if (node.parentElement.itemizeOptions.flipAnimation) {
+                          node.classList.add("itemize_hide");
+                          scope.itemizeChild(node, node.parentElement, true);
+                          scope.flipRead(scope.items);
+                          scope.flipAdd(node);
+                          scope.flipPlay(
+                            scope.items,
+                            node.parentElement.itemizeOptions.flipAnimDuration
+                          );
+                        } else {
+                          scope.itemizeChild(node, node.parentElement, true);
+                        }
                       }
                     }
                   }
@@ -253,12 +279,13 @@ class Itemize {
 
     if (
       child.type !== "text/css" &&
-      typeof child.getAttribute("notItemize") !== "string" &&
+      typeof child.getAttribute("notItemize") !== "string" && child.tagName !== "BR" &&
       !child.itemizeId
     ) {
       child.itemizeId = this.makeId(8);
       this.items.push(child);
       child.classList.add("itemize_item_" + child.itemizeId);
+      child.classList.add("itmz_item");
       if (!parent.itemizeOptions.removeBtn) {
         child.onclick = () => {
           if (parent.itemizeOptions.modalConfirm) {
@@ -271,6 +298,7 @@ class Itemize {
         if (!parent.itemizeOptions.removeBtnClass) {
           child.style.position = "relative";
           const button = document.createElement("div");
+
           button.classList.add("itemize_btn_" + child.itemizeId);
           button.classList.add("itemize_remove_btn");
           button.onclick = () => {
@@ -289,10 +317,11 @@ class Itemize {
               parent.itemizeOptions.removeBtnClass
           );
           if (!button) {
-            knownErrors +=
+            console.error(
               "Cannot find specified button's class: " +
-              parent.itemizeOptions.removeBtnClass +
-              "\n";
+                parent.itemizeOptions.removeBtnClass +
+                "\n"
+            );
           } else {
             button.onclick = () => {
               if (parent.itemizeOptions.modalConfirm) {
@@ -369,6 +398,7 @@ class Itemize {
           btnPos.marginRight = "0px";
           btnPos.marginBottom = btnMargin;
           btnPos.marginLeft = btnMargin;
+          break;
         case "center-left":
           btnPos.top = "50%";
           btnPos.right = "auto";
@@ -469,7 +499,7 @@ class Itemize {
           );
         }
       } else {
-        item = elem;
+        item = el;
         if (!item) {
           throw new Error(
             "- Itemize - ERROR:\n No item found, cannot create a confirm modal."
@@ -604,7 +634,6 @@ class Itemize {
       };
 
       Object.assign(modal.style, {
-        display: "block",
         position: "fixed ",
         top: "50%",
         left: "50%",
@@ -1004,7 +1033,7 @@ class Itemize {
           if (this.globalOptions.beforeRemove) {
             item.removeStatus = "pending";
             let confirmRemove = this.globalOptions.beforeRemove(item);
-            if (confirmRemove == undefined) {
+            if (confirmRemove === undefined) {
               throw new Error(
                 '- Itemize - ERROR:\n The function "beforeErase" must return a Boolean or a Promise'
               );
@@ -1031,6 +1060,7 @@ class Itemize {
                     this.showAlert("removed", item);
                     this.flipRead(this.items);
                     this.flipRemove(item);
+                    this.cleanItem(item);
                     this.items.splice(item.arrayPosition, 1);
                     setTimeout(() => {
                       this.flipPlay(this.items, animDuration);
@@ -1039,6 +1069,7 @@ class Itemize {
                     this.showAlert("removed", item);
                     item.removeStatus = null;
                     item.parentElement.removeChild(item);
+                    this.cleanItem(item);
                     this.items.splice(item.arrayPosition, 1);
                   }
                 })
@@ -1066,6 +1097,7 @@ class Itemize {
                 this.showAlert("removed", item);
                 this.flipRead(this.items);
                 this.flipRemove(item);
+                this.cleanItem(item);
                 this.items.splice(item.arrayPosition, 1);
                 setTimeout(() => {
                   this.flipPlay(this.items, animDuration);
@@ -1075,6 +1107,7 @@ class Itemize {
                 item.removeStatus = null;
                 item.parentElement.removeChild(item);
                 this.items.splice(item.arrayPosition, 1);
+                this.cleanItem(item);
               }
             }
           } else {
@@ -1095,6 +1128,7 @@ class Itemize {
               this.showAlert("removed", item);
               this.flipRead(this.items);
               this.flipRemove(item);
+              this.cleanItem(item);
               this.items.splice(item.arrayPosition, 1);
               setTimeout(() => {
                 this.flipPlay(this.items, animDuration * 0.5);
@@ -1103,6 +1137,7 @@ class Itemize {
               this.showAlert("removed", item);
               item.removeStatus = null;
               item.parentElement.removeChild(item);
+              this.cleanItem(item);
               this.items.splice(item.arrayPosition, 1);
             }
           }
@@ -1115,6 +1150,20 @@ class Itemize {
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + error);
     }
+  }
+  cleanItem(item) {
+    for (let u = 0; u < item.classList.length; u++) {
+      item.classList.remove("itmz_item");
+      if (item.classList[u].indexOf("itemize_item_") !== -1) {
+        item.classList.remove(item.classList[u]);
+        break;
+      }
+    }
+    let btn = item.querySelector(".itemize_remove_btn");
+    if (btn) {
+      btn.remove();
+    }
+    item.itemizeId = null;
   }
   animateRAF(elem, from, to, duration) {
     function anim(timestamp) {
@@ -1240,10 +1289,10 @@ class Itemize {
     const deltaY = oldPos.top - newPos.top;
     let deltaW = oldPos.width / newPos.width;
     let deltaH = oldPos.height / newPos.height;
-    if (isNaN(deltaW)) {
+    if (isNaN(deltaW) || deltaW === Infinity) {
       deltaW = 1;
     }
-    if (isNaN(deltaH)) {
+    if (isNaN(deltaH) || deltaH === Infinity) {
       deltaH = 1;
     }
     elem.newAddPos = newPos;
@@ -1318,14 +1367,14 @@ class Itemize {
         const deltaY = oldPos.top - newPos.top;
         let deltaW = oldPos.width / newPos.width;
         let deltaH = oldPos.height / newPos.height;
-        if (isNaN(deltaW)) {
+        if (isNaN(deltaW) || deltaW === Infinity) {
           deltaW = 1;
         }
-        if (isNaN(deltaH)) {
+        if (isNaN(deltaH) || deltaH === Infinity) {
           deltaH = 1;
         }
+
         if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
-          elems[i].inAnim = true;
           if (elems[i].animate) {
             elems[i].animate(
               [
@@ -1366,9 +1415,6 @@ class Itemize {
               duration
             );
           }
-          setTimeout(() => {
-            elems[i].inAnim = false;
-          }, duration);
         }
       }
     }
@@ -1567,7 +1613,7 @@ class Itemize {
     }
     if (
       typeof parent.getAttribute("removeBtnMargin") === "string" &&
-      parseInt(parent.getAttribute("removeBtnMargin")) !== NaN
+      !isNaN(parseInt(parent.getAttribute("removeBtnMargin")))
     ) {
       options.removeBtnMargin = parseInt(
         parent.getAttribute("removeBtnMargin")
@@ -1624,7 +1670,7 @@ class Itemize {
     }
     if (
       typeof parent.getAttribute("animRemoveTranslateX") === "string" &&
-      parseInt(parent.getAttribute("animRemoveTranslateX")) !== NaN
+      !isNaN(parseInt(parent.getAttribute("animRemoveTranslateX")))
     ) {
       options.animRemoveTranslateX = parseInt(
         parent.getAttribute("animRemoveTranslateX")
@@ -1632,7 +1678,7 @@ class Itemize {
     }
     if (
       typeof parent.getAttribute("animRemoveTranslateY") === "string" &&
-      parseInt(parent.getAttribute("animRemoveTranslateY")) !== NaN
+      !isNaN(parseInt(parent.getAttribute("animRemoveTranslateY")))
     ) {
       options.animRemoveTranslateY = parseInt(
         parent.getAttribute("animRemoveTranslateY")
@@ -1640,7 +1686,7 @@ class Itemize {
     }
     if (
       typeof parent.getAttribute("animAddTranslateY") === "string" &&
-      parseInt(parent.getAttribute("animAddTranslateY")) !== NaN
+      !isNaN(parseInt(parent.getAttribute("animAddTranslateY")))
     ) {
       options.animAddTranslateY = parseInt(
         parent.getAttribute("animAddTranslateY")
@@ -1648,7 +1694,7 @@ class Itemize {
     }
     if (
       typeof parent.getAttribute("animAddTranslateX") === "string" &&
-      parseInt(parent.getAttribute("animAddTranslateX")) !== NaN
+      !isNaN(parseInt(parent.getAttribute("animAddTranslateX")))
     ) {
       options.animAddTranslateX = parseInt(
         parent.getAttribute("animAddTranslateX")
@@ -1675,3 +1721,6 @@ class Itemize {
     return result;
   }
 }
+try {
+  module.exports = Itemize;
+} catch {}
