@@ -1,5 +1,5 @@
 /*
- -- itemize.js v0.40--
+ -- itemize.js v0.37--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -11,34 +11,54 @@ class Itemize {
     this.alertNb = 0;
     this.modalDisappearTimeout = null;
     this.elPos = {};
-    this.targetElements = null;
+    this.lastTargets = null;
     let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     if (optionCheckResult !== "valid") {
       console.error("- Itemize - TYPE ERROR:\n" + optionCheckResult);
     }
   }
   apply(target) {
-    this.targetElements = this.getTargetElements(target);
-    if (this.targetElements && this.targetElements.length > 0) {
-      // this.clearObservers();
-      this.applyItemize();
-    } else {
-      console.error("- Itemize - ERROR:\n no valid target found.\n");
+    let targets = target;
+    let childItemizedNb = 0;
+    if (!Array.isArray(targets)) {
+      targets = [targets];
     }
+    for (let i = 0; i < targets.length; i++) {
+      this.lastTargets = this.getTargetElements(targets[i]);
+      if (this.lastTargets && this.lastTargets.length > 0) {
+        // this.clearObservers();
+        childItemizedNb += this.applyItemize();
+      } else {
+        console.error(
+          "- Itemize - ERROR:\n " + targets[i] + " is not a valid target.\n"
+        );
+      }
+    }
+    return childItemizedNb + " element(s) itemized";
   }
   cancel(target) {
+    let unItemizedNb = 0;
     if (target) {
-      this.targetElements = this.getTargetElements(target);
-      if (this.targetElements && this.targetElements.length > 0) {
-        // this.clearObservers();
-        this.cancelItemize();
-      } else {
-        console.error("- Itemize - ERROR:\n no valid target found.\n");
+      let targets = target;
+      if (!Array.isArray(targets)) {
+        targets = [targets];
+      }
+      for (let i = 0; i < targets.length; i++) {
+        this.lastTargets = this.getTargetElements(targets[i]);
+        if (this.lastTargets && this.lastTargets.length > 0) {
+          // this.clearObservers();
+          unItemizedNb += this.cancelItemize();
+        } else {
+          console.error(
+            "- Itemize - ERROR:\n " + targets[i] + " is not a valid target.\n"
+          );
+        }
       }
     } else {
       this.clearObservers();
-      this.cancelItemize("all");
+      unItemizedNb = this.cancelItemize("all");
     }
+    return unItemizedNb + " element(s) unitemized";
   }
   getTargetElements(target) {
     try {
@@ -53,33 +73,39 @@ class Itemize {
     }
   }
 
-  clearObservers(itemizeIds) {
+  clearObservers(parentId) {
     if (window.itemizeObservers) {
-      for (let i = window.itemizeObservers.length - 1; i >= 0; i--) {
-        window.itemizeObservers[i].disconnect();
-        window.itemizeObservers.splice(i, 1);
+      if (!parentId) {
+        for (let i = window.itemizeObservers.length - 1; i >= 0; i--) {
+          window.itemizeObservers[i].disconnect();
+          window.itemizeObservers.splice(i, 1);
+        }
+      } else {
+        for (let i = window.itemizeObservers.length - 1; i >= 0; i--) {
+          if (window.itemizeObservers[i].itemizeId === parentId) {
+            window.itemizeObservers[i].disconnect();
+            window.itemizeObservers.splice(i, 1);
+          }
+        }
       }
     }
   }
   cancelItemize(allOrSpecific) {
+    let unItemizedNb = 0;
     try {
-      let targets = this.targetElements.length;
+      let targets = this.lastTargets.length;
       if (allOrSpecific == "all") {
         targets = this.items;
       }
-      for (let i = 0; i < this.targetElements.length; i++) {
-        let parent = this.targetElements[i];
+      for (let i = 0; i < this.lastTargets.length; i++) {
+        let parent = this.lastTargets[i];
         if (parent.itemizeId) {
-          if (window.itemizeObservers) {
-            for (let z = window.itemizeObservers.length - 1; z >= 0; z--) {
-              if (window.itemizeObservers[z].itemizeId === parent.itemizeId) {
-                window.itemizeObservers[z].disconnect();
-                window.itemizeObservers.splice(z, 1);
-              }
-            }
-          }
+          this.clearObservers(parent.itemizeId);
           for (let j = 0; j < parent.children.length; j++) {
-            this.cancelItemizeChild(parent.children[j], parent);
+            if (parent.children[j].itemizeId) {
+              this.cancelItemizeChild(parent.children[j], parent);
+              unItemizedNb++;
+            }
           }
           for (let k = parent.classList.length - 1; k >= 0; k--) {
             if (parent.classList[k].indexOf("itemize_parent") !== -1) {
@@ -90,6 +116,7 @@ class Itemize {
           parent.itemizeOptions = null;
         }
       }
+      return unItemizedNb;
     } catch (err) {
       console.error(err);
     }
@@ -133,10 +160,14 @@ class Itemize {
     child.itemizeId = null;
   }
   applyItemize(withoutObs) {
+    let childItemizedNb = 0;
     try {
       let knownErrors = "";
-      for (let i = 0; i < this.targetElements.length; i++) {
-        let parent = this.targetElements[i];
+      for (let i = 0; i < this.lastTargets.length; i++) {
+        let parent = this.lastTargets[i];
+        if (parent.itemizeId) {
+          this.clearObservers(parent.itemizeId);
+        }
         let parentItemizeId = this.makeId(8);
         parent.itemizeId = parentItemizeId;
         for (let i = parent.classList.length - 1; i >= 0; i--) {
@@ -201,11 +232,15 @@ class Itemize {
           ].itemizeId = parent.itemizeId;
         }
         this.applyCss(parent);
+
         for (let z = 0; z < parent.children.length; z++) {
           let child = parent.children[z];
-          this.itemizeChild(child, parent);
+          if (this.itemizeChild(child, parent)) {
+            childItemizedNb++;
+          }
         }
       }
+      return childItemizedNb;
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + knownErrors);
       console.error(error);
@@ -274,6 +309,9 @@ class Itemize {
       if (fromObserver) {
         this.showAlert("added", child);
       }
+      return true;
+    } else {
+      return false;
     }
   }
   applyCss(parent) {

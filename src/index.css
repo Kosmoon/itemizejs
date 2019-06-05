@@ -49,7 +49,8 @@ body {
 .testul {
     padding-top: 50px;
     width: 50%;
-    margin: 5px
+    margin: 5px;
+    height: 300px;
 }
 
 .testul li {

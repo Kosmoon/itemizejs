@@ -9,41 +9,82 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 /*
- -- itemize.js v0.32 --
+ -- itemize.js v0.37--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
 var Itemize =
 /*#__PURE__*/
 function () {
-  function Itemize(options, target) {
+  function Itemize(options) {
     _classCallCheck(this, Itemize);
 
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
     this.alertNb = 0;
-    this.target = target;
     this.modalDisappearTimeout = null;
+    this.elPos = {};
+    this.lastTargets = null;
     var optionCheckResult = this.optionsTypeCheck(this.globalOptions);
 
     if (optionCheckResult !== "valid") {
-      // check: option type error
       console.error("- Itemize - TYPE ERROR:\n" + optionCheckResult);
-    } else {
-      this.targetElements = this.getTargetElements(this.target);
-
-      if (this.targetElements && this.targetElements.length > 0) {
-        this.clearObservers();
-        this.itemizeIt();
-      } else {
-        console.error("- Itemize - ERROR:\n Cannot find any valid target\n");
-      }
     }
-
-    this.elPos = {};
   }
 
   _createClass(Itemize, [{
+    key: "apply",
+    value: function apply(target) {
+      var targets = target;
+      var childItemizedNb = 0;
+
+      if (!Array.isArray(targets)) {
+        targets = [targets];
+      }
+
+      for (var i = 0; i < targets.length; i++) {
+        this.lastTargets = this.getTargetElements(targets[i]);
+
+        if (this.lastTargets && this.lastTargets.length > 0) {
+          // this.clearObservers();
+          childItemizedNb += this.applyItemize();
+        } else {
+          console.error("- Itemize - ERROR:\n " + targets[i] + " is not a valid target.\n");
+        }
+      }
+
+      return childItemizedNb + " element(s) itemized";
+    }
+  }, {
+    key: "cancel",
+    value: function cancel(target) {
+      var unItemizedNb = 0;
+
+      if (target) {
+        var targets = target;
+
+        if (!Array.isArray(targets)) {
+          targets = [targets];
+        }
+
+        for (var i = 0; i < targets.length; i++) {
+          this.lastTargets = this.getTargetElements(targets[i]);
+
+          if (this.lastTargets && this.lastTargets.length > 0) {
+            // this.clearObservers();
+            unItemizedNb += this.cancelItemize();
+          } else {
+            console.error("- Itemize - ERROR:\n " + targets[i] + " is not a valid target.\n");
+          }
+        }
+      } else {
+        this.clearObservers();
+        unItemizedNb = this.cancelItemize("all");
+      }
+
+      return unItemizedNb + " element(s) unitemized";
+    }
+  }, {
     key: "getTargetElements",
     value: function getTargetElements(target) {
       try {
@@ -58,153 +99,131 @@ function () {
       }
     }
   }, {
-    key: "getOptionsFromAttributes",
-    value: function getOptionsFromAttributes(parent, options) {
-      if (parent.getAttribute("removeBtn") === "false") {
-        options.removeBtn = false;
-      } else if (parent.getAttribute("removeBtn") === "true") {
-        options.removeBtn = true;
-      }
-
-      if (parent.getAttribute("modalConfirm") === "false") {
-        options.modalConfirm = false;
-      } else if (parent.getAttribute("modalConfirm") === "true") {
-        options.modalConfirm = true;
-      }
-
-      if (parent.getAttribute("flipAnimation") === "false") {
-        options.flipAnimation = false;
-      } else if (parent.getAttribute("flipAnimation") === "true") {
-        options.flipAnimation = true;
-      }
-
-      if (typeof parent.getAttribute("removeBtnClass") === "string") {
-        if (parent.getAttribute("removeBtnClass") === "false") {
-          options.removeBtnClass = null;
-        } else {
-          options.removeBtnClass = parent.getAttribute("removeBtnClass");
-        }
-      }
-
-      if (typeof parent.getAttribute("removeBtnWidth") === "string" && parseInt(parent.getAttribute("removeBtnWidth")) > 0) {
-        options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
-      }
-
-      if (typeof parent.getAttribute("removeBtnColor") === "string") {
-        options.removeBtnColor = parent.getAttribute("removeBtnColor");
-      }
-
-      if (typeof parent.getAttribute("removeBtnHoverColor") === "string") {
-        options.removeBtnHoverColor = parent.getAttribute("removeBtnHoverColor");
-      }
-
-      if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
-        options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
-      }
-
-      if (typeof parent.getAttribute("removeBtnPosition") === "string") {
-        options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
-      }
-
-      if (typeof parent.getAttribute("removeBtnBgColor") === "string") {
-        options.removeBtnBgColor = parent.getAttribute("removeBtnBgColor");
-      }
-
-      if (typeof parent.getAttribute("removeBtnBgHoverColor") === "string") {
-        options.removeBtnBgHoverColor = parent.getAttribute("removeBtnBgHoverColor");
-      }
-
-      if (typeof parent.getAttribute("removeBtnMargin") === "string" && parseInt(parent.getAttribute("removeBtnMargin")) !== NaN) {
-        options.removeBtnMargin = parseInt(parent.getAttribute("removeBtnMargin"));
-      }
-
-      if (typeof parent.getAttribute("modalText") === "string") {
-        options.modalText = parent.getAttribute("modalText");
-      }
-
-      if (typeof parent.getAttribute("removeAlertText") === "string") {
-        options.removeAlertText = parent.getAttribute("removeAlertText");
-      }
-
-      if (typeof parent.getAttribute("addAlertText") === "string") {
-        options.addAlertText = parent.getAttribute("addAlertText");
-      }
-
-      if (parent.getAttribute("showAddAlerts") === "true") {
-        options.showAddAlerts = true;
-      } else if (parent.getAttribute("showAddAlerts") === "false") {
-        options.showAddAlerts = false;
-      }
-
-      if (parent.getAttribute("showRemoveAlerts") === "true") {
-        options.showRemoveAlerts = true;
-      } else if (parent.getAttribute("showRemoveAlerts") === "false") {
-        options.showRemoveAlerts = false;
-      }
-
-      if (parent.getAttribute("removeBtnCircle") === "true") {
-        options.removeBtnCircle = true;
-      } else if (parent.getAttribute("removeBtnCircle") === "false") {
-        options.removeBtnCircle = false;
-      }
-
-      if (typeof parent.getAttribute("alertPosition") === "string") {
-        options.alertPosition = parent.getAttribute("alertPosition");
-      }
-
-      if (typeof parent.getAttribute("flipAnimDuration") === "string" && parseInt(parent.getAttribute("flipAnimDuration")) > 0) {
-        options.flipAnimDuration = parseInt(parent.getAttribute("flipAnimDuration"));
-      }
-
-      if (typeof parent.getAttribute("animRemoveTranslateX") === "string" && parseInt(parent.getAttribute("animRemoveTranslateX")) !== NaN) {
-        options.animRemoveTranslateX = parseInt(parent.getAttribute("animRemoveTranslateX"));
-      }
-
-      if (typeof parent.getAttribute("animRemoveTranslateY") === "string" && parseInt(parent.getAttribute("animRemoveTranslateY")) !== NaN) {
-        options.animRemoveTranslateY = parseInt(parent.getAttribute("animRemoveTranslateY"));
-      }
-
-      if (typeof parent.getAttribute("animAddTranslateY") === "string" && parseInt(parent.getAttribute("animAddTranslateY")) !== NaN) {
-        options.animAddTranslateY = parseInt(parent.getAttribute("animAddTranslateY"));
-      }
-
-      if (typeof parent.getAttribute("animAddTranslateX") === "string" && parseInt(parent.getAttribute("animAddTranslateX")) !== NaN) {
-        options.animAddTranslateX = parseInt(parent.getAttribute("animAddTranslateX"));
-      }
-
-      if (typeof parent.getAttribute("removeBtnThickness") === "string" && parseInt(parent.getAttribute("removeBtnThickness")) > 0) {
-        options.removeBtnThickness = parseInt(parent.getAttribute("removeBtnThickness"));
-      }
-
-      return options;
-    }
-  }, {
     key: "clearObservers",
-    value: function clearObservers() {
+    value: function clearObservers(parentId) {
       if (window.itemizeObservers) {
-        for (var i = window.itemizeObservers.length - 1; i >= 0; i--) {
-          window.itemizeObservers[i].disconnect();
-          window.itemizeObservers.splice(i, 1);
+        if (!parentId) {
+          for (var i = window.itemizeObservers.length - 1; i >= 0; i--) {
+            window.itemizeObservers[i].disconnect();
+            window.itemizeObservers.splice(i, 1);
+          }
+        } else {
+          for (var _i = window.itemizeObservers.length - 1; _i >= 0; _i--) {
+            if (window.itemizeObservers[_i].itemizeId === parentId) {
+              window.itemizeObservers[_i].disconnect();
+
+              window.itemizeObservers.splice(_i, 1);
+            }
+          }
         }
       }
     }
   }, {
-    key: "itemizeIt",
-    value: function itemizeIt(withoutObs) {
-      var _this = this;
-
-      var knownErrors = "";
+    key: "cancelItemize",
+    value: function cancelItemize(allOrSpecific) {
+      var unItemizedNb = 0;
 
       try {
-        for (var i = 0; i < this.targetElements.length; i++) {
-          var parent = this.targetElements[i];
+        var targets = this.lastTargets.length;
+
+        if (allOrSpecific == "all") {
+          targets = this.items;
+        }
+
+        for (var i = 0; i < this.lastTargets.length; i++) {
+          var parent = this.lastTargets[i];
+
+          if (parent.itemizeId) {
+            this.clearObservers(parent.itemizeId);
+
+            for (var j = 0; j < parent.children.length; j++) {
+              if (parent.children[j].itemizeId) {
+                this.cancelItemizeChild(parent.children[j], parent);
+                unItemizedNb++;
+              }
+            }
+
+            for (var k = parent.classList.length - 1; k >= 0; k--) {
+              if (parent.classList[k].indexOf("itemize_parent") !== -1) {
+                parent.classList.remove(parent.classList[k]);
+              }
+            }
+
+            parent.itemizeId = null;
+            parent.itemizeOptions = null;
+          }
+        }
+
+        return unItemizedNb;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }, {
+    key: "cancelItemizeChild",
+    value: function cancelItemizeChild(child, parent) {
+      for (var r = this.items.length - 1; r >= 0; r--) {
+        if (this.items[r] === child) {
+          this.items.splice(r, 1);
+        }
+      }
+
+      if (!parent.itemizeOptions.removeBtn) {
+        child.onclick = null;
+      } else {
+        if (!parent.itemizeOptions.removeBtnClass) {
+          var btn = child.querySelector(".itemize_remove_btn");
+
+          if (btn) {
+            btn.remove();
+          }
+        } else {
+          var button = parent.querySelector(".itemize_item_" + child.itemizeId + " ." + parent.itemizeOptions.removeBtnClass);
+
+          if (button) {
+            button.onclick = null;
+          }
+        }
+      }
+
+      var oldStyle = parent.querySelector(".itemize_style");
+
+      if (oldStyle) {
+        parent.querySelector(".itemize_style").remove();
+      }
+
+      for (var s = child.classList.length - 1; s >= 0; s--) {
+        if (child.classList[s].indexOf("itemize_item_") !== -1) {
+          child.classList.remove(child.classList[s]);
+        }
+      }
+
+      child.itemizeId = null;
+    }
+  }, {
+    key: "applyItemize",
+    value: function applyItemize(withoutObs) {
+      var _this = this;
+
+      var childItemizedNb = 0;
+
+      try {
+        var _knownErrors = "";
+
+        for (var i = 0; i < this.lastTargets.length; i++) {
+          var parent = this.lastTargets[i];
+
+          if (parent.itemizeId) {
+            this.clearObservers(parent.itemizeId);
+          }
+
           var parentItemizeId = this.makeId(8);
           parent.itemizeId = parentItemizeId;
 
-          for (var _i = parent.classList.length - 1; _i >= 0; _i--) {
+          for (var _i2 = parent.classList.length - 1; _i2 >= 0; _i2--) {
             // cleaning parent of itemize_parent_xxxx classes
-            if (parent.classList[_i].indexOf("itemize_parent") !== -1) {
-              parent.classList.remove(parent.classList[_i]);
+            if (parent.classList[_i2].indexOf("itemize_parent") !== -1) {
+              parent.classList.remove(parent.classList[_i2]);
             }
           }
 
@@ -252,7 +271,7 @@ function () {
                               scope.itemizeChild(node, node.parentElement, true);
                               scope.flipRead(scope.items);
                               scope.flipAdd(node);
-                              scope.flipPlay(scope.items);
+                              scope.flipPlay(scope.items, node.parentElement.itemizeOptions.flipAnimDuration);
                             } else {
                               scope.itemizeChild(node, node.parentElement, true);
                             }
@@ -293,9 +312,14 @@ function () {
 
           for (var z = 0; z < parent.children.length; z++) {
             var child = parent.children[z];
-            this.itemizeChild(child, parent);
+
+            if (this.itemizeChild(child, parent)) {
+              childItemizedNb++;
+            }
           }
         }
+
+        return childItemizedNb;
       } catch (error) {
         console.error("- Itemize - ERROR:\n" + knownErrors);
         console.error(error);
@@ -342,21 +366,25 @@ function () {
 
             if (!_button) {
               knownErrors += "Cannot find specified button's class: " + parent.itemizeOptions.removeBtnClass + "\n";
+            } else {
+              _button.onclick = function () {
+                if (parent.itemizeOptions.modalConfirm) {
+                  _this2.modalConfirm(child.itemizeId);
+                } else {
+                  _this2.remove(child.itemizeId);
+                }
+              };
             }
-
-            _button.onclick = function () {
-              if (parent.itemizeOptions.modalConfirm) {
-                _this2.modalConfirm(child.itemizeId);
-              } else {
-                _this2.remove(child.itemizeId);
-              }
-            };
           }
         }
 
         if (fromObserver) {
           this.showAlert("added", child);
         }
+
+        return true;
+      } else {
+        return false;
       }
     }
   }, {
@@ -372,10 +400,11 @@ function () {
       var css = document.createElement("style");
       css.classList.add("itemize_style");
       css.type = "text/css";
-      var styles = "";
+      var styles = ""; // parent global styles
+
+      styles += ".itemize_parent_".concat(parent.itemizeId, " .itemize_hide{display:none}"); // remove btn styles
 
       if (options.removeBtn && !options.removeBtnClass) {
-        // remove btn styles
         var btnMargin = options.removeBtnMargin + "px";
         var btnPos = {
           top: 0,
@@ -453,10 +482,7 @@ function () {
             break;
         }
 
-        styles += ".itemize_parent_".concat(parent.itemizeId, " .itemize_remove_btn{position:absolute;top:").concat(btnPos.top, "!important;right:").concat(btnPos.right, "!important;bottom:").concat(btnPos.bottom, "!important;left:").concat(btnPos.left, "!important;width:").concat(options.removeBtnWidth, "px!important;height:").concat(options.removeBtnWidth, "px!important;overflow:hidden;cursor:pointer;margin:").concat(btnPos.marginTop, " ").concat(btnPos.marginRight, " ").concat(btnPos.marginBottom, " ").concat(btnPos.marginLeft, ";transform:").concat(btnPos.transform, ";border-radius:").concat(options.removeBtnCircle ? "50%" : "0%", ";background-color:").concat(options.removeBtnBgColor, "}.itemize_remove_btn:hover{background-color:").concat(options.removeBtnBgHoverColor, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn:hover::after,.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn:hover::before{transition:background 0.2s ease-in-out;background:").concat(options.removeBtnHoverColor, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::after,.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::before{content:'';position:absolute;height:").concat(options.removeBtnThickness, "px;transition:background 0.2s ease-in-out;width:").concat(options.removeBtnWidth / (options.removeBtnCircle ? 2 : 1), "px;top:50%;left:").concat(options.removeBtnCircle ? "25%" : 0, ";margin-top:").concat(options.removeBtnThickness * 0.5 < 1 ? -1 : -options.removeBtnThickness * 0.5, "px;background:").concat(options.removeBtnColor, ";border-radius:").concat(options.removeBtnSharpness, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}");
-      } else {
-        // global parent styles
-        styles += ".itemize_parent_".concat(parent.itemizeId, " .itemize_hide{display:none}");
+        styles += ".itemize_parent_".concat(parent.itemizeId, " .itemize_remove_btn{position:absolute;top:").concat(btnPos.top, "!important;right:").concat(btnPos.right, "!important;bottom:").concat(btnPos.bottom, "!important;left:").concat(btnPos.left, "!important;width:").concat(options.removeBtnWidth, "px!important;height:").concat(options.removeBtnWidth, "px!important;overflow:hidden;cursor:pointer;margin:").concat(btnPos.marginTop, " ").concat(btnPos.marginRight, " ").concat(btnPos.marginBottom, " ").concat(btnPos.marginLeft, ";transform:").concat(btnPos.transform, ";border-radius:").concat(options.removeBtnCircle ? "50%" : "0%", ";background-color:").concat(options.removeBtnBgColor, "}.itemize_remove_btn:hover{background-color:").concat(options.removeBtnBgHoverColor, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn:hover::after,.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn:hover::before{transition:background 0.2s ease-in-out;background:").concat(options.removeBtnHoverColor, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::after,.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::before{content:'';position:absolute;height:").concat(options.removeBtnThickness, "px;transition:background 0.2s ease-in-out;width:").concat(options.removeBtnWidth / 2, "px;top:50%;left:25%;margin-top:").concat(options.removeBtnThickness * 0.5 < 1 ? -1 : -options.removeBtnThickness * 0.5, "px;background:").concat(options.removeBtnColor, ";border-radius:").concat(options.removeBtnSharpness, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}");
       }
 
       if (css.styleSheet) {
@@ -488,25 +514,26 @@ function () {
             item = document.querySelector(el);
 
             if (!item || !item.itemizeId) {
-              throw new Error("Not a valid Itemize element1, cannot create a confirm modal.");
+              throw new Error("- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal.");
             }
           }
 
           if (!item) {
-            throw new Error("No item found2, cannot create a confirm modal.");
+            throw new Error("- Itemize - ERROR:\n No item found, cannot create a confirm modal.");
           }
         } else {
           item = elem;
 
           if (!item) {
-            throw new Error("No item found3, cannot create a confirm modal.");
+            throw new Error("- Itemize - ERROR:\n No item found, cannot create a confirm modal.");
           }
 
           if (!item.itemizeId) {
-            throw new Error("Not a valid Itemize element4, cannot create a confirm modal.");
+            throw new Error("- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal.");
           }
         }
 
+        var modalAnimDuration = 150;
         var backDrop = document.createElement("div");
         var modal = document.createElement("div");
         var alertText = document.createElement("div");
@@ -533,31 +560,62 @@ function () {
         modal.appendChild(crossClose);
 
         var hideModal = function hideModal(bdy, bckdrop, mdal) {
-          bckdrop.animate([{
-            opacity: 1
-          }, {
-            opacity: 0
-          }], {
-            duration: 300,
-            easing: "ease-in-out",
-            fill: "both"
-          });
-          mdal.animate([{
-            opacity: 1,
-            transform: "translateY(-50%) translateX(-50%)"
-          }, {
-            opacity: 0,
-            transform: "translateY(0%) translateX(-50%)"
-          }], {
-            duration: 300,
-            easing: "cubic-bezier(.75,-0.5,0,1.75)",
-            fill: "both"
-          });
+          bckdrop.onclick = null;
+          mdal.onclick = null;
+
+          if (bckdrop.animate) {
+            bckdrop.animate([{
+              opacity: 1
+            }, {
+              opacity: 0
+            }], {
+              duration: modalAnimDuration,
+              easing: "ease-in-out",
+              fill: "both"
+            });
+          } else {
+            _this3.animateRAF(bckdrop, [{
+              opacity: 1
+            }], [{
+              opacity: 0
+            }], modalAnimDuration);
+          }
+
+          if (mdal.animate) {
+            mdal.animate([{
+              opacity: 1,
+              transform: "translateY(-50%) translateX(-50%)"
+            }, {
+              opacity: 0,
+              transform: "translateY(0%) translateX(-50%)"
+            }], {
+              duration: modalAnimDuration,
+              easing: "ease-in-out",
+              fill: "both"
+            });
+          } else {
+            _this3.animateRAF(mdal, [{
+              opacity: 1,
+              transform: {
+                translateX: -50,
+                translateY: -50,
+                unit: "%"
+              }
+            }], [{
+              opacity: 0,
+              transform: {
+                translateX: -50,
+                translateY: 0,
+                unit: "%"
+              }
+            }], modalAnimDuration);
+          }
+
           clearTimeout(_this3.modalDisappearTimeout);
           _this3.modalDisappearTimeout = setTimeout(function () {
             bdy.removeChild(bckdrop);
             bdy.removeChild(mdal); // bdy.style.overflow = bodyInitialOverflow;
-          }, 300);
+          }, modalAnimDuration);
         };
 
         backDrop.onclick = function () {
@@ -657,26 +715,54 @@ function () {
         });
         body.prepend(modal);
         body.prepend(backDrop);
-        backDrop.animate([{
-          opacity: 0
-        }, {
-          opacity: 1
-        }], {
-          duration: 300,
-          easing: "ease-in-out",
-          fill: "both"
-        });
-        modal.animate([{
-          opacity: 0,
-          transform: "translateY(-100%) translateX(-50%)"
-        }, {
-          opacity: 1,
-          transform: "translateY(-50%) translateX(-50%)"
-        }], {
-          duration: 400,
-          easing: "cubic-bezier(.75,-0.5,0,1.75)",
-          fill: "both"
-        });
+
+        if (backDrop.animate) {
+          backDrop.animate([{
+            opacity: 0
+          }, {
+            opacity: 1
+          }], {
+            duration: 300,
+            easing: "ease-out",
+            fill: "both"
+          });
+        } else {
+          this.animateRAF(backDrop, [{
+            opacity: 0
+          }], [{
+            opacity: 1
+          }], modalAnimDuration);
+        }
+
+        if (modal.animate) {
+          modal.animate([{
+            opacity: 0,
+            transform: "translateY(-100%) translateX(-50%)"
+          }, {
+            opacity: 1,
+            transform: "translateY(-50%) translateX(-50%)"
+          }], {
+            duration: modalAnimDuration,
+            easing: "ease-in",
+            fill: "both"
+          });
+        } else {
+          this.animateRAF(modal, [{
+            opacity: 0,
+            transform: {
+              translateX: -50,
+              translateY: -100,
+              unit: "%"
+            }
+          }], [{
+            opacity: 1,
+            transform: {
+              translateX: -50,
+              translateY: -50,
+              unit: "%"
+            }
+          }], modalAnimDuration);
+        }
       } catch (error) {
         console.error("- Itemize - ERROR:\n" + error);
       }
@@ -747,7 +833,7 @@ function () {
 
         this.alertNb++;
         var popAlert = document.createElement("div");
-        popAlert.alertNb = this.alertNb;
+        popAlert.alertId = this.alertNb;
         var alertTimer = document.createElement("div");
         var alertText = document.createElement("div");
         popAlert.classList.add(alertClassName);
@@ -786,30 +872,66 @@ function () {
         document.querySelector("body").appendChild(popAlert);
         popAlert.appendChild(alertTimer);
         popAlert.appendChild(alertText);
-        alertTimer.animate([{
-          width: "100%"
-        }, {
-          width: "0%"
-        }], {
-          duration: alertTimerDuration,
-          easing: "linear",
-          fill: "both"
-        });
+
+        if (alertTimer.animate) {
+          alertTimer.animate([{
+            width: "100%"
+          }, {
+            width: "0%"
+          }], {
+            duration: alertTimerDuration,
+            easing: "linear",
+            fill: "both"
+          });
+        } else {
+          this.animateRAF(alertTimer, [{
+            width: {
+              value: 100,
+              unit: "%"
+            }
+          }], [{
+            width: {
+              value: 0,
+              unit: "%"
+            }
+          }], alertTimerDuration);
+        }
+
         setTimeout(function () {
           var alertList = document.querySelectorAll(".itemize_alert");
 
           for (var i = 0; i < alertList.length; i++) {
-            if (alertList[i].alertNb > 0) {
-              alertList[i].animate([{
-                transform: "translate(".concat(alertTranslateX, ", ").concat(minusOrNothing).concat(alertList[i].alertNb * 100 - (alertIsTop ? 100 : 0), "%)")
-              }, {
-                transform: "translate(".concat(alertTranslateX, ", ").concat(minusOrNothing).concat(alertList[i].alertNb * 100 - (alertIsTop ? 100 : 0) - 100, "%)")
-              }], {
-                duration: 300,
-                easing: "ease-in-out",
-                fill: "both"
-              });
-              alertList[i].alertNb--;
+            if (alertList[i].alertId > 0) {
+              var translateYStart = parseInt("".concat(minusOrNothing).concat(alertList[i].alertId * 100 - (alertIsTop ? 100 : 0)));
+              var translateYEnd = parseInt("".concat(minusOrNothing).concat(alertList[i].alertId * 100 - (alertIsTop ? 100 : 0) - 100));
+
+              if (alertList[i].animate) {
+                alertList[i].animate([{
+                  transform: "translate(".concat(alertTranslateX, ", ").concat(translateYStart, "%)")
+                }, {
+                  transform: "translate(".concat(alertTranslateX, ", ").concat(translateYEnd, "%)")
+                }], {
+                  duration: 150,
+                  easing: "ease-in-out",
+                  fill: "both"
+                });
+              } else {
+                _this4.animateRAF(alertList[i], [{
+                  transform: {
+                    translateX: parseInt(alertTranslateX),
+                    translateY: translateYStart,
+                    unit: "%"
+                  }
+                }], [{
+                  transform: {
+                    translateX: parseInt(alertTranslateX),
+                    translateY: translateYEnd,
+                    unit: "%"
+                  }
+                }], 150);
+              }
+
+              alertList[i].alertId--;
             }
           }
 
@@ -840,33 +962,33 @@ function () {
             item = document.querySelector(el);
 
             if (!item || !item.itemizeId) {
-              throw new Error("Not a valid Itemize element");
+              throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
             }
 
-            for (var _i2 = 0; _i2 < this.items.length; _i2++) {
-              if (this.items[_i2].itemizeId === item.itemizeId) {
-                item.arrayPosition = _i2;
+            for (var _i3 = 0; _i3 < this.items.length; _i3++) {
+              if (this.items[_i3].itemizeId === item.itemizeId) {
+                item.arrayPosition = _i3;
               }
             }
           }
 
           if (!item) {
-            throw new Error("No item found to remove");
+            throw new Error("- Itemize - ERROR:\nNo item found to remove");
           }
         } else {
           item = el;
 
           if (!item) {
-            throw new Error("No item found to remove");
+            throw new Error("- Itemize - ERROR:\nNo item found to remove");
           }
 
           if (!item.itemizeId) {
-            throw new Error("Not a valid Itemize element");
+            throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
           }
 
-          for (var _i3 = 0; _i3 < this.items.length; _i3++) {
-            if (item.itemizeId === this.items[_i3].itemizeId) {
-              item.arrayPosition = _i3;
+          for (var _i4 = 0; _i4 < this.items.length; _i4++) {
+            if (item.itemizeId === this.items[_i4].itemizeId) {
+              item.arrayPosition = _i4;
             }
           }
         }
@@ -878,10 +1000,13 @@ function () {
               var confirmRemove = this.globalOptions.beforeRemove(item);
 
               if (confirmRemove == undefined) {
-                throw new Error('The function "beforeErase" must return a Boolean or a Promise');
+                throw new Error('- Itemize - ERROR:\n The function "beforeErase" must return a Boolean or a Promise');
               }
 
               if (typeof confirmRemove.then === "function") {
+                var animDuration = item.parentElement.itemizeOptions.flipAnimDuration;
+                var onClickFn = item.onclick;
+                item.onclick = null;
                 confirmRemove.then(function (response) {
                   if (item.parentElement.itemizeOptions.flipAnimation) {
                     var closeBtn = item.querySelector(".itemize_remove_btn");
@@ -904,7 +1029,9 @@ function () {
 
                     _this5.items.splice(item.arrayPosition, 1);
 
-                    _this5.flipPlay(_this5.items);
+                    setTimeout(function () {
+                      _this5.flipPlay(_this5.items, animDuration);
+                    }, animDuration);
                   } else {
                     _this5.showAlert("removed", item);
 
@@ -915,11 +1042,14 @@ function () {
                   }
                 })["catch"](function (err) {
                   console.log(err);
+                  item.onclick = onClickFn;
                   item.removeStatus = null;
                 });
               } else if (confirmRemove) {
                 if (item.parentElement.itemizeOptions.flipAnimation) {
+                  var _animDuration = item.parentElement.itemizeOptions.flipAnimDuration;
                   var closeBtn = item.querySelector(".itemize_remove_btn");
+                  item.onclick = null;
 
                   if (closeBtn) {
                     closeBtn.onclick = null;
@@ -935,7 +1065,9 @@ function () {
                   this.flipRead(this.items);
                   this.flipRemove(item);
                   this.items.splice(item.arrayPosition, 1);
-                  this.flipPlay(this.items);
+                  setTimeout(function () {
+                    _this5.flipPlay(_this5.items, _animDuration);
+                  }, _animDuration);
                 } else {
                   this.showAlert("removed", item);
                   item.removeStatus = null;
@@ -945,6 +1077,8 @@ function () {
               }
             } else {
               if (item.parentElement.itemizeOptions.flipAnimation) {
+                var _animDuration2 = item.parentElement.itemizeOptions.flipAnimDuration;
+
                 var _closeBtn = item.querySelector(".itemize_remove_btn");
 
                 if (_closeBtn) {
@@ -961,7 +1095,9 @@ function () {
                 this.flipRead(this.items);
                 this.flipRemove(item);
                 this.items.splice(item.arrayPosition, 1);
-                this.flipPlay(this.items);
+                setTimeout(function () {
+                  _this5.flipPlay(_this5.items, _animDuration2 * 0.5);
+                }, _animDuration2 * 0.5);
               } else {
                 this.showAlert("removed", item);
                 item.removeStatus = null;
@@ -971,16 +1107,69 @@ function () {
             }
           }
         } else {
-          throw new Error("this element has an invalid itemizeId");
+          throw new Error("- Itemize - ERROR:\n this element has an invalid itemizeId");
         }
       } catch (error) {
         console.error("- Itemize - ERROR:\n" + error);
       }
     }
   }, {
+    key: "animateRAF",
+    value: function animateRAF(elem, from, to, duration) {
+      function anim(timestamp) {
+        var progress;
+
+        if (!elem.startAnimTime) {
+          elem.startAnimTime = timestamp;
+          elem.animTicks = 0;
+
+          for (var i = 0; i < from.length; i++) {
+            for (var key in from[i]) {
+              if (from[i].hasOwnProperty(key)) {
+                if (key === "transform") {
+                  elem.style.transform = "translateX(".concat(from[i][key].translateX).concat(from[i][key].unit, ") translateY(").concat(from[i][key].translateY).concat(from[i][key].unit, ")");
+                } else if (key === "opacity") {
+                  elem.style.opacity = from[i][key];
+                } else {
+                  elem.style[key] = "".concat(from[i][key].value).concat(from[i][key].unit);
+                }
+              }
+            }
+          }
+        }
+
+        progress = timestamp - elem.startAnimTime;
+
+        for (var _i5 = 0; _i5 < to.length; _i5++) {
+          for (var _key in to[_i5]) {
+            if (to[_i5].hasOwnProperty(_key)) {
+              if (_key === "transform") {
+                elem.style.transform = "translateX(".concat(from[_i5][_key].translateX - (from[_i5][_key].translateX - to[_i5][_key].translateX) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i5][_key].unit, ") translateY(").concat(from[_i5][_key].translateY - (from[_i5][_key].translateY - to[_i5][_key].translateY) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i5][_key].unit, ")");
+              } else if (_key === "opacity") {
+                elem.style.opacity = from[_i5][_key] - (from[_i5][_key] - to[_i5][_key]) / (duration * 60 / 1000) * elem.animTicks;
+              } else {
+                elem.style[_key] = "".concat(from[_i5][_key].value - (from[_i5][_key].value - to[_i5][_key].value) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i5][_key].unit);
+              }
+            }
+          }
+        }
+
+        if (progress < duration - 1) {
+          elem.animTicks++;
+          requestAnimationFrame(anim);
+        } else {
+          elem.startAnimTime = null;
+          elem.animTicks = 0;
+        }
+      }
+
+      requestAnimationFrame(anim);
+    }
+  }, {
     key: "flipRemove",
     value: function flipRemove(elem) {
-      elem.parentElement.appendChild(elem);
+      elem.onclick = null; // elem.parentElement.appendChild(elem);
+
       var options = elem.parentElement.itemizeOptions;
       var newPos = elem.getBoundingClientRect();
       var oldPos = this.elPos[elem.itemizeId];
@@ -995,42 +1184,34 @@ function () {
           transform: "translate(".concat(deltaX + options.animRemoveTranslateX, "px, ").concat(deltaY + options.animRemoveTranslateY, "px)"),
           opacity: 0
         }], {
-          duration: options.flipAnimDuration,
-          easing: "ease-in-out",
+          duration: options.flipAnimDuration * 0.5,
+          easing: options.flipAnimEasing,
           fill: "both"
         });
       } else {
-        var animIt = function animIt(timestamp) {
-          var progress;
-          var duration = options.flipAnimDuration;
-
-          if (!elem.startAnimTime) {
-            elem.startAnimTime = timestamp;
-            elem.animTicks = 0;
-            elem.style.transform = "translateX(".concat(deltaX, "px) translateY(").concat(deltaY, "px)");
-            elem.style.opacity = 1;
+        this.animateRAF(elem, [{
+          opacity: 1
+        }, {
+          transform: {
+            translateX: deltaX,
+            translateY: deltaY,
+            unit: "px"
           }
-
-          progress = timestamp - elem.startAnimTime;
-          elem.style.transform = "translate(".concat(deltaX + options.animRemoveTranslateX / (duration * 60 / 1000) * elem.animTicks, "px, ").concat(deltaY + options.animRemoveTranslateY / (duration * 60 / 1000) * elem.animTicks, "px)");
-          elem.style.opacity = 1 - 1 / (duration * 60 / 1000) * elem.animTicks;
-
-          if (progress < duration) {
-            elem.animTicks++;
-            requestAnimationFrame(animIt);
-          } else {
-            elem.startAnimTime = null;
-            elem.animTicks = 0;
+        }], [{
+          opacity: 0
+        }, {
+          transform: {
+            translateX: deltaX + options.animRemoveTranslateX,
+            translateY: deltaY + options.animRemoveTranslateY,
+            unit: "px"
           }
-        };
-
-        requestAnimationFrame(animIt);
+        }], options.flipAnimDuration * 0.5);
       }
 
       setTimeout(function () {
         elem.removeStatus = null;
         elem.parentElement.removeChild(elem);
-      }, options.flipAnimDuration);
+      }, options.flipAnimDuration * 0.5);
     }
   }, {
     key: "flipAdd",
@@ -1056,17 +1237,41 @@ function () {
 
       elem.newAddPos = newPos;
       elem.oldAddPos = oldPos;
-      elem.animate([{
-        transform: "translate(".concat(deltaX + options.animAddTranslateX, "px, ").concat(deltaY + options.animAddTranslateY, "px) scale(").concat(deltaW, ", ").concat(deltaH, ")"),
-        opacity: 0
-      }, {
-        transform: "none",
-        opacity: 1
-      }], {
-        duration: options.flipAnimDuration,
-        easing: "ease-in-out",
-        fill: "both"
-      });
+      var translateXStart = deltaX + options.animAddTranslateX;
+      var translateYStart = deltaY + options.animAddTranslateY;
+
+      if (elem.animate) {
+        elem.animate([{
+          transform: "translate(".concat(translateXStart, "px, ").concat(translateYStart, "px) scale(").concat(deltaW, ", ").concat(deltaH, ")"),
+          opacity: 0
+        }, {
+          transform: "none",
+          opacity: 1
+        }], {
+          duration: options.flipAnimDuration,
+          easing: options.flipAnimEasing,
+          fill: "both"
+        });
+      } else {
+        this.animateRAF(elem, [{
+          opacity: 0
+        }, {
+          transform: {
+            translateX: translateXStart,
+            translateY: translateYStart,
+            unit: "px"
+          }
+        }], [{
+          opacity: 1
+        }, {
+          transform: {
+            translateX: 0,
+            translateY: 0,
+            unit: "px"
+          }
+        }], options.flipAnimDuration);
+      }
+
       setTimeout(function () {
         elem.inAddAnim = false;
         elem.newAddPos = null;
@@ -1083,7 +1288,7 @@ function () {
     }
   }, {
     key: "flipPlay",
-    value: function flipPlay(elems) {
+    value: function flipPlay(elems, duration) {
       var _this6 = this;
 
       var _loop = function _loop(i) {
@@ -1112,40 +1317,29 @@ function () {
               }, {
                 transform: "none"
               }], {
-                duration: elems[i].parentElement.itemizeOptions.flipAnimDuration,
-                easing: "ease-in-out",
+                duration: duration,
+                easing: elems[i].parentNode.itemizeOptions.flipAnimEasing,
                 fill: "both"
               });
             } else {
-              var animIt = function animIt(timestamp) {
-                var progress;
-                var duration = elems[i].parentElement.itemizeOptions.flipAnimDuration;
-
-                if (!elems[i].startAnimTime) {
-                  elems[i].startAnimTime = timestamp;
-                  elems[i].animTicks = 0;
-                  elems[i].style.transform = "translate(".concat(deltaX, "px, ").concat(deltaY, "px)");
+              _this6.animateRAF(elems[i], [{
+                transform: {
+                  translateX: deltaX,
+                  translateY: deltaY,
+                  unit: "px"
                 }
-
-                progress = timestamp - elems[i].startAnimTime;
-                elems[i].style.transform = "translate(".concat(deltaX - deltaX / (duration * 60 / 1000) * elems[i].animTicks, "px, ").concat(deltaY - deltaY / (duration * 60 / 1000) * elems[i].animTicks, "px) ");
-
-                if (progress < duration) {
-                  elems[i].animTicks++;
-                  requestAnimationFrame(animIt);
-                } else {
-                  elems[i].startAnimTime = null;
-                  elems[i].animTicks = 0;
-                  elems[i].style.transform = "none";
+              }], [{
+                transform: {
+                  translateX: 0,
+                  translateY: 0,
+                  unit: "px"
                 }
-              };
-
-              requestAnimationFrame(animIt);
+              }], duration);
             }
 
             setTimeout(function () {
               elems[i].inAnim = false;
-            }, elems[i].parentElement.itemizeOptions.flipAnimDuration);
+            }, duration);
           }
         }
       };
@@ -1160,16 +1354,16 @@ function () {
       try {
         var defaultOptions = {
           removeBtn: true,
-          removeBtnWidth: 18,
+          removeBtnWidth: 20,
           removeBtnThickness: 2,
-          removeBtnColor: "#696969",
-          removeBtnHoverColor: "#000000",
+          removeBtnColor: "#565C67",
+          removeBtnHoverColor: "#ffffff",
           removeBtnSharpness: "0px",
           removeBtnPosition: "top-right",
           removeBtnMargin: 2,
-          removeBtnCircle: false,
-          removeBtnBgColor: "none",
-          removeBtnBgHoverColor: "none",
+          removeBtnCircle: true,
+          removeBtnBgColor: "#d1cfcf",
+          removeBtnBgHoverColor: "#959595",
           removeBtnClass: null,
           modalConfirm: false,
           modalText: "Are you sure to remove this item?",
@@ -1180,11 +1374,12 @@ function () {
           alertPosition: "bottom-right",
           alertTimer: 4000,
           flipAnimation: true,
+          flipAnimEasing: "ease-in-out",
+          flipAnimDuration: 500,
           animRemoveTranslateX: 0,
           animRemoveTranslateY: -100,
           animAddTranslateX: 0,
-          animAddTranslateY: 0,
-          flipAnimDuration: 400,
+          animAddTranslateY: -100,
           beforeRemove: null
         };
 
@@ -1286,6 +1481,12 @@ function () {
         error += "option 'flipAnimDuration' must be a Number\n";
       }
 
+      if (typeof options.flipAnimEasing !== "string") {
+        error += "option 'flipAnimEasing' must be a String\n";
+      } else if (options.flipAnimEasing !== "linear" && options.flipAnimEasing !== "ease" && options.flipAnimEasing !== "ease-in-out" && options.flipAnimEasing !== "ease-in" && options.flipAnimEasing !== "ease-out" && options.flipAnimEasing.indexOf("cubic-bezier(") === -1) {
+        error += "option 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n";
+      }
+
       if (typeof options.animRemoveTranslateX !== "number") {
         error += "option 'animRemoveTranslateX' must be a Number\n";
       }
@@ -1311,6 +1512,133 @@ function () {
       } else {
         return error;
       }
+    }
+  }, {
+    key: "getOptionsFromAttributes",
+    value: function getOptionsFromAttributes(parent, options) {
+      if (parent.getAttribute("removeBtn") === "false") {
+        options.removeBtn = false;
+      } else if (parent.getAttribute("removeBtn") === "true") {
+        options.removeBtn = true;
+      }
+
+      if (parent.getAttribute("modalConfirm") === "false") {
+        options.modalConfirm = false;
+      } else if (parent.getAttribute("modalConfirm") === "true") {
+        options.modalConfirm = true;
+      }
+
+      if (parent.getAttribute("flipAnimation") === "false") {
+        options.flipAnimation = false;
+      } else if (parent.getAttribute("flipAnimation") === "true") {
+        options.flipAnimation = true;
+      }
+
+      if (typeof parent.getAttribute("removeBtnClass") === "string") {
+        if (parent.getAttribute("removeBtnClass") === "false") {
+          options.removeBtnClass = null;
+        } else {
+          options.removeBtnClass = parent.getAttribute("removeBtnClass");
+        }
+      }
+
+      if (typeof parent.getAttribute("removeBtnWidth") === "string" && parseInt(parent.getAttribute("removeBtnWidth")) > 0) {
+        options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
+      }
+
+      if (typeof parent.getAttribute("removeBtnColor") === "string") {
+        options.removeBtnColor = parent.getAttribute("removeBtnColor");
+      }
+
+      if (typeof parent.getAttribute("removeBtnHoverColor") === "string") {
+        options.removeBtnHoverColor = parent.getAttribute("removeBtnHoverColor");
+      }
+
+      if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
+        options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
+      }
+
+      if (typeof parent.getAttribute("removeBtnPosition") === "string") {
+        options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
+      }
+
+      if (typeof parent.getAttribute("removeBtnBgColor") === "string") {
+        options.removeBtnBgColor = parent.getAttribute("removeBtnBgColor");
+      }
+
+      if (typeof parent.getAttribute("removeBtnBgHoverColor") === "string") {
+        options.removeBtnBgHoverColor = parent.getAttribute("removeBtnBgHoverColor");
+      }
+
+      if (typeof parent.getAttribute("removeBtnMargin") === "string" && parseInt(parent.getAttribute("removeBtnMargin")) !== NaN) {
+        options.removeBtnMargin = parseInt(parent.getAttribute("removeBtnMargin"));
+      }
+
+      if (typeof parent.getAttribute("modalText") === "string") {
+        options.modalText = parent.getAttribute("modalText");
+      }
+
+      if (typeof parent.getAttribute("removeAlertText") === "string") {
+        options.removeAlertText = parent.getAttribute("removeAlertText");
+      }
+
+      if (typeof parent.getAttribute("addAlertText") === "string") {
+        options.addAlertText = parent.getAttribute("addAlertText");
+      }
+
+      if (parent.getAttribute("showAddAlerts") === "true") {
+        options.showAddAlerts = true;
+      } else if (parent.getAttribute("showAddAlerts") === "false") {
+        options.showAddAlerts = false;
+      }
+
+      if (parent.getAttribute("showRemoveAlerts") === "true") {
+        options.showRemoveAlerts = true;
+      } else if (parent.getAttribute("showRemoveAlerts") === "false") {
+        options.showRemoveAlerts = false;
+      }
+
+      if (parent.getAttribute("removeBtnCircle") === "true") {
+        options.removeBtnCircle = true;
+      } else if (parent.getAttribute("removeBtnCircle") === "false") {
+        options.removeBtnCircle = false;
+      }
+
+      if (typeof parent.getAttribute("flipAnimDuration") === "string" && parseInt(parent.getAttribute("flipAnimDuration")) > 0) {
+        options.flipAnimDuration = parseInt(parent.getAttribute("flipAnimDuration"));
+      }
+
+      var easeAttr = parent.getAttribute("flipAnimEasing");
+
+      if (typeof easeAttr === "string") {
+        if (easeAttr !== "linear" && easeAttr !== "ease" && easeAttr !== "ease-in-out" && easeAttr !== "ease-in" && easeAttr !== "ease-out" && easeAttr.indexOf("cubic-bezier(") === -1) {
+          console.error("- Itemize - ERROR:\n 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n");
+        } else {
+          options.flipAnimEasing = easeAttr;
+        }
+      }
+
+      if (typeof parent.getAttribute("animRemoveTranslateX") === "string" && parseInt(parent.getAttribute("animRemoveTranslateX")) !== NaN) {
+        options.animRemoveTranslateX = parseInt(parent.getAttribute("animRemoveTranslateX"));
+      }
+
+      if (typeof parent.getAttribute("animRemoveTranslateY") === "string" && parseInt(parent.getAttribute("animRemoveTranslateY")) !== NaN) {
+        options.animRemoveTranslateY = parseInt(parent.getAttribute("animRemoveTranslateY"));
+      }
+
+      if (typeof parent.getAttribute("animAddTranslateY") === "string" && parseInt(parent.getAttribute("animAddTranslateY")) !== NaN) {
+        options.animAddTranslateY = parseInt(parent.getAttribute("animAddTranslateY"));
+      }
+
+      if (typeof parent.getAttribute("animAddTranslateX") === "string" && parseInt(parent.getAttribute("animAddTranslateX")) !== NaN) {
+        options.animAddTranslateX = parseInt(parent.getAttribute("animAddTranslateX"));
+      }
+
+      if (typeof parent.getAttribute("removeBtnThickness") === "string" && parseInt(parent.getAttribute("removeBtnThickness")) > 0) {
+        options.removeBtnThickness = parseInt(parent.getAttribute("removeBtnThickness"));
+      }
+
+      return options;
     }
   }, {
     key: "makeId",

@@ -5,8 +5,12 @@
 [x] - modal btn hover color
 [x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
 [x] - removeBtnBackgroundHoverCOlor
+[ ] - ajouter une variable global de la class: this.parents ou this.containers
+[ ] - cancel et apply -> single target ou array of target
+[ ] - le clearObserver a revoir car si on apply sur une simple target ca annule tout les autres observer
+[ ] - collect errors dans getOptionsFromAttributes (error += ...) et les compiler dans un  console.error a la fin de la fonction
 [ ] - removeBtnWith 18,16 etc. -> decalage bizarre a coriger
-[ ] - flipAnim easing dans options et attribute
+[x] - flipAnim easing dans options et attribute
 [ ] - itemizeId sur le btnClose pour selec l'item facilement et exec .remove()
 [ ] - alert: remove canceled a cause de la fonction, remove success,
 [x] - alert presset: "bottom right" "bottom left" bottom center etc..
@@ -18,7 +22,7 @@
 [x] - event listener sur parent pour gerer les add (pas oublier d'unscubscribe)
 [x] - system d'alert avant suppression
 [ ] - before erase async ou onErase async?
-[ ] - animate() browser compatibility
+[x] - animate() browser compatibility
 [ ] - flip remove control de l'opacity avec une options
 [x] - flip presset et duration
 [ ] - flip presset dans les params de la function erase pour flip de la facon qu'on veux pour chaque erase
