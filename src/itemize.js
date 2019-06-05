@@ -18,19 +18,18 @@ class Itemize {
     }
   }
   apply(target) {
-    let targets = target;
     let childItemizedNb = 0;
-    if (!Array.isArray(targets)) {
-      targets = [targets];
+    if (!Array.isArray(target)) {
+      target = [target];
     }
-    for (let i = 0; i < targets.length; i++) {
-      this.lastTargets = this.getTargetElements(targets[i]);
+    for (let i = 0; i < target.length; i++) {
+      this.lastTargets = this.getTargetElements(target[i]);
       if (this.lastTargets && this.lastTargets.length > 0) {
         // this.clearObservers();
         childItemizedNb += this.applyItemize();
       } else {
         console.error(
-          "- Itemize - ERROR:\n " + targets[i] + " is not a valid target.\n"
+          "- Itemize - ERROR:\n " + target[i] + " is not a valid target.\n"
         );
       }
     }
@@ -39,18 +38,17 @@ class Itemize {
   cancel(target) {
     let unItemizedNb = 0;
     if (target) {
-      let targets = target;
-      if (!Array.isArray(targets)) {
-        targets = [targets];
+      if (!Array.isArray(target)) {
+        target = [target];
       }
-      for (let i = 0; i < targets.length; i++) {
-        this.lastTargets = this.getTargetElements(targets[i]);
+      for (let i = 0; i < target.length; i++) {
+        this.lastTargets = this.getTargetElements(target[i]);
         if (this.lastTargets && this.lastTargets.length > 0) {
           // this.clearObservers();
           unItemizedNb += this.cancelItemize();
         } else {
           console.error(
-            "- Itemize - ERROR:\n " + targets[i] + " is not a valid target.\n"
+            "- Itemize - ERROR:\n " + target[i] + " is not a valid target.\n"
           );
         }
       }
