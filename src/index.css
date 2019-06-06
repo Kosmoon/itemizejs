@@ -62,6 +62,51 @@ body {
     padding: 10px;
 }
 
+.c_of_c {
+    margin: 10px;
+    background: #d1cfcf;
+    -webkit-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    padding: 10px;
+}
+
+.c {
+    margin: 10px;
+    background: #cf8989;
+    -webkit-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    padding: 10px;
+}
+
+.c_in_c {
+    margin: 10px;
+    background: #3f5534;
+    -webkit-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    padding: 10px;
+}
+
+.c_in_c_in_c {
+    margin: 10px;
+    background: #413455;
+    -webkit-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    padding: 10px;
+}
+
+.c_in_c_in_c_in_c {
+    margin: 10px;
+    background: #555334;
+    -webkit-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
+    padding: 10px;
+}
+
 .new_elem {
     height: 100px;
     width: 100px;

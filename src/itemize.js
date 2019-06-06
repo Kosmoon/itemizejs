@@ -29,12 +29,63 @@ class Itemize {
         this.lastTargetedContainers &&
         this.lastTargetedContainers.length > 0
       ) {
-        // this.clearObservers();
-        childItemizedNb += this.applyItemize();
-      } else {
-        console.error(
-          "- Itemize - ERROR:\n " + target[i] + " not found.\n"
+        childItemizedNb += this.applyItemize(
+          this.lastTargetedContainers,
+          false
         );
+        let nestedApply = (containers, nestedLevel) => {
+          let nestedNb = 1;
+          if (containers.length > 0 && nestedNb < nestedLevel) {
+            for (let i = 0; i < containers.length; i++) {
+              childItemizedNb += this.applyItemize(
+                containers[i].children,
+                false
+              );
+              nestedNb++;
+              if (containers.length > 0 && nestedNb < nestedLevel) {
+                nestedApply(containers[i].children, nestedLevel);
+              }
+            }
+          }
+        };
+        nestedApply(
+          this.lastTargetedContainers,
+          this.globalOptions.nestedLevel
+        );
+        // if (this.globalOptions.nestedLevel > 1) {
+        //   // apply to child of child of ... according to options.nestedLevel number
+        //   for (let f = 0; f < this.lastTargetedContainers.length; f++) {
+        //     childItemizedNb += this.applyItemize(
+        //       this.lastTargetedContainers[f].children
+        //     );
+        //     if (this.globalOptions.nestedLevel > 2) {
+        //       for (
+        //         let g = 0;
+        //         g < this.lastTargetedContainers[f].children.length;
+        //         g++
+        //       ) {
+        //         childItemizedNb += this.applyItemize(
+        //           this.lastTargetedContainers[f].children[g].children
+        //         );
+        //         if (this.globalOptions.nestedLevel > 3) {
+        //           for (
+        //             let h = 0;
+        //             h <
+        //             this.lastTargetedContainers[f].children[g].children.length;
+        //             h++
+        //           ) {
+        //             childItemizedNb += this.applyItemize(
+        //               this.lastTargetedContainers[f].children[g].children[h]
+        //                 .children
+        //             );
+        //           }
+        //         }
+        //       }
+        //     }
+        //   }
+        // }
+      } else {
+        console.error("- Itemize - ERROR:\n " + target[i] + " not found.\n");
       }
     }
     return childItemizedNb + " element(s) itemized";
@@ -51,11 +102,9 @@ class Itemize {
           this.lastTargetedContainers &&
           this.lastTargetedContainers.length > 0
         ) {
-          unItemizedNb += this.cancelItemize();
+          unItemizedNb += this.cancelItemize(this.lastTargetedContainers);
         } else {
-          console.error(
-            "- Itemize - ERROR:\n " + target[i] + " not found.\n"
-          );
+          console.error("- Itemize - ERROR:\n " + target[i] + " not found.\n");
         }
       }
     } else {
@@ -79,196 +128,163 @@ class Itemize {
 
   clearObservers(parentId) {
     if (window.itemizeObservers) {
-      if (!parentId) {
-        for (let i = window.itemizeObservers.length - 1; i >= 0; i--) {
+      for (let i = window.itemizeObservers.length - 1; i >= 0; i--) {
+        let disconnect = false;
+        if (parentId) {
+          if (window.itemizeObservers[i].itemizeContainerId === parentId) {
+            disconnect = true;
+          }
+        } else {
+          disconnect = true;
+        }
+        if (disconnect) {
           window.itemizeObservers[i].disconnect();
           window.itemizeObservers.splice(i, 1);
         }
-      } else {
-        for (let i = window.itemizeObservers.length - 1; i >= 0; i--) {
-          if (window.itemizeObservers[i].itemizeId === parentId) {
-            window.itemizeObservers[i].disconnect();
-            window.itemizeObservers.splice(i, 1);
-          }
-        }
       }
     }
   }
-  cancelItemize(allOrSpecific) {
-    let unItemizedNb = 0;
-    try {
-      let parentTargets = [];
-      if (allOrSpecific === "all") {
-        parentTargets = this.containers.splice(0);
-      } else {
-        parentTargets = this.lastTargetedContainers;
-      }
-      for (let z = 0; z < parentTargets.length; z++) {
-        let parent = parentTargets[z];
-        let targetItems = parent.querySelectorAll(".itmz_item");
-        for (let j = 0; j < targetItems.length; j++) {
-          if (targetItems[j].itemizeId) {
-            this.cancelItemizeChild(targetItems[j], targetItems[j].parentNode);
-            unItemizedNb++;
-          }
-        }
-        if (parent.itemizeId) {
-          this.clearObservers(parent.itemizeId);
-          for (let k = parent.classList.length - 1; k >= 0; k--) {
-            if (parent.classList[k].indexOf("itemize_parent") !== -1) {
-              parent.classList.remove(parent.classList[k]);
-              break;
-            }
-          }
-          parent.itemizeId = null;
-          parent.itemizeOptions = null;
-          for (let i = 0; i < this.containers.length; i++) {
-            if (this.containers[i] === parent){
-              this.containers.splice(i,1);
-              break;
-            }
-          }
-        }
-      }
-      return unItemizedNb;
-    } catch (err) {
-      console.error(err);
-    }
-  }
-  cancelItemizeChild(child, parent) {
-    for (let r = this.items.length - 1; r >= 0; r--) {
-      if (this.items[r] === child) {
-        this.cleanItem(this.items[r]);
-        this.items.splice(r, 1);
-        break;
-      }
-    }
-    if (!parent.itemizeOptions.removeBtn) {
-      child.onclick = null;
-    } else {
-      if (!parent.itemizeOptions.removeBtnClass) {
-        let btn = child.querySelector(".itemize_remove_btn");
-        if (btn) {
-          btn.remove();
-        }
-      } else {
-        console.log("y");
-        const button = child.querySelector(
-          "." + parent.itemizeOptions.removeBtnClass
-        );
-        console.log(button);
-        if (button) {
-          button.onclick = null;
-        }
-      }
-    }
-    let oldStyle = parent.querySelector(".itemize_style");
-    if (oldStyle) {
-      parent.querySelector(".itemize_style").remove();
-    }
-    for (let s = child.classList.length - 1; s >= 0; s--) {
-      if (child.classList[s].indexOf("itemize_item_") !== -1) {
-        child.classList.remove(child.classList[s]);
-        break;
-      }
-    }
-    child.itemizeId = null;
-  }
-  applyItemize(withoutObs) {
+  applyItemize(parents, withoutObs) {
     let childItemizedNb = 0;
     let knownErrors = "";
     try {
-      for (let i = 0; i < this.lastTargetedContainers.length; i++) {
-        let parent = this.lastTargetedContainers[i];
-        if (!(parent in this.containers)) {
-          this.containers.push(parent);
-        }
-        if (parent.itemizeId) {
-          this.clearObservers(parent.itemizeId);
-        }
-        let parentItemizeId = this.makeId(8);
-        parent.itemizeId = parentItemizeId;
-        for (let i = parent.classList.length - 1; i >= 0; i--) {
-          // cleaning parent of itemize_parent_xxxx classes
-          if (parent.classList[i].indexOf("itemize_parent") !== -1) {
-            parent.classList.remove(parent.classList[i]);
-            break;
+      for (let i = 0; i < parents.length; i++) {
+        let parent = parents[i];
+        if (
+          !parent.classList.contains("itemize_remove_btn") &&
+          parent.type !== "text/css" &&
+          parent.tagName !== "BR" &&
+          parent.tagName !== "SCRIPT" &&
+          parent.tagName !== "STYLE"
+        ) {
+          let parentInList = false;
+          for (let p = 0; p < this.containers.length; p++) {
+            if (
+              parent.itemizeContainerId &&
+              parent.itemizeContainerId ===
+                this.containers[p].itemizeContainerId
+            ) {
+              parentInList = true;
+            }
           }
-        }
-        parent.classList.add(`itemize_parent_${parentItemizeId}`); // refresh parent with a new itemizeId class
-        let options = Object.assign({}, this.globalOptions); // cloning options
-        options = this.getOptionsFromAttributes(parent, options);
-        parent.itemizeOptions = options;
-        // node added OBSERVER
-        if (!withoutObs) {
-          let config = { attributes: true, childList: true, subtree: true };
-          let scope = this;
-          let callback = function(mutationsList, observer) {
-            for (var mutation of mutationsList) {
-              if (
-                mutation.type === "childList" &&
-                mutation.addedNodes.length > 0
-              ) {
-                mutation.addedNodes.forEach(node => {
-                  let newNode = true;
-                  if (node.classList) {
-                    node.classList.forEach(className => {
-                      if (className.indexOf("itemize_") !== -1) {
-                        // check si le child n'est pas un element deja added qui passe par un flipAnim
-                        newNode = false;
-                      }
-                    });
-                    if (newNode) {
-                      if (node.getAttribute("notItemize")) {
-                        console.log("not itemize element added");
-                      } else if (node.type !== "text/css" && node.tagName !== "BR"){
-                        if (node.parentElement.itemizeOptions.flipAnimation) {
-                          node.classList.add("itemize_hide");
-                          scope.itemizeChild(node, node.parentElement, true);
-                          scope.flipRead(scope.items);
-                          scope.flipAdd(node);
-                          scope.flipPlay(
-                            scope.items,
-                            node.parentElement.itemizeOptions.flipAnimDuration
-                          );
-                        } else {
-                          scope.itemizeChild(node, node.parentElement, true);
+          if (!parentInList) {
+            this.containers.push(parent);
+          }
+          if (parent.itemizeContainerId) {
+            this.clearObservers(parent.itemizeContainerId);
+          }
+          let parentItemizeId = this.makeId(8);
+          parent.itemizeContainerId = parentItemizeId;
+          for (let i = parent.classList.length - 1; i >= 0; i--) {
+            // cleaning parent of itemize_parent_xxxx classes
+            if (parent.classList[i].indexOf("itemize_parent") !== -1) {
+              parent.classList.remove(parent.classList[i]);
+              break;
+            }
+          }
+          parent.classList.add(`itmz_parent`);
+          parent.classList.add(`itemize_parent_${parentItemizeId}`); // refresh parent with a new itemizeContainerId class
+          let options = Object.assign({}, this.globalOptions); // cloning options
+          options = this.getOptionsFromAttributes(parent, options);
+          parent.itemizeOptions = options;
+          // node added OBSERVER
+          if (!withoutObs) {
+            let config = { attributes: true, childList: true, subtree: true };
+            let scope = this;
+            let callback = function(mutationsList, observer) {
+              for (var mutation of mutationsList) {
+                if (
+                  mutation.type === "childList" &&
+                  mutation.addedNodes.length > 0
+                ) {
+                  mutation.addedNodes.forEach(node => {
+                    let newNode = true;
+                    if (node.classList) {
+                      node.classList.forEach(className => {
+                        if (className.indexOf("itemize_") !== -1) {
+                          // check si le child n'est pas un element deja added qui passe par un flipAnim
+                          newNode = false;
+                        }
+                      });
+                      if (newNode) {
+                        if (node.getAttribute("notItemize")) {
+                          console.log("not itemize element added");
+                        } else if (
+                          node.type !== "text/css" &&
+                          node.tagName !== "BR" &&
+                          node.tagName !== "SCRIPT" &&
+                          node.parentElement.itemizeContainerId &&
+                          node.tagName !== "STYLE"
+                        ) {
+                          if (
+                            node.parentElement.itemizeOptions &&
+                            node.parentElement.itemizeOptions.flipAnimation
+                          ) {
+                            node.classList.add("itemize_hide");
+                            scope.itemizeChild(node, node.parentElement, true);
+                            scope.flipRead(scope.items);
+                            scope.flipAdd(node);
+                            scope.flipPlay(
+                              scope.items,
+                              node.parentElement.itemizeOptions.flipAnimDuration
+                            );
+                          } else {
+                            scope.itemizeChild(node, node.parentElement, true);
+                          }
                         }
                       }
                     }
-                  }
-                });
+                  });
+                }
               }
+            };
+            if (window.itemizeObservers) {
+              // ajout des observer de facon global et suppression/deconnection quand parent n'est plus present
+              window.itemizeObservers.push(new MutationObserver(callback));
+            } else {
+              window.itemizeObservers = [new MutationObserver(callback)];
             }
-          };
-          if (window.itemizeObservers) {
-            // ajout des observer de facon global et suppression/deconnection quand parent n'est plus present
-            window.itemizeObservers.push(new MutationObserver(callback));
-          } else {
-            window.itemizeObservers = [new MutationObserver(callback)];
+            window.itemizeObservers[window.itemizeObservers.length - 1].observe(
+              parent,
+              config
+            );
+            window.itemizeObservers[
+              window.itemizeObservers.length - 1
+            ].itemizeContainerId = parent.itemizeContainerId;
           }
-          window.itemizeObservers[window.itemizeObservers.length - 1].observe(
-            parent,
-            config
-          );
-          window.itemizeObservers[
-            window.itemizeObservers.length - 1
-          ].itemizeId = parent.itemizeId;
-        }
-        this.applyCss(parent);
+          this.applyCss(parent);
 
-        for (let z = 0; z < parent.children.length; z++) {
-          let child = parent.children[z];
-          if (this.itemizeChild(child, parent)) {
-            childItemizedNb++;
+          for (let z = 0; z < parent.children.length; z++) {
+            let child = parent.children[z];
+            if (this.itemizeChild(child, parent)) {
+              childItemizedNb++;
+            }
           }
         }
       }
+
       return childItemizedNb;
     } catch (error) {
       console.error("- Itemize - ERROR:\n" + knownErrors);
       console.error(error);
     }
+  }
+  childIsItemizable(child, parent) {
+    return (
+      child.type !== "text/css" &&
+      typeof child.getAttribute("notItemize") !== "string" &&
+      child.tagName !== "BR" &&
+      child.tagName !== "SCRIPT" &&
+      !child.itemizeItemId &&
+      !child.itemizeBtn &&
+      !child.classList.contains("itemize_remove_btn") &&
+      !(
+        parent.parentNode.itemizeOptions &&
+        child.classList.contains(
+          parent.parentNode.itemizeOptions.removeBtnClass
+        )
+      )
+    );
   }
   itemizeChild(child, parent, fromObserver) {
     window.requestAnimationFrame =
@@ -277,42 +293,45 @@ class Itemize {
       window.webkitRequestAnimationFrame ||
       window.msRequestAnimationFrame;
 
-    if (
-      child.type !== "text/css" &&
-      typeof child.getAttribute("notItemize") !== "string" && child.tagName !== "BR" &&
-      !child.itemizeId
-    ) {
-      child.itemizeId = this.makeId(8);
+    if (this.childIsItemizable(child, parent)) {
+      child.itemizeItemId = this.makeId(8);
       this.items.push(child);
-      child.classList.add("itemize_item_" + child.itemizeId);
+      child.classList.add("itemize_item_" + child.itemizeItemId);
       child.classList.add("itmz_item");
       if (!parent.itemizeOptions.removeBtn) {
         child.onclick = () => {
           if (parent.itemizeOptions.modalConfirm) {
-            this.modalConfirm(child.itemizeId);
+            this.modalConfirm(child.itemizeItemId);
           } else {
-            this.remove(child.itemizeId);
+            this.remove(child.itemizeItemId);
           }
         };
       } else {
         if (!parent.itemizeOptions.removeBtnClass) {
-          child.style.position = "relative";
+          if (
+            child.style.position !== "absolute" &&
+            child.style.position !== "fixed"
+          ) {
+            child.style.position = "relative";
+          }
+
           const button = document.createElement("div");
 
-          button.classList.add("itemize_btn_" + child.itemizeId);
+          button.classList.add("itemize_btn_" + child.itemizeItemId);
           button.classList.add("itemize_remove_btn");
+          button.itemizeBtn = true;
           button.onclick = () => {
             if (parent.itemizeOptions.modalConfirm) {
-              this.modalConfirm(child.itemizeId);
+              this.modalConfirm(child.itemizeItemId);
             } else {
-              this.remove(child.itemizeId);
+              this.remove(child.itemizeItemId);
             }
           };
           child.appendChild(button);
         } else {
           const button = document.querySelector(
             ".itemize_item_" +
-              child.itemizeId +
+              child.itemizeItemId +
               " ." +
               parent.itemizeOptions.removeBtnClass
           );
@@ -325,9 +344,9 @@ class Itemize {
           } else {
             button.onclick = () => {
               if (parent.itemizeOptions.modalConfirm) {
-                this.modalConfirm(child.itemizeId);
+                this.modalConfirm(child.itemizeItemId);
               } else {
-                this.remove(child.itemizeId);
+                this.remove(child.itemizeItemId);
               }
             };
           }
@@ -352,7 +371,9 @@ class Itemize {
     css.type = "text/css";
     let styles = "";
     // parent global styles
-    styles += `.itemize_parent_${parent.itemizeId} .itemize_hide{display:none}`;
+    styles += `.itemize_parent_${
+      parent.itemizeContainerId
+    } .itemize_hide{display:none}`;
     // remove btn styles
     if (options.removeBtn && !options.removeBtnClass) {
       let btnMargin = options.removeBtnMargin + "px";
@@ -425,8 +446,8 @@ class Itemize {
           break;
       }
       styles += `.itemize_parent_${
-        parent.itemizeId
-      } .itemize_remove_btn{position:absolute;top:${
+        parent.itemizeContainerId
+      } .itemize_remove_btn{z-index:1000000!important;position:absolute;top:${
         btnPos.top
       }!important;right:${btnPos.right}!important;bottom:${
         btnPos.bottom
@@ -445,15 +466,15 @@ class Itemize {
       }}.itemize_remove_btn:hover{background-color:${
         options.removeBtnBgHoverColor
       }}.itemize_parent_${
-        parent.itemizeId
+        parent.itemizeContainerId
       } .itemize_remove_btn:hover::after,.itemize_parent_${
-        parent.itemizeId
+        parent.itemizeContainerId
       } .itemize_remove_btn:hover::before{transition:background 0.2s ease-in-out;background:${
         options.removeBtnHoverColor
       }}.itemize_parent_${
-        parent.itemizeId
+        parent.itemizeContainerId
       } .itemize_remove_btn::after,.itemize_parent_${
-        parent.itemizeId
+        parent.itemizeContainerId
       } .itemize_remove_btn::before{content:'';position:absolute;height:${
         options.removeBtnThickness
       }px;transition:background 0.2s ease-in-out;width:${options.removeBtnWidth /
@@ -464,9 +485,9 @@ class Itemize {
       }px;background:${options.removeBtnColor};border-radius:${
         options.removeBtnSharpness
       }}.itemize_parent_${
-        parent.itemizeId
+        parent.itemizeContainerId
       } .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_${
-        parent.itemizeId
+        parent.itemizeContainerId
       } .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}`;
     }
     if (css.styleSheet) {
@@ -476,18 +497,105 @@ class Itemize {
     }
     parent.appendChild(css);
   }
+  cancelItemize(targets) {
+    let unItemizedNb = 0;
+    try {
+      let parentTargets = [];
+      if (targets === "all") {
+        parentTargets = this.containers.splice(0); // cloning
+      } else {
+        parentTargets = targets;
+      }
+      for (let z = 0; z < parentTargets.length; z++) {
+        let parent = parentTargets[z];
+        let targetItems = parent.querySelectorAll(".itmz_item");
+        for (let j = 0; j < targetItems.length; j++) {
+          if (targetItems[j].itemizeContainerId) {
+            this.clearObservers(targetItems[j].itemizeContainerId);
+          }
+          if (targetItems[j].itemizeItemId) {
+            this.cancelItemizeChild(targetItems[j], targetItems[j].parentNode);
+            unItemizedNb++;
+          }
+        }
+        if (parent.itemizeContainerId) {
+          this.clearObservers(parent.itemizeContainerId);
+          for (let k = parent.classList.length - 1; k >= 0; k--) {
+            if (parent.classList[k].indexOf("itemize_parent") !== -1) {
+              parent.classList.remove(parent.classList[k]);
+              parent.classList.remove("itmz_parent");
+              break;
+            }
+          }
+          let parentsInParent = parent.querySelectorAll(".itmz_parent");
+          for (let v = 0; v < parentsInParent.length; v++) {
+            this.cancelItemize(parentsInParent[v]);
+          }
+          parent.itemizeContainerId = null;
+          parent.itemizeOptions = null;
+          for (let i = 0; i < this.containers.length; i++) {
+            if (this.containers[i] === parent) {
+              this.containers.splice(i, 1);
+              break;
+            }
+          }
+        }
+      }
+      return unItemizedNb;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  cancelItemizeChild(child, parent) {
+    for (let r = this.items.length - 1; r >= 0; r--) {
+      if (this.items[r] === child) {
+        this.cleanItem(this.items[r]);
+        this.items.splice(r, 1);
+        break;
+      }
+    }
+    if (!parent.itemizeOptions.removeBtn) {
+      child.onclick = null;
+    } else {
+      if (!parent.itemizeOptions.removeBtnClass) {
+        let btn = child.querySelector(".itemize_remove_btn");
+        if (btn) {
+          btn.remove();
+        }
+      } else {
+        const button = child.querySelector(
+          "." + parent.itemizeOptions.removeBtnClass
+        );
+        if (button) {
+          button.onclick = null;
+        }
+      }
+    }
+    let oldStyle = parent.querySelector(".itemize_style");
+    if (oldStyle) {
+      parent.querySelector(".itemize_style").remove();
+    }
+    for (let s = child.classList.length - 1; s >= 0; s--) {
+      if (child.classList[s].indexOf("itemize_item_") !== -1) {
+        child.classList.remove(child.classList[s]);
+        break;
+      }
+    }
+    child.itemizeItemId = null;
+  }
+
   modalConfirm(el) {
     try {
       let item = null;
       if (typeof el === "string") {
         for (let i = 0; i < this.items.length; i++) {
-          if (this.items[i].itemizeId === el) {
+          if (this.items[i].itemizeItemId === el) {
             item = this.items[i];
           }
         }
         if (!item) {
           item = document.querySelector(el);
-          if (!item || !item.itemizeId) {
+          if (!item || !item.itemizeItemId) {
             throw new Error(
               "- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal."
             );
@@ -505,7 +613,7 @@ class Itemize {
             "- Itemize - ERROR:\n No item found, cannot create a confirm modal."
           );
         }
-        if (!item.itemizeId) {
+        if (!item.itemizeItemId) {
           throw new Error(
             "- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal."
           );
@@ -995,18 +1103,18 @@ class Itemize {
       let item = null;
       if (typeof el === "string") {
         for (let i = 0; i < this.items.length; i++) {
-          if (this.items[i].itemizeId === el) {
+          if (this.items[i].itemizeItemId === el) {
             item = this.items[i];
             item.arrayPosition = i;
           }
         }
         if (!item) {
           item = document.querySelector(el);
-          if (!item || !item.itemizeId) {
+          if (!item || !item.itemizeItemId) {
             throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
           }
           for (let i = 0; i < this.items.length; i++) {
-            if (this.items[i].itemizeId === item.itemizeId) {
+            if (this.items[i].itemizeItemId === item.itemizeItemId) {
               item.arrayPosition = i;
             }
           }
@@ -1019,11 +1127,11 @@ class Itemize {
         if (!item) {
           throw new Error("- Itemize - ERROR:\nNo item found to remove");
         }
-        if (!item.itemizeId) {
+        if (!item.itemizeItemId) {
           throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
         }
         for (let i = 0; i < this.items.length; i++) {
-          if (item.itemizeId === this.items[i].itemizeId) {
+          if (item.itemizeItemId === this.items[i].itemizeItemId) {
             item.arrayPosition = i;
           }
         }
@@ -1068,7 +1176,7 @@ class Itemize {
                   } else {
                     this.showAlert("removed", item);
                     item.removeStatus = null;
-                    item.parentElement.removeChild(item);
+                    item.remove();
                     this.cleanItem(item);
                     this.items.splice(item.arrayPosition, 1);
                   }
@@ -1105,7 +1213,7 @@ class Itemize {
               } else {
                 this.showAlert("removed", item);
                 item.removeStatus = null;
-                item.parentElement.removeChild(item);
+                item.remove();
                 this.items.splice(item.arrayPosition, 1);
                 this.cleanItem(item);
               }
@@ -1136,7 +1244,7 @@ class Itemize {
             } else {
               this.showAlert("removed", item);
               item.removeStatus = null;
-              item.parentElement.removeChild(item);
+              item.remove();
               this.cleanItem(item);
               this.items.splice(item.arrayPosition, 1);
             }
@@ -1144,7 +1252,7 @@ class Itemize {
         }
       } else {
         throw new Error(
-          "- Itemize - ERROR:\n this element has an invalid itemizeId"
+          "- Itemize - ERROR:\n this element has an invalid itemizeItemId"
         );
       }
     } catch (error) {
@@ -1159,11 +1267,36 @@ class Itemize {
         break;
       }
     }
-    let btn = item.querySelector(".itemize_remove_btn");
-    if (btn) {
-      btn.remove();
+    if (
+      item.parentNode.itemizeOptions &&
+      item.parentNode.itemizeOptions.removeBtnClass
+    ) {
+      let btn = item.querySelector(
+        "." + item.parentNode.itemizeOptions.removeBtnClass
+      );
+      if (btn) {
+        btn.remove();
+      }
+    } else {
+      let btn = item.querySelector(".itemize_remove_btn");
+      if (btn) {
+        btn.remove();
+      }
     }
-    item.itemizeId = null;
+    if (item.itemizeContainerId) {
+      this.clearObservers(item.itemizeContainerId);
+      let parentsInItem = item.querySelectorAll(".itmz_parent");
+      this.cancelItemize(parentsInItem);
+      for (let i = 0; i < parentsInItem.length; i++) {
+        if (parentsInItem[i].itemizeContainerId) {
+          this.clearObservers(parentsInItem[i].itemizeContainerId);
+        }
+      }
+      if (item.classList.contains("itmz_parent")) {
+        this.cancelItemize([item]);
+      }
+    }
+    item.itemizeItemId = null;
   }
   animateRAF(elem, from, to, duration) {
     function anim(timestamp) {
@@ -1229,7 +1362,7 @@ class Itemize {
     // elem.parentElement.appendChild(elem);
     let options = elem.parentElement.itemizeOptions;
     const newPos = elem.getBoundingClientRect();
-    const oldPos = this.elPos[elem.itemizeId];
+    const oldPos = this.elPos[elem.itemizeItemId];
     const deltaX = oldPos.left - newPos.left;
     const deltaY = oldPos.top - newPos.top;
     if (elem.animate) {
@@ -1275,16 +1408,17 @@ class Itemize {
 
     setTimeout(() => {
       elem.removeStatus = null;
-      elem.parentElement.removeChild(elem);
+      elem.remove();
     }, options.flipAnimDuration * 0.5);
   }
   flipAdd(elem) {
     elem.classList.remove("itemize_hide");
     elem.inAddAnim = true;
-    this.elPos[elem.itemizeId] = elem.oldAddPos || elem.getBoundingClientRect();
+    this.elPos[elem.itemizeItemId] =
+      elem.oldAddPos || elem.getBoundingClientRect();
     let options = elem.parentElement.itemizeOptions;
     const newPos = elem.getBoundingClientRect();
-    const oldPos = elem.oldAddPos || this.elPos[elem.itemizeId];
+    const oldPos = elem.oldAddPos || this.elPos[elem.itemizeItemId];
     const deltaX = oldPos.left - newPos.left;
     const deltaY = oldPos.top - newPos.top;
     let deltaW = oldPos.width / newPos.width;
@@ -1304,7 +1438,7 @@ class Itemize {
       elem.animate(
         [
           {
-            transform: `translate(${translateXStart}px, ${translateYStart}px) scale(${deltaW}, ${deltaH})`,
+            transform: `translate(${translateXStart}px, ${translateYStart}px)`,
             opacity: 0
           },
           {
@@ -1354,15 +1488,19 @@ class Itemize {
   flipRead(elems) {
     // this.elPos = {};
     for (let i = 0; i < elems.length; i++) {
-      this.elPos[elems[i].itemizeId] = elems[i].getBoundingClientRect();
+      this.elPos[elems[i].itemizeItemId] = elems[i].getBoundingClientRect();
     }
   }
 
   flipPlay(elems, duration) {
     for (let i = 0; i < elems.length; i++) {
-      if (!elems[i].inAddAnim) {
+      if (
+        !elems[i].inAddAnim &&
+        elems[i].parentNode &&
+        elems[i].parentNode.itemizeOptions
+      ) {
         const newPos = elems[i].getBoundingClientRect();
-        const oldPos = this.elPos[elems[i].itemizeId];
+        const oldPos = this.elPos[elems[i].itemizeItemId];
         const deltaX = oldPos.left - newPos.left;
         const deltaY = oldPos.top - newPos.top;
         let deltaW = oldPos.width / newPos.width;
@@ -1379,7 +1517,7 @@ class Itemize {
             elems[i].animate(
               [
                 {
-                  transform: `translate(${deltaX}px, ${deltaY}px) scale(${deltaW}, ${deltaH})`
+                  transform: `translate(${deltaX}px, ${deltaY}px)`
                 },
                 {
                   transform: "none"
@@ -1450,7 +1588,8 @@ class Itemize {
         animRemoveTranslateY: -100,
         animAddTranslateX: 0,
         animAddTranslateY: -100,
-        beforeRemove: null
+        beforeRemove: null,
+        nestedLevel: 1
       };
       for (var key in newOptions) {
         if (newOptions.hasOwnProperty(key))
