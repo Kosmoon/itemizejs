@@ -5,6 +5,10 @@
 [x] - modal btn hover color
 [x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
 [x] - removeBtnBackgroundHoverCOlor
+[ ] - DEFI important: empecher le click sur lelement en dessous du boutton d'arriver ET empecher le redimentionement des elements lors d'un apply (exemple spotifty)
+
+[ ] - cancel en nested aussi
+[ ] - loading message en fixed ('applying itemize')
 [ ] - nested level option?
 [ ] - apply(target, -->options<--)
 [ ] - rajouter dans global options: observeAddedNodes (default: true), le mettre dans applyItemize(withobserver) et rajouter dans les attribut aussi

@@ -15,10 +15,11 @@ class Itemize {
     this.lastTargetedContainers = null;
     let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     if (optionCheckResult !== "valid") {
-      console.error("- Itemize - TYPE ERROR:\n" + optionCheckResult);
+      console.error("- Itemize - TYPE error:\n" + optionCheckResult);
     }
   }
-  apply(target) {
+  apply(target, options) {
+    this.globalOptions = this.mergeOptions(options);
     let childItemizedNb = 0;
     if (!Array.isArray(target)) {
       target = [target];
@@ -52,42 +53,14 @@ class Itemize {
           this.lastTargetedContainers,
           this.globalOptions.nestedLevel
         );
-        // if (this.globalOptions.nestedLevel > 1) {
-        //   // apply to child of child of ... according to options.nestedLevel number
-        //   for (let f = 0; f < this.lastTargetedContainers.length; f++) {
-        //     childItemizedNb += this.applyItemize(
-        //       this.lastTargetedContainers[f].children
-        //     );
-        //     if (this.globalOptions.nestedLevel > 2) {
-        //       for (
-        //         let g = 0;
-        //         g < this.lastTargetedContainers[f].children.length;
-        //         g++
-        //       ) {
-        //         childItemizedNb += this.applyItemize(
-        //           this.lastTargetedContainers[f].children[g].children
-        //         );
-        //         if (this.globalOptions.nestedLevel > 3) {
-        //           for (
-        //             let h = 0;
-        //             h <
-        //             this.lastTargetedContainers[f].children[g].children.length;
-        //             h++
-        //           ) {
-        //             childItemizedNb += this.applyItemize(
-        //               this.lastTargetedContainers[f].children[g].children[h]
-        //                 .children
-        //             );
-        //           }
-        //         }
-        //       }
-        //     }
-        //   }
-        // }
       } else {
-        console.error("- Itemize - ERROR:\n " + target[i] + " not found.\n");
+        console.error(" - Itemize error - \n " + target[i] + " not found.\n");
       }
     }
+    console.log(
+      "%c" + childItemizedNb + " element(s) itemized",
+      "background: #060606; color:#1FEA00;padding:10px"
+    );
     return childItemizedNb + " element(s) itemized";
   }
   cancel(target) {
@@ -104,7 +77,7 @@ class Itemize {
         ) {
           unItemizedNb += this.cancelItemize(this.lastTargetedContainers);
         } else {
-          console.error("- Itemize - ERROR:\n " + target[i] + " not found.\n");
+          console.error(" - Itemize error - \n " + target[i] + " not found.\n");
         }
       }
     } else {
@@ -189,7 +162,11 @@ class Itemize {
           parent.itemizeOptions = options;
           // node added OBSERVER
           if (!withoutObs) {
-            let config = { attributes: true, childList: true, subtree: true };
+            let config = {
+              attributes: true,
+              childList: true,
+              subtree: true
+            };
             let scope = this;
             let callback = function(mutationsList, observer) {
               for (var mutation of mutationsList) {
@@ -210,6 +187,7 @@ class Itemize {
                         if (node.getAttribute("notItemize")) {
                           console.log("not itemize element added");
                         } else if (
+                          node.parentElement &&
                           node.type !== "text/css" &&
                           node.tagName !== "BR" &&
                           node.tagName !== "SCRIPT" &&
@@ -265,7 +243,7 @@ class Itemize {
 
       return childItemizedNb;
     } catch (error) {
-      console.error("- Itemize - ERROR:\n" + knownErrors);
+      console.error(" - Itemize error - \n" + knownErrors);
       console.error(error);
     }
   }
@@ -299,13 +277,17 @@ class Itemize {
       child.classList.add("itemize_item_" + child.itemizeItemId);
       child.classList.add("itmz_item");
       if (!parent.itemizeOptions.removeBtn) {
-        child.onclick = () => {
+        child.onclick = e => {
+          e.preventDefault();
           if (parent.itemizeOptions.modalConfirm) {
             this.modalConfirm(child.itemizeItemId);
           } else {
             this.remove(child.itemizeItemId);
           }
         };
+        if (parent.itemizeOptions.outlineItemOnHover) {
+          this.shadowOnHover(child, false);
+        }
       } else {
         if (!parent.itemizeOptions.removeBtnClass) {
           if (
@@ -320,7 +302,8 @@ class Itemize {
           button.classList.add("itemize_btn_" + child.itemizeItemId);
           button.classList.add("itemize_remove_btn");
           button.itemizeBtn = true;
-          button.onclick = () => {
+          button.onclick = e => {
+            e.preventDefault();
             if (parent.itemizeOptions.modalConfirm) {
               this.modalConfirm(child.itemizeItemId);
             } else {
@@ -328,6 +311,9 @@ class Itemize {
             }
           };
           child.appendChild(button);
+          if (parent.itemizeOptions.outlineItemOnHover) {
+            this.shadowOnHover(button, true);
+          }
         } else {
           const button = document.querySelector(
             ".itemize_item_" +
@@ -337,18 +323,22 @@ class Itemize {
           );
           if (!button) {
             console.error(
-              "Cannot find specified button's class: " +
+              " - Itemize error - \n Cannot find specified button's class: " +
                 parent.itemizeOptions.removeBtnClass +
                 "\n"
             );
           } else {
-            button.onclick = () => {
+            button.onclick = e => {
+              e.preventDefault();
               if (parent.itemizeOptions.modalConfirm) {
                 this.modalConfirm(child.itemizeItemId);
               } else {
                 this.remove(child.itemizeItemId);
               }
             };
+            if (parent.itemizeOptions.outlineItemOnHover) {
+              this.shadowOnHover(button, true);
+            }
           }
         }
       }
@@ -359,6 +349,27 @@ class Itemize {
     } else {
       return false;
     }
+  }
+  shadowOnHover(elem, isRemoveBtn) {
+    let parent = null;
+    if (isRemoveBtn) {
+      parent = elem.parentElement;
+    } else {
+      parent = elem;
+    }
+    if (parent) {
+      elem.parentShadowStyle = parent.style.boxShadow;
+    }
+    elem.onmouseenter = e => {
+      if (parent) {
+        parent.style.boxShadow = "inset 0px 0px 0px 3px rgba(15,179,0,1)";
+      }
+    };
+    elem.onmouseleave = e => {
+      if (parent) {
+        parent.style.boxShadow = elem.parentShadowStyle;
+      }
+    };
   }
   applyCss(parent) {
     let options = parent.itemizeOptions;
@@ -597,25 +608,25 @@ class Itemize {
           item = document.querySelector(el);
           if (!item || !item.itemizeItemId) {
             throw new Error(
-              "- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal."
+              " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
             );
           }
         }
         if (!item) {
           throw new Error(
-            "- Itemize - ERROR:\n No item found, cannot create a confirm modal."
+            " - Itemize error - \n No item found, cannot create a confirm modal."
           );
         }
       } else {
         item = el;
         if (!item) {
           throw new Error(
-            "- Itemize - ERROR:\n No item found, cannot create a confirm modal."
+            " - Itemize error - \n No item found, cannot create a confirm modal."
           );
         }
         if (!item.itemizeItemId) {
           throw new Error(
-            "- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal."
+            " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
           );
         }
       }
@@ -666,8 +677,16 @@ class Itemize {
         } else {
           this.animateRAF(
             bckdrop,
-            [{ opacity: 1 }],
-            [{ opacity: 0 }],
+            [
+              {
+                opacity: 1
+              }
+            ],
+            [
+              {
+                opacity: 0
+              }
+            ],
             modalAnimDuration
           );
         }
@@ -695,13 +714,21 @@ class Itemize {
             [
               {
                 opacity: 1,
-                transform: { translateX: -50, translateY: -50, unit: "%" }
+                transform: {
+                  translateX: -50,
+                  translateY: -50,
+                  unit: "%"
+                }
               }
             ],
             [
               {
                 opacity: 0,
-                transform: { translateX: -50, translateY: 0, unit: "%" }
+                transform: {
+                  translateX: -50,
+                  translateY: 0,
+                  unit: "%"
+                }
               }
             ],
             modalAnimDuration
@@ -867,20 +894,28 @@ class Itemize {
           [
             {
               opacity: 0,
-              transform: { translateX: -50, translateY: -100, unit: "%" }
+              transform: {
+                translateX: -50,
+                translateY: -100,
+                unit: "%"
+              }
             }
           ],
           [
             {
               opacity: 1,
-              transform: { translateX: -50, translateY: -50, unit: "%" }
+              transform: {
+                translateX: -50,
+                translateY: -50,
+                unit: "%"
+              }
             }
           ],
           modalAnimDuration
         );
       }
     } catch (error) {
-      console.error("- Itemize - ERROR:\n" + error);
+      console.error(" - Itemize error - \n" + error);
     }
   }
 
@@ -1023,12 +1058,18 @@ class Itemize {
           alertTimer,
           [
             {
-              width: { value: 100, unit: "%" }
+              width: {
+                value: 100,
+                unit: "%"
+              }
             }
           ],
           [
             {
-              width: { value: 0, unit: "%" }
+              width: {
+                value: 0,
+                unit: "%"
+              }
             }
           ],
           alertTimerDuration
@@ -1111,7 +1152,7 @@ class Itemize {
         if (!item) {
           item = document.querySelector(el);
           if (!item || !item.itemizeItemId) {
-            throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
+            throw new Error(" - Itemize error - \nNot a valid Itemize element");
           }
           for (let i = 0; i < this.items.length; i++) {
             if (this.items[i].itemizeItemId === item.itemizeItemId) {
@@ -1120,15 +1161,15 @@ class Itemize {
           }
         }
         if (!item) {
-          throw new Error("- Itemize - ERROR:\nNo item found to remove");
+          throw new Error(" - Itemize error - \nNo item found to remove");
         }
       } else {
         item = el;
         if (!item) {
-          throw new Error("- Itemize - ERROR:\nNo item found to remove");
+          throw new Error(" - Itemize error - \nNo item found to remove");
         }
         if (!item.itemizeItemId) {
-          throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
+          throw new Error(" - Itemize error - \nNot a valid Itemize element");
         }
         for (let i = 0; i < this.items.length; i++) {
           if (item.itemizeItemId === this.items[i].itemizeItemId) {
@@ -1143,7 +1184,7 @@ class Itemize {
             let confirmRemove = this.globalOptions.beforeRemove(item);
             if (confirmRemove === undefined) {
               throw new Error(
-                '- Itemize - ERROR:\n The function "beforeErase" must return a Boolean or a Promise'
+                ' - Itemize error - \n The function "beforeErase" must return a Boolean or a Promise'
               );
             }
             if (typeof confirmRemove.then === "function") {
@@ -1252,11 +1293,11 @@ class Itemize {
         }
       } else {
         throw new Error(
-          "- Itemize - ERROR:\n this element has an invalid itemizeItemId"
+          " - Itemize error - \n this element has an invalid itemizeItemId"
         );
       }
     } catch (error) {
-      console.error("- Itemize - ERROR:\n" + error);
+      console.error(" - Itemize error - \n" + error);
     }
   }
   cleanItem(item) {
@@ -1389,11 +1430,21 @@ class Itemize {
       this.animateRAF(
         elem,
         [
-          { opacity: 1 },
-          { transform: { translateX: deltaX, translateY: deltaY, unit: "px" } }
+          {
+            opacity: 1
+          },
+          {
+            transform: {
+              translateX: deltaX,
+              translateY: deltaY,
+              unit: "px"
+            }
+          }
         ],
         [
-          { opacity: 0 },
+          {
+            opacity: 0
+          },
           {
             transform: {
               translateX: deltaX + options.animRemoveTranslateX,
@@ -1456,7 +1507,9 @@ class Itemize {
       this.animateRAF(
         elem,
         [
-          { opacity: 0 },
+          {
+            opacity: 0
+          },
           {
             transform: {
               translateX: translateXStart,
@@ -1466,7 +1519,9 @@ class Itemize {
           }
         ],
         [
-          { opacity: 1 },
+          {
+            opacity: 1
+          },
           {
             transform: {
               translateX: 0,
@@ -1589,6 +1644,7 @@ class Itemize {
         animAddTranslateX: 0,
         animAddTranslateY: -100,
         beforeRemove: null,
+        outlineItemOnHover: false,
         nestedLevel: 1
       };
       for (var key in newOptions) {
@@ -1662,6 +1718,12 @@ class Itemize {
     }
     if (typeof options.flipAnimation !== "boolean") {
       error += "option 'flipAnimation' must be a Boolean\n";
+    }
+    if (typeof options.outlineItemOnHover !== "boolean") {
+      error += "option 'outlineItemOnHover' must be a Boolean\n";
+    }
+    if (typeof options.nestedLevel !== "number") {
+      error += "option 'nestedLevel' must be a Number\n";
     }
     if (typeof options.flipAnimDuration !== "number") {
       error += "option 'flipAnimDuration' must be a Number\n";
@@ -1782,6 +1844,17 @@ class Itemize {
     } else if (parent.getAttribute("removeBtnCircle") === "false") {
       options.removeBtnCircle = false;
     }
+    if (parent.getAttribute("outlineItemOnHover") === "true") {
+      options.outlineItemOnHover = true;
+    } else if (parent.getAttribute("outlineItemOnHover") === "false") {
+      options.outlineItemOnHover = false;
+    }
+    if (
+      typeof parent.getAttribute("nestedLevel") === "string" &&
+      parseInt(parent.getAttribute("nestedLevel")) > 0
+    ) {
+      options.nestedLevel = parseInt(parent.getAttribute("nestedLevel"));
+    }
     if (
       typeof parent.getAttribute("flipAnimDuration") === "string" &&
       parseInt(parent.getAttribute("flipAnimDuration")) > 0
@@ -1801,7 +1874,7 @@ class Itemize {
         easeAttr.indexOf("cubic-bezier(") === -1
       ) {
         console.error(
-          "- Itemize - ERROR:\n 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n"
+          " - Itemize error - \n 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n"
         );
       } else {
         options.flipAnimEasing = easeAttr;
