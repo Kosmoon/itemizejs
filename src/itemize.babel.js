@@ -1,7 +1,5 @@
 "use strict";
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -9,7 +7,7 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 /*
- -- itemize.js v0.37--
+ -- itemize.js v0.40--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -19,40 +17,62 @@ function () {
   function Itemize(options) {
     _classCallCheck(this, Itemize);
 
+    this.containers = [];
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
     this.alertNb = 0;
     this.modalDisappearTimeout = null;
     this.elPos = {};
-    this.lastTargets = null;
+    this.lastTargetedContainers = null;
     var optionCheckResult = this.optionsTypeCheck(this.globalOptions);
 
     if (optionCheckResult !== "valid") {
-      console.error("- Itemize - TYPE ERROR:\n" + optionCheckResult);
+      console.error("- Itemize - TYPE error:\n" + optionCheckResult);
     }
   }
 
   _createClass(Itemize, [{
     key: "apply",
-    value: function apply(target) {
-      var targets = target;
+    value: function apply(target, options) {
+      var _this = this;
+
+      this.globalOptions = this.mergeOptions(options);
       var childItemizedNb = 0;
 
-      if (!Array.isArray(targets)) {
-        targets = [targets];
+      if (!Array.isArray(target)) {
+        target = [target];
       }
 
-      for (var i = 0; i < targets.length; i++) {
-        this.lastTargets = this.getTargetElements(targets[i]);
+      for (var i = 0; i < target.length; i++) {
+        this.lastTargetedContainers = this.getTargetElements(target[i]);
 
-        if (this.lastTargets && this.lastTargets.length > 0) {
-          // this.clearObservers();
-          childItemizedNb += this.applyItemize();
+        if (this.lastTargetedContainers && this.lastTargetedContainers.length > 0) {
+          (function () {
+            childItemizedNb += _this.applyItemize(_this.lastTargetedContainers, false);
+
+            var nestingApply = function nestingApply(containers, nestingLevel) {
+              var nestingNb = 1;
+
+              if (containers.length > 0 && nestingNb < nestingLevel) {
+                for (var _i = 0; _i < containers.length; _i++) {
+                  childItemizedNb += _this.applyItemize(containers[_i].children, false, options);
+                  nestingNb++;
+
+                  if (containers.length > 0 && nestingNb < nestingLevel) {
+                    nestingApply(containers[_i].children, nestingLevel);
+                  }
+                }
+              }
+            };
+
+            nestingApply(_this.lastTargetedContainers, _this.globalOptions.nestingLevel);
+          })();
         } else {
-          console.error("- Itemize - ERROR:\n " + targets[i] + " is not a valid target.\n");
+          console.error(" - Itemize error - \n " + target[i] + " not found.\n");
         }
       }
 
+      console.log("%c" + childItemizedNb + " element(s) itemized", "background: #060606; color:#1FEA00;padding:10px");
       return childItemizedNb + " element(s) itemized";
     }
   }, {
@@ -61,20 +81,17 @@ function () {
       var unItemizedNb = 0;
 
       if (target) {
-        var targets = target;
-
-        if (!Array.isArray(targets)) {
-          targets = [targets];
+        if (!Array.isArray(target)) {
+          target = [target];
         }
 
-        for (var i = 0; i < targets.length; i++) {
-          this.lastTargets = this.getTargetElements(targets[i]);
+        for (var i = 0; i < target.length; i++) {
+          this.lastTargetedContainers = this.getTargetElements(target[i]);
 
-          if (this.lastTargets && this.lastTargets.length > 0) {
-            // this.clearObservers();
-            unItemizedNb += this.cancelItemize();
+          if (this.lastTargetedContainers && this.lastTargetedContainers.length > 0) {
+            unItemizedNb += this.cancelItemize(this.lastTargetedContainers);
           } else {
-            console.error("- Itemize - ERROR:\n " + targets[i] + " is not a valid target.\n");
+            console.error(" - Itemize error - \n " + target[i] + " not found.\n");
           }
         }
       } else {
@@ -102,278 +119,248 @@ function () {
     key: "clearObservers",
     value: function clearObservers(parentId) {
       if (window.itemizeObservers) {
-        if (!parentId) {
-          for (var i = window.itemizeObservers.length - 1; i >= 0; i--) {
+        for (var i = window.itemizeObservers.length - 1; i >= 0; i--) {
+          var disconnect = false;
+
+          if (parentId) {
+            if (window.itemizeObservers[i].itemizeContainerId === parentId) {
+              disconnect = true;
+            }
+          } else {
+            disconnect = true;
+          }
+
+          if (disconnect) {
             window.itemizeObservers[i].disconnect();
             window.itemizeObservers.splice(i, 1);
           }
-        } else {
-          for (var _i = window.itemizeObservers.length - 1; _i >= 0; _i--) {
-            if (window.itemizeObservers[_i].itemizeId === parentId) {
-              window.itemizeObservers[_i].disconnect();
-
-              window.itemizeObservers.splice(_i, 1);
-            }
-          }
         }
       }
-    }
-  }, {
-    key: "cancelItemize",
-    value: function cancelItemize(allOrSpecific) {
-      var unItemizedNb = 0;
-
-      try {
-        var targets = this.lastTargets.length;
-
-        if (allOrSpecific == "all") {
-          targets = this.items;
-        }
-
-        for (var i = 0; i < this.lastTargets.length; i++) {
-          var parent = this.lastTargets[i];
-
-          if (parent.itemizeId) {
-            this.clearObservers(parent.itemizeId);
-
-            for (var j = 0; j < parent.children.length; j++) {
-              if (parent.children[j].itemizeId) {
-                this.cancelItemizeChild(parent.children[j], parent);
-                unItemizedNb++;
-              }
-            }
-
-            for (var k = parent.classList.length - 1; k >= 0; k--) {
-              if (parent.classList[k].indexOf("itemize_parent") !== -1) {
-                parent.classList.remove(parent.classList[k]);
-              }
-            }
-
-            parent.itemizeId = null;
-            parent.itemizeOptions = null;
-          }
-        }
-
-        return unItemizedNb;
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  }, {
-    key: "cancelItemizeChild",
-    value: function cancelItemizeChild(child, parent) {
-      for (var r = this.items.length - 1; r >= 0; r--) {
-        if (this.items[r] === child) {
-          this.items.splice(r, 1);
-        }
-      }
-
-      if (!parent.itemizeOptions.removeBtn) {
-        child.onclick = null;
-      } else {
-        if (!parent.itemizeOptions.removeBtnClass) {
-          var btn = child.querySelector(".itemize_remove_btn");
-
-          if (btn) {
-            btn.remove();
-          }
-        } else {
-          var button = parent.querySelector(".itemize_item_" + child.itemizeId + " ." + parent.itemizeOptions.removeBtnClass);
-
-          if (button) {
-            button.onclick = null;
-          }
-        }
-      }
-
-      var oldStyle = parent.querySelector(".itemize_style");
-
-      if (oldStyle) {
-        parent.querySelector(".itemize_style").remove();
-      }
-
-      for (var s = child.classList.length - 1; s >= 0; s--) {
-        if (child.classList[s].indexOf("itemize_item_") !== -1) {
-          child.classList.remove(child.classList[s]);
-        }
-      }
-
-      child.itemizeId = null;
     }
   }, {
     key: "applyItemize",
-    value: function applyItemize(withoutObs) {
-      var _this = this;
+    value: function applyItemize(parents, withoutObs, applyOptions) {
+      var _this2 = this;
 
       var childItemizedNb = 0;
+      var knownErrors = "";
 
       try {
-        var _knownErrors = "";
+        for (var i = 0; i < parents.length; i++) {
+          var parent = parents[i];
 
-        for (var i = 0; i < this.lastTargets.length; i++) {
-          var parent = this.lastTargets[i];
+          if (!parent.classList.contains("itemize_remove_btn") && parent.type !== "text/css" && parent.tagName !== "BR" && parent.tagName !== "SCRIPT" && parent.tagName !== "STYLE") {
+            var parentInList = false;
 
-          if (parent.itemizeId) {
-            this.clearObservers(parent.itemizeId);
-          }
-
-          var parentItemizeId = this.makeId(8);
-          parent.itemizeId = parentItemizeId;
-
-          for (var _i2 = parent.classList.length - 1; _i2 >= 0; _i2--) {
-            // cleaning parent of itemize_parent_xxxx classes
-            if (parent.classList[_i2].indexOf("itemize_parent") !== -1) {
-              parent.classList.remove(parent.classList[_i2]);
+            for (var p = 0; p < this.containers.length; p++) {
+              if (parent.itemizeContainerId && parent.itemizeContainerId === this.containers[p].itemizeContainerId) {
+                parentInList = true;
+              }
             }
-          }
 
-          parent.classList.add("itemize_parent_".concat(parentItemizeId)); // refresh parent with a new itemizeId class
+            if (!parentInList) {
+              this.containers.push(parent);
+            }
 
-          var options = Object.assign({}, this.globalOptions); // cloning options
+            if (parent.itemizeContainerId) {
+              this.clearObservers(parent.itemizeContainerId);
+            }
 
-          options = this.getOptionsFromAttributes(parent, options);
-          parent.itemizeOptions = options; // node added OBSERVER
+            var parentItemizeId = this.makeId(8);
+            parent.itemizeContainerId = parentItemizeId;
 
-          if (!withoutObs) {
-            (function () {
-              var config = {
-                attributes: true,
-                childList: true,
-                subtree: true
-              };
-              var scope = _this;
+            for (var _i2 = parent.classList.length - 1; _i2 >= 0; _i2--) {
+              // cleaning parent of itemize_parent_xxxx classes
+              if (parent.classList[_i2].indexOf("itemize_parent") !== -1) {
+                parent.classList.remove(parent.classList[_i2]);
+                break;
+              }
+            }
 
-              var callback = function callback(mutationsList, observer) {
-                var _iteratorNormalCompletion = true;
-                var _didIteratorError = false;
-                var _iteratorError = undefined;
+            parent.classList.add("itmz_parent");
+            parent.classList.add("itemize_parent_".concat(parentItemizeId)); // refresh parent with a new itemizeContainerId class
 
-                try {
-                  for (var _iterator = mutationsList[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var mutation = _step.value;
+            var options = Object.assign({}, this.globalOptions); // cloning options
 
-                    if (mutation.type == "childList") {
-                      mutation.addedNodes.forEach(function (node) {
-                        var newNode = true;
-                        node.classList.forEach(function (className) {
-                          if (className.indexOf("itemize_") !== -1) {
-                            // check si le child n'est pas un element deja added qui passe par un flipAnim
-                            newNode = false;
-                          }
-                        });
+            if (applyOptions) {
+              options = this.mergeOptions(applyOptions);
+            }
 
-                        if (newNode) {
-                          if (node.getAttribute("notItemize")) {
-                            console.log("not itemize element added");
-                          } else {
-                            if (node.parentElement.itemizeOptions.flipAnimation) {
-                              node.classList.add("itemize_hide");
-                              scope.itemizeChild(node, node.parentElement, true);
-                              scope.flipRead(scope.items);
-                              scope.flipAdd(node);
-                              scope.flipPlay(scope.items, node.parentElement.itemizeOptions.flipAnimDuration);
-                            } else {
-                              scope.itemizeChild(node, node.parentElement, true);
+            options = this.getOptionsFromAttributes(parent, options);
+            parent.itemizeOptions = options; // node added OBSERVER
+
+            if (!withoutObs) {
+              (function () {
+                var config = {
+                  attributes: true,
+                  childList: true,
+                  subtree: true
+                };
+                var scope = _this2;
+
+                var callback = function callback(mutationsList, observer) {
+                  var _iteratorNormalCompletion = true;
+                  var _didIteratorError = false;
+                  var _iteratorError = undefined;
+
+                  try {
+                    for (var _iterator = mutationsList[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                      var mutation = _step.value;
+
+                      if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                        mutation.addedNodes.forEach(function (node) {
+                          var newNode = true;
+
+                          if (node.classList) {
+                            node.classList.forEach(function (className) {
+                              if (className.indexOf("itemize_") !== -1) {
+                                // check si le child n'est pas un element deja added qui passe par un flipAnim
+                                newNode = false;
+                              }
+                            });
+
+                            if (newNode) {
+                              if (node.getAttribute("notItemize")) {
+                                console.log("not itemize element added");
+                              } else if (node.parentElement && node.type !== "text/css" && node.tagName !== "BR" && node.tagName !== "SCRIPT" && node.parentElement.itemizeContainerId && node.tagName !== "STYLE") {
+                                if (node.parentElement.itemizeOptions && node.parentElement.itemizeOptions.flipAnimation) {
+                                  node.classList.add("itemize_hide");
+                                  scope.itemizeChild(node, node.parentElement, true);
+                                  scope.flipRead(scope.items);
+                                  scope.flipAdd(node);
+                                  scope.flipPlay(scope.items, node.parentElement.itemizeOptions.flipAnimDuration);
+                                } else {
+                                  scope.itemizeChild(node, node.parentElement, true);
+                                }
+                              }
                             }
                           }
-                        }
-                      });
+                        });
+                      }
                     }
-                  }
-                } catch (err) {
-                  _didIteratorError = true;
-                  _iteratorError = err;
-                } finally {
-                  try {
-                    if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-                      _iterator["return"]();
-                    }
+                  } catch (err) {
+                    _didIteratorError = true;
+                    _iteratorError = err;
                   } finally {
-                    if (_didIteratorError) {
-                      throw _iteratorError;
+                    try {
+                      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+                        _iterator["return"]();
+                      }
+                    } finally {
+                      if (_didIteratorError) {
+                        throw _iteratorError;
+                      }
                     }
                   }
+                };
+
+                if (window.itemizeObservers) {
+                  // ajout des observer de facon global et suppression/deconnection quand parent n'est plus present
+                  window.itemizeObservers.push(new MutationObserver(callback));
+                } else {
+                  window.itemizeObservers = [new MutationObserver(callback)];
                 }
-              };
 
-              if (window.itemizeObservers) {
-                // ajout des observer de facon global et suppression/deconnection quand parent n'est plus present
-                window.itemizeObservers.push(new MutationObserver(callback));
-              } else {
-                window.itemizeObservers = [new MutationObserver(callback)];
+                window.itemizeObservers[window.itemizeObservers.length - 1].observe(parent, config);
+                window.itemizeObservers[window.itemizeObservers.length - 1].itemizeContainerId = parent.itemizeContainerId;
+              })();
+            }
+
+            this.applyCss(parent);
+
+            for (var z = 0; z < parent.children.length; z++) {
+              var child = parent.children[z];
+
+              if (this.itemizeChild(child, parent)) {
+                childItemizedNb++;
               }
-
-              window.itemizeObservers[window.itemizeObservers.length - 1].observe(parent, config);
-              window.itemizeObservers[window.itemizeObservers.length - 1].itemizeId = parent.itemizeId;
-            })();
-          }
-
-          this.applyCss(parent);
-
-          for (var z = 0; z < parent.children.length; z++) {
-            var child = parent.children[z];
-
-            if (this.itemizeChild(child, parent)) {
-              childItemizedNb++;
             }
           }
         }
 
         return childItemizedNb;
       } catch (error) {
-        console.error("- Itemize - ERROR:\n" + knownErrors);
+        console.error(" - Itemize error - \n" + knownErrors);
         console.error(error);
       }
     }
   }, {
+    key: "childIsItemizable",
+    value: function childIsItemizable(child, parent) {
+      return child.type !== "text/css" && typeof child.getAttribute("notItemize") !== "string" && child.tagName !== "BR" && child.tagName !== "SCRIPT" && !child.itemizeItemId && !child.itemizeBtn && !child.classList.contains("itemize_remove_btn") && !(parent.parentNode.itemizeOptions && child.classList.contains(parent.parentNode.itemizeOptions.removeBtnClass));
+    }
+  }, {
     key: "itemizeChild",
     value: function itemizeChild(child, parent, fromObserver) {
-      var _this2 = this;
+      var _this3 = this;
 
       window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 
-      if (child.type !== "text/css" && typeof child.getAttribute("notItemize") !== "string" && !child.itemizeId) {
-        child.itemizeId = this.makeId(8);
+      if (this.childIsItemizable(child, parent)) {
+        child.itemizeItemId = this.makeId(8);
         this.items.push(child);
-        child.classList.add("itemize_item_" + child.itemizeId);
+        child.classList.add("itemize_item_" + child.itemizeItemId);
+        child.classList.add("itmz_item");
 
         if (!parent.itemizeOptions.removeBtn) {
-          child.onclick = function () {
+          child.onclick = function (e) {
+            e.stopPropagation();
+
             if (parent.itemizeOptions.modalConfirm) {
-              _this2.modalConfirm(child.itemizeId);
+              _this3.modalConfirm(child.itemizeItemId);
             } else {
-              _this2.remove(child.itemizeId);
+              _this3.remove(child.itemizeItemId);
             }
           };
+
+          if (parent.itemizeOptions.outlineItemOnHover) {
+            this.shadowOnHover(child, false);
+          }
         } else {
           if (!parent.itemizeOptions.removeBtnClass) {
-            child.style.position = "relative";
-            var button = document.createElement("div");
-            button.classList.add("itemize_btn_" + child.itemizeId);
-            button.classList.add("itemize_remove_btn");
+            if (child.style.position !== "absolute" && child.style.position !== "fixed") {
+              child.style.position = "relative";
+            }
 
-            button.onclick = function () {
+            var button = document.createElement("div");
+            button.classList.add("itemize_btn_" + child.itemizeItemId);
+            button.classList.add("itemize_remove_btn");
+            button.itemizeBtn = true;
+
+            button.onclick = function (e) {
+              e.stopPropagation();
+
               if (parent.itemizeOptions.modalConfirm) {
-                _this2.modalConfirm(child.itemizeId);
+                _this3.modalConfirm(child.itemizeItemId);
               } else {
-                _this2.remove(child.itemizeId);
+                _this3.remove(child.itemizeItemId);
               }
             };
 
             child.appendChild(button);
+
+            if (parent.itemizeOptions.outlineItemOnHover) {
+              this.shadowOnHover(button, true);
+            }
           } else {
-            var _button = document.querySelector(".itemize_item_" + child.itemizeId + " ." + parent.itemizeOptions.removeBtnClass);
+            var _button = document.querySelector(".itemize_item_" + child.itemizeItemId + " ." + parent.itemizeOptions.removeBtnClass);
 
             if (!_button) {
-              knownErrors += "Cannot find specified button's class: " + parent.itemizeOptions.removeBtnClass + "\n";
+              console.error(" - Itemize error - \n Cannot find specified button's class: " + parent.itemizeOptions.removeBtnClass + "\n");
             } else {
-              _button.onclick = function () {
+              _button.onclick = function (e) {
+                e.stopPropagation();
+
                 if (parent.itemizeOptions.modalConfirm) {
-                  _this2.modalConfirm(child.itemizeId);
+                  _this3.modalConfirm(child.itemizeItemId);
                 } else {
-                  _this2.remove(child.itemizeId);
+                  _this3.remove(child.itemizeItemId);
                 }
               };
+
+              if (parent.itemizeOptions.outlineItemOnHover) {
+                this.shadowOnHover(_button, true);
+              }
             }
           }
         }
@@ -386,6 +373,33 @@ function () {
       } else {
         return false;
       }
+    }
+  }, {
+    key: "shadowOnHover",
+    value: function shadowOnHover(elem, isRemoveBtn) {
+      var parent = null;
+
+      if (isRemoveBtn) {
+        parent = elem.parentElement;
+      } else {
+        parent = elem;
+      }
+
+      if (parent) {
+        elem.parentShadowStyle = parent.style.boxShadow;
+      }
+
+      elem.onmouseenter = function (e) {
+        if (parent) {
+          parent.style.boxShadow = "inset 0px 0px 0px 3px rgba(15,179,0,1)";
+        }
+      };
+
+      elem.onmouseleave = function (e) {
+        if (parent) {
+          parent.style.boxShadow = elem.parentShadowStyle;
+        }
+      };
     }
   }, {
     key: "applyCss",
@@ -402,7 +416,7 @@ function () {
       css.type = "text/css";
       var styles = ""; // parent global styles
 
-      styles += ".itemize_parent_".concat(parent.itemizeId, " .itemize_hide{display:none}"); // remove btn styles
+      styles += ".itemize_parent_".concat(parent.itemizeContainerId, " .itemize_hide{display:none}"); // remove btn styles
 
       if (options.removeBtn && !options.removeBtnClass) {
         var btnMargin = options.removeBtnMargin + "px";
@@ -452,6 +466,7 @@ function () {
             btnPos.marginRight = "0px";
             btnPos.marginBottom = btnMargin;
             btnPos.marginLeft = btnMargin;
+            break;
 
           case "center-left":
             btnPos.top = "50%";
@@ -482,7 +497,7 @@ function () {
             break;
         }
 
-        styles += ".itemize_parent_".concat(parent.itemizeId, " .itemize_remove_btn{position:absolute;top:").concat(btnPos.top, "!important;right:").concat(btnPos.right, "!important;bottom:").concat(btnPos.bottom, "!important;left:").concat(btnPos.left, "!important;width:").concat(options.removeBtnWidth, "px!important;height:").concat(options.removeBtnWidth, "px!important;overflow:hidden;cursor:pointer;margin:").concat(btnPos.marginTop, " ").concat(btnPos.marginRight, " ").concat(btnPos.marginBottom, " ").concat(btnPos.marginLeft, ";transform:").concat(btnPos.transform, ";border-radius:").concat(options.removeBtnCircle ? "50%" : "0%", ";background-color:").concat(options.removeBtnBgColor, "}.itemize_remove_btn:hover{background-color:").concat(options.removeBtnBgHoverColor, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn:hover::after,.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn:hover::before{transition:background 0.2s ease-in-out;background:").concat(options.removeBtnHoverColor, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::after,.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::before{content:'';position:absolute;height:").concat(options.removeBtnThickness, "px;transition:background 0.2s ease-in-out;width:").concat(options.removeBtnWidth / 2, "px;top:50%;left:25%;margin-top:").concat(options.removeBtnThickness * 0.5 < 1 ? -1 : -options.removeBtnThickness * 0.5, "px;background:").concat(options.removeBtnColor, ";border-radius:").concat(options.removeBtnSharpness, "}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_").concat(parent.itemizeId, " .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}");
+        styles += ".itemize_parent_".concat(parent.itemizeContainerId, " .itemize_remove_btn{z-index:1000000!important;position:absolute;top:").concat(btnPos.top, "!important;right:").concat(btnPos.right, "!important;bottom:").concat(btnPos.bottom, "!important;left:").concat(btnPos.left, "!important;width:").concat(options.removeBtnWidth, "px!important;height:").concat(options.removeBtnWidth, "px!important;overflow:hidden;cursor:pointer;margin:").concat(btnPos.marginTop, " ").concat(btnPos.marginRight, " ").concat(btnPos.marginBottom, " ").concat(btnPos.marginLeft, ";transform:").concat(btnPos.transform, ";border-radius:").concat(options.removeBtnCircle ? "50%" : "0%", ";background-color:").concat(options.removeBtnBgColor, "}.itemize_remove_btn:hover{background-color:").concat(options.removeBtnBgHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::before{transition:background 0.2s ease-in-out;background:").concat(options.removeBtnHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{content:'';position:absolute;height:").concat(options.removeBtnThickness, "px;transition:background 0.2s ease-in-out;width:").concat(options.removeBtnWidth / 2, "px;top:50%;left:25%;margin-top:").concat(options.removeBtnThickness * 0.5 < 1 ? -1 : -options.removeBtnThickness * 0.5, "px;background:").concat(options.removeBtnColor, ";border-radius:").concat(options.removeBtnSharpness, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}");
       }
 
       if (css.styleSheet) {
@@ -494,18 +509,123 @@ function () {
       parent.appendChild(css);
     }
   }, {
-    key: "modalConfirm",
-    value: function modalConfirm(el) {
-      var _this3 = this;
+    key: "cancelItemize",
+    value: function cancelItemize(targets) {
+      var unItemizedNb = 0;
 
       try {
-        var _Object$assign;
+        var parentTargets = [];
 
+        if (targets === "all") {
+          parentTargets = this.containers.splice(0); // cloning
+        } else {
+          parentTargets = targets;
+        }
+
+        for (var z = 0; z < parentTargets.length; z++) {
+          var parent = parentTargets[z];
+          var targetItems = parent.querySelectorAll(".itmz_item");
+
+          for (var j = 0; j < targetItems.length; j++) {
+            if (targetItems[j].itemizeContainerId) {
+              this.clearObservers(targetItems[j].itemizeContainerId);
+            }
+
+            if (targetItems[j].itemizeItemId) {
+              this.cancelItemizeChild(targetItems[j], targetItems[j].parentNode);
+              unItemizedNb++;
+            }
+          }
+
+          if (parent.itemizeContainerId) {
+            this.clearObservers(parent.itemizeContainerId);
+
+            for (var k = parent.classList.length - 1; k >= 0; k--) {
+              if (parent.classList[k].indexOf("itemize_parent") !== -1) {
+                parent.classList.remove(parent.classList[k]);
+                parent.classList.remove("itmz_parent");
+                break;
+              }
+            }
+
+            var parentsInParent = parent.querySelectorAll(".itmz_parent");
+
+            for (var v = 0; v < parentsInParent.length; v++) {
+              this.cancelItemize(parentsInParent[v]);
+            }
+
+            parent.itemizeContainerId = null;
+            parent.itemizeOptions = null;
+
+            for (var i = 0; i < this.containers.length; i++) {
+              if (this.containers[i] === parent) {
+                this.containers.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+
+        return unItemizedNb;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }, {
+    key: "cancelItemizeChild",
+    value: function cancelItemizeChild(child, parent) {
+      for (var r = this.items.length - 1; r >= 0; r--) {
+        if (this.items[r] === child) {
+          this.cleanItem(this.items[r]);
+          this.items.splice(r, 1);
+          break;
+        }
+      }
+
+      if (!parent.itemizeOptions.removeBtn) {
+        child.onclick = null;
+      } else {
+        if (!parent.itemizeOptions.removeBtnClass) {
+          var btn = child.querySelector(".itemize_remove_btn");
+
+          if (btn) {
+            btn.remove();
+          }
+        } else {
+          var button = child.querySelector("." + parent.itemizeOptions.removeBtnClass);
+
+          if (button) {
+            button.onclick = null;
+          }
+        }
+      }
+
+      var oldStyle = parent.querySelector(".itemize_style");
+
+      if (oldStyle) {
+        parent.querySelector(".itemize_style").remove();
+      }
+
+      for (var s = child.classList.length - 1; s >= 0; s--) {
+        if (child.classList[s].indexOf("itemize_item_") !== -1) {
+          child.classList.remove(child.classList[s]);
+          break;
+        }
+      }
+
+      child.itemizeItemId = null;
+    }
+  }, {
+    key: "modalConfirm",
+    value: function modalConfirm(el) {
+      var _this4 = this;
+
+      try {
         var item = null;
 
         if (typeof el === "string") {
           for (var i = 0; i < this.items.length; i++) {
-            if (this.items[i].itemizeId === el) {
+            if (this.items[i].itemizeItemId === el) {
               item = this.items[i];
             }
           }
@@ -513,23 +633,23 @@ function () {
           if (!item) {
             item = document.querySelector(el);
 
-            if (!item || !item.itemizeId) {
-              throw new Error("- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal.");
+            if (!item || !item.itemizeItemId) {
+              throw new Error(" - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal.");
             }
           }
 
           if (!item) {
-            throw new Error("- Itemize - ERROR:\n No item found, cannot create a confirm modal.");
+            throw new Error(" - Itemize error - \n No item found, cannot create a confirm modal.");
           }
         } else {
-          item = elem;
+          item = el;
 
           if (!item) {
-            throw new Error("- Itemize - ERROR:\n No item found, cannot create a confirm modal.");
+            throw new Error(" - Itemize error - \n No item found, cannot create a confirm modal.");
           }
 
-          if (!item.itemizeId) {
-            throw new Error("- Itemize - ERROR:\n Not a valid Itemize element, cannot create a confirm modal.");
+          if (!item.itemizeItemId) {
+            throw new Error(" - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal.");
           }
         }
 
@@ -574,7 +694,7 @@ function () {
               fill: "both"
             });
           } else {
-            _this3.animateRAF(bckdrop, [{
+            _this4.animateRAF(bckdrop, [{
               opacity: 1
             }], [{
               opacity: 0
@@ -594,7 +714,7 @@ function () {
               fill: "both"
             });
           } else {
-            _this3.animateRAF(mdal, [{
+            _this4.animateRAF(mdal, [{
               opacity: 1,
               transform: {
                 translateX: -50,
@@ -611,8 +731,8 @@ function () {
             }], modalAnimDuration);
           }
 
-          clearTimeout(_this3.modalDisappearTimeout);
-          _this3.modalDisappearTimeout = setTimeout(function () {
+          clearTimeout(_this4.modalDisappearTimeout);
+          _this4.modalDisappearTimeout = setTimeout(function () {
             bdy.removeChild(bckdrop);
             bdy.removeChild(mdal); // bdy.style.overflow = bodyInitialOverflow;
           }, modalAnimDuration);
@@ -638,7 +758,7 @@ function () {
           if (!btnConfirm.clicked) {
             hideModal(body, backDrop, modal);
 
-            _this3.remove(el);
+            _this4.remove(el);
           }
 
           btnConfirm.clicked = true;
@@ -652,8 +772,7 @@ function () {
           crossClose.clicked = true;
         };
 
-        Object.assign(modal.style, (_Object$assign = {
-          display: "block",
+        Object.assign(modal.style, {
           position: "fixed ",
           top: "50%",
           left: "50%",
@@ -663,8 +782,14 @@ function () {
           width: "90vw",
           maxWidth: "500px",
           borderRadius: "4px",
-          boxSizing: "border-box"
-        }, _defineProperty(_Object$assign, "display", "flex"), _defineProperty(_Object$assign, "flexDirection", "column"), _defineProperty(_Object$assign, "justifyContent", "center"), _defineProperty(_Object$assign, "textAlign", "center"), _defineProperty(_Object$assign, "fontFamily", "helvetica"), _defineProperty(_Object$assign, "zIndex", 1000000), _Object$assign));
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          textAlign: "center",
+          fontFamily: "helvetica",
+          zIndex: 1000000
+        });
         var modalCss = ".itemize_modal_btnConfirm:hover{ background-color: #c83e34 !important; transition: background-color 0.3s ease-in-out }.itemize_modal_btnCancel:hover{ background-color: #4a5055 !important; transition: background-color 0.3s ease-in-out }.itemize_modal_cross {cursor:pointer;position: absolute;right: 5px;top: 5px;width: 18px;height:18px;opacity:0.3;}.itemize_modal_cross:hover{opacity:1;}.itemize_modal_cross:before,.itemize_modal_cross:after{position:absolute;left:9px;content:' ';height: 19px;width:2px;background-color:#333;}.itemize_modal_cross:before{transform:rotate(45deg);}.itemize_modal_cross:after{transform:rotate(-45deg);}";
         var styleEl = document.createElement("style");
 
@@ -764,13 +889,13 @@ function () {
           }], modalAnimDuration);
         }
       } catch (error) {
-        console.error("- Itemize - ERROR:\n" + error);
+        console.error(" - Itemize error - \n" + error);
       }
     }
   }, {
     key: "showAlert",
     value: function showAlert(action, element) {
-      var _this4 = this;
+      var _this5 = this;
 
       if (element.parentElement.itemizeOptions.showAddAlerts && action === "added" || element.parentElement.itemizeOptions.showRemoveAlerts && action === "removed") {
         var alertClassName = "";
@@ -916,7 +1041,7 @@ function () {
                   fill: "both"
                 });
               } else {
-                _this4.animateRAF(alertList[i], [{
+                _this5.animateRAF(alertList[i], [{
                   transform: {
                     translateX: parseInt(alertTranslateX),
                     translateY: translateYStart,
@@ -935,7 +1060,7 @@ function () {
             }
           }
 
-          _this4.alertNb--;
+          _this5.alertNb--;
           setTimeout(function () {
             document.querySelector("body").removeChild(popAlert);
           }, 300);
@@ -945,14 +1070,14 @@ function () {
   }, {
     key: "remove",
     value: function remove(el) {
-      var _this5 = this;
+      var _this6 = this;
 
       try {
         var item = null;
 
         if (typeof el === "string") {
           for (var i = 0; i < this.items.length; i++) {
-            if (this.items[i].itemizeId === el) {
+            if (this.items[i].itemizeItemId === el) {
               item = this.items[i];
               item.arrayPosition = i;
             }
@@ -961,46 +1086,46 @@ function () {
           if (!item) {
             item = document.querySelector(el);
 
-            if (!item || !item.itemizeId) {
-              throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
+            if (!item || !item.itemizeItemId) {
+              throw new Error(" - Itemize error - \nNot a valid Itemize element");
             }
 
             for (var _i3 = 0; _i3 < this.items.length; _i3++) {
-              if (this.items[_i3].itemizeId === item.itemizeId) {
+              if (this.items[_i3].itemizeItemId === item.itemizeItemId) {
                 item.arrayPosition = _i3;
               }
             }
           }
 
           if (!item) {
-            throw new Error("- Itemize - ERROR:\nNo item found to remove");
+            throw new Error(" - Itemize error - \nNo item found to remove");
           }
         } else {
           item = el;
 
           if (!item) {
-            throw new Error("- Itemize - ERROR:\nNo item found to remove");
+            throw new Error(" - Itemize error - \nNo item found to remove");
           }
 
-          if (!item.itemizeId) {
-            throw new Error("- Itemize - ERROR:\nNot a valid Itemize element");
+          if (!item.itemizeItemId) {
+            throw new Error(" - Itemize error - \nNot a valid Itemize element");
           }
 
           for (var _i4 = 0; _i4 < this.items.length; _i4++) {
-            if (item.itemizeId === this.items[_i4].itemizeId) {
+            if (item.itemizeItemId === this.items[_i4].itemizeItemId) {
               item.arrayPosition = _i4;
             }
           }
         }
 
-        if (item.arrayPosition || item.arrayPosition === 0) {
+        if ((item.arrayPosition || item.arrayPosition === 0) && item.parentElement && item.parentElement.itemizeOptions) {
           if (!item.removeStatus || item.removeStatus !== "pending") {
             if (this.globalOptions.beforeRemove) {
               item.removeStatus = "pending";
               var confirmRemove = this.globalOptions.beforeRemove(item);
 
-              if (confirmRemove == undefined) {
-                throw new Error('- Itemize - ERROR:\n The function "beforeErase" must return a Boolean or a Promise');
+              if (confirmRemove === undefined) {
+                throw new Error(' - Itemize error - \n The function "beforeErase" must return a Boolean or a Promise');
               }
 
               if (typeof confirmRemove.then === "function") {
@@ -1014,31 +1139,31 @@ function () {
                     if (closeBtn) {
                       closeBtn.onclick = null;
                     } else {
-                      closeBtn = item.querySelector("." + _this5.globalOptions.removeBtnClass);
+                      closeBtn = item.querySelector("." + _this6.globalOptions.removeBtnClass);
 
                       if (closeBtn) {
                         closeBtn.onclick = null;
                       }
                     }
 
-                    _this5.showAlert("removed", item);
+                    _this6.showAlert("removed", item);
 
-                    _this5.flipRead(_this5.items);
+                    _this6.flipRead(_this6.items);
 
-                    _this5.flipRemove(item);
+                    _this6.flipRemove(item);
 
-                    _this5.items.splice(item.arrayPosition, 1);
+                    _this6.cleanItem(item);
 
-                    setTimeout(function () {
-                      _this5.flipPlay(_this5.items, animDuration);
-                    }, animDuration);
+                    _this6.items.splice(item.arrayPosition, 1);
                   } else {
-                    _this5.showAlert("removed", item);
+                    _this6.showAlert("removed", item);
 
                     item.removeStatus = null;
-                    item.parentElement.removeChild(item);
+                    item.remove();
 
-                    _this5.items.splice(item.arrayPosition, 1);
+                    _this6.cleanItem(item);
+
+                    _this6.items.splice(item.arrayPosition, 1);
                   }
                 })["catch"](function (err) {
                   console.log(err);
@@ -1064,15 +1189,14 @@ function () {
                   this.showAlert("removed", item);
                   this.flipRead(this.items);
                   this.flipRemove(item);
+                  this.cleanItem(item);
                   this.items.splice(item.arrayPosition, 1);
-                  setTimeout(function () {
-                    _this5.flipPlay(_this5.items, _animDuration);
-                  }, _animDuration);
                 } else {
                   this.showAlert("removed", item);
                   item.removeStatus = null;
-                  item.parentElement.removeChild(item);
+                  item.remove();
                   this.items.splice(item.arrayPosition, 1);
+                  this.cleanItem(item);
                 }
               }
             } else {
@@ -1094,24 +1218,67 @@ function () {
                 this.showAlert("removed", item);
                 this.flipRead(this.items);
                 this.flipRemove(item);
+                this.cleanItem(item);
                 this.items.splice(item.arrayPosition, 1);
-                setTimeout(function () {
-                  _this5.flipPlay(_this5.items, _animDuration2 * 0.5);
-                }, _animDuration2 * 0.5);
               } else {
                 this.showAlert("removed", item);
                 item.removeStatus = null;
-                item.parentElement.removeChild(item);
+                item.remove();
+                this.cleanItem(item);
                 this.items.splice(item.arrayPosition, 1);
               }
             }
           }
         } else {
-          throw new Error("- Itemize - ERROR:\n this element has an invalid itemizeId");
+          throw new Error(" - Itemize error - \n this element has an invalid itemizeItemId");
         }
       } catch (error) {
-        console.error("- Itemize - ERROR:\n" + error);
+        console.error(" - Itemize error - \n" + error);
       }
+    }
+  }, {
+    key: "cleanItem",
+    value: function cleanItem(item) {
+      for (var u = 0; u < item.classList.length; u++) {
+        item.classList.remove("itmz_item");
+
+        if (item.classList[u].indexOf("itemize_item_") !== -1) {
+          item.classList.remove(item.classList[u]);
+          break;
+        }
+      }
+
+      if (item.parentNode && item.parentNode.itemizeOptions && item.parentNode.itemizeOptions.removeBtnClass) {
+        var btn = item.querySelector("." + item.parentNode.itemizeOptions.removeBtnClass);
+
+        if (btn) {
+          btn.remove();
+        }
+      } else {
+        var _btn = item.querySelector(".itemize_remove_btn");
+
+        if (_btn) {
+          _btn.remove();
+        }
+      }
+
+      if (item.itemizeContainerId) {
+        this.clearObservers(item.itemizeContainerId);
+        var parentsInItem = item.querySelectorAll(".itmz_parent");
+        this.cancelItemize(parentsInItem);
+
+        for (var i = 0; i < parentsInItem.length; i++) {
+          if (parentsInItem[i].itemizeContainerId) {
+            this.clearObservers(parentsInItem[i].itemizeContainerId);
+          }
+        }
+
+        if (item.classList.contains("itmz_parent")) {
+          this.cancelItemize([item]);
+        }
+      }
+
+      item.itemizeItemId = null;
     }
   }, {
     key: "animateRAF",
@@ -1168,11 +1335,13 @@ function () {
   }, {
     key: "flipRemove",
     value: function flipRemove(elem) {
+      var _this7 = this;
+
       elem.onclick = null; // elem.parentElement.appendChild(elem);
 
       var options = elem.parentElement.itemizeOptions;
       var newPos = elem.getBoundingClientRect();
-      var oldPos = this.elPos[elem.itemizeId];
+      var oldPos = this.elPos[elem.itemizeItemId];
       var deltaX = oldPos.left - newPos.left;
       var deltaY = oldPos.top - newPos.top;
 
@@ -1210,7 +1379,9 @@ function () {
 
       setTimeout(function () {
         elem.removeStatus = null;
-        elem.parentElement.removeChild(elem);
+        elem.remove();
+
+        _this7.flipPlay(_this7.items, options.flipAnimDuration * 0.5);
       }, options.flipAnimDuration * 0.5);
     }
   }, {
@@ -1218,20 +1389,20 @@ function () {
     value: function flipAdd(elem) {
       elem.classList.remove("itemize_hide");
       elem.inAddAnim = true;
-      this.elPos[elem.itemizeId] = elem.oldAddPos || elem.getBoundingClientRect();
+      this.elPos[elem.itemizeItemId] = elem.oldAddPos || elem.getBoundingClientRect();
       var options = elem.parentElement.itemizeOptions;
       var newPos = elem.getBoundingClientRect();
-      var oldPos = elem.oldAddPos || this.elPos[elem.itemizeId];
+      var oldPos = elem.oldAddPos || this.elPos[elem.itemizeItemId];
       var deltaX = oldPos.left - newPos.left;
       var deltaY = oldPos.top - newPos.top;
       var deltaW = oldPos.width / newPos.width;
       var deltaH = oldPos.height / newPos.height;
 
-      if (isNaN(deltaW)) {
+      if (isNaN(deltaW) || deltaW === Infinity) {
         deltaW = 1;
       }
 
-      if (isNaN(deltaH)) {
+      if (isNaN(deltaH) || deltaH === Infinity) {
         deltaH = 1;
       }
 
@@ -1242,7 +1413,7 @@ function () {
 
       if (elem.animate) {
         elem.animate([{
-          transform: "translate(".concat(translateXStart, "px, ").concat(translateYStart, "px) scale(").concat(deltaW, ", ").concat(deltaH, ")"),
+          transform: "translate(".concat(translateXStart, "px, ").concat(translateYStart, "px)"),
           opacity: 0
         }, {
           transform: "none",
@@ -1283,37 +1454,33 @@ function () {
     value: function flipRead(elems) {
       // this.elPos = {};
       for (var i = 0; i < elems.length; i++) {
-        this.elPos[elems[i].itemizeId] = elems[i].getBoundingClientRect();
+        this.elPos[elems[i].itemizeItemId] = elems[i].getBoundingClientRect();
       }
     }
   }, {
     key: "flipPlay",
     value: function flipPlay(elems, duration) {
-      var _this6 = this;
-
-      var _loop = function _loop(i) {
-        if (!elems[i].inAddAnim) {
+      for (var i = 0; i < elems.length; i++) {
+        if (!elems[i].inAddAnim && elems[i].parentNode && elems[i].parentNode.itemizeOptions) {
           var newPos = elems[i].getBoundingClientRect();
-          var oldPos = _this6.elPos[elems[i].itemizeId];
+          var oldPos = this.elPos[elems[i].itemizeItemId];
           var deltaX = oldPos.left - newPos.left;
           var deltaY = oldPos.top - newPos.top;
           var deltaW = oldPos.width / newPos.width;
           var deltaH = oldPos.height / newPos.height;
 
-          if (isNaN(deltaW)) {
+          if (isNaN(deltaW) || deltaW === Infinity) {
             deltaW = 1;
           }
 
-          if (isNaN(deltaH)) {
+          if (isNaN(deltaH) || deltaH === Infinity) {
             deltaH = 1;
           }
 
           if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
-            elems[i].inAnim = true;
-
             if (elems[i].animate) {
               elems[i].animate([{
-                transform: "translate(".concat(deltaX, "px, ").concat(deltaY, "px) scale(").concat(deltaW, ", ").concat(deltaH, ")")
+                transform: "translate(".concat(deltaX, "px, ").concat(deltaY, "px)")
               }, {
                 transform: "none"
               }], {
@@ -1322,7 +1489,7 @@ function () {
                 fill: "both"
               });
             } else {
-              _this6.animateRAF(elems[i], [{
+              this.animateRAF(elems[i], [{
                 transform: {
                   translateX: deltaX,
                   translateY: deltaY,
@@ -1336,16 +1503,8 @@ function () {
                 }
               }], duration);
             }
-
-            setTimeout(function () {
-              elems[i].inAnim = false;
-            }, duration);
           }
         }
-      };
-
-      for (var i = 0; i < elems.length; i++) {
-        _loop(i);
       }
     }
   }, {
@@ -1380,11 +1539,15 @@ function () {
           animRemoveTranslateY: -100,
           animAddTranslateX: 0,
           animAddTranslateY: -100,
-          beforeRemove: null
+          beforeRemove: null,
+          outlineItemOnHover: false,
+          nestingLevel: 1
         };
 
         for (var key in newOptions) {
-          if (newOptions.hasOwnProperty(key)) defaultOptions[key] = newOptions[key];
+          if (newOptions.hasOwnProperty(key)) {
+            defaultOptions[key] = newOptions[key];
+          }
         }
 
         return defaultOptions;
@@ -1477,6 +1640,14 @@ function () {
         error += "option 'flipAnimation' must be a Boolean\n";
       }
 
+      if (typeof options.outlineItemOnHover !== "boolean") {
+        error += "option 'outlineItemOnHover' must be a Boolean\n";
+      }
+
+      if (typeof options.nestingLevel !== "number") {
+        error += "option 'nestingLevel' must be a Number\n";
+      }
+
       if (typeof options.flipAnimDuration !== "number") {
         error += "option 'flipAnimDuration' must be a Number\n";
       }
@@ -1516,127 +1687,181 @@ function () {
   }, {
     key: "getOptionsFromAttributes",
     value: function getOptionsFromAttributes(parent, options) {
-      if (parent.getAttribute("removeBtn") === "false") {
-        options.removeBtn = false;
-      } else if (parent.getAttribute("removeBtn") === "true") {
-        options.removeBtn = true;
-      }
+      var intAttributes = ["removeBtnWidth", "removeBtnThickness", "removeBtnMargin", "nestingLevel", "flipAnimDuration", "animRemoveTranslateX", "animRemoveTranslateY", "animAddTranslateX", "animAddTranslateY", "removeBtnThickness", "alertTimer"];
 
-      if (parent.getAttribute("modalConfirm") === "false") {
-        options.modalConfirm = false;
-      } else if (parent.getAttribute("modalConfirm") === "true") {
-        options.modalConfirm = true;
-      }
-
-      if (parent.getAttribute("flipAnimation") === "false") {
-        options.flipAnimation = false;
-      } else if (parent.getAttribute("flipAnimation") === "true") {
-        options.flipAnimation = true;
-      }
-
-      if (typeof parent.getAttribute("removeBtnClass") === "string") {
-        if (parent.getAttribute("removeBtnClass") === "false") {
-          options.removeBtnClass = null;
-        } else {
-          options.removeBtnClass = parent.getAttribute("removeBtnClass");
+      for (var key in options) {
+        if (options.hasOwnProperty(key)) {
+          if (parent.getAttribute(key)) {
+            if (parent.getAttribute(key) === "false") {
+              options[key] = false;
+            } else if (parent.getAttribute(key) === "true") {
+              options[key] = true;
+            } else if (intAttributes.indexOf(key) !== -1) {
+              if (parseInt(parent.getAttribute(key)) > 0) {
+                options[key] = parseInt(parent.getAttribute(key));
+              }
+            } else {
+              options[key] = parent.getAttribute(key);
+            }
+          }
         }
-      }
+      } // if (parent.getAttribute("removeBtn") === "false") {
+      //   options.removeBtn = false;
+      // } else if (parent.getAttribute("removeBtn") === "true") {
+      //   options.removeBtn = true;
+      // }
+      // if (parent.getAttribute("modalConfirm") === "false") {
+      //   options.modalConfirm = false;
+      // } else if (parent.getAttribute("modalConfirm") === "true") {
+      //   options.modalConfirm = true;
+      // }
+      // if (parent.getAttribute("flipAnimation") === "false") {
+      //   options.flipAnimation = false;
+      // } else if (parent.getAttribute("flipAnimation") === "true") {
+      //   options.flipAnimation = true;
+      // }
+      // if (typeof parent.getAttribute("removeBtnClass") === "string") {
+      //   if (parent.getAttribute("removeBtnClass") === "false") {
+      //     options.removeBtnClass = null;
+      //   } else {
+      //     options.removeBtnClass = parent.getAttribute("removeBtnClass");
+      //   }
+      // }
+      // if (
+      //   typeof parent.getAttribute("removeBtnWidth") === "string" &&
+      //   parseInt(parent.getAttribute("removeBtnWidth")) > 0
+      // ) {
+      //   options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
+      // }
+      // if (typeof parent.getAttribute("removeBtnColor") === "string") {
+      //   options.removeBtnColor = parent.getAttribute("removeBtnColor");
+      // }
+      // if (typeof parent.getAttribute("removeBtnHoverColor") === "string") {
+      //   options.removeBtnHoverColor = parent.getAttribute("removeBtnHoverColor");
+      // }
+      // if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
+      //   options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
+      // }
+      // if (typeof parent.getAttribute("removeBtnPosition") === "string") {
+      //   options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
+      // }
+      // if (typeof parent.getAttribute("removeBtnBgColor") === "string") {
+      //   options.removeBtnBgColor = parent.getAttribute("removeBtnBgColor");
+      // }
+      // if (typeof parent.getAttribute("removeBtnBgHoverColor") === "string") {
+      //   options.removeBtnBgHoverColor = parent.getAttribute(
+      //     "removeBtnBgHoverColor"
+      //   );
+      // }
+      // if (
+      //   typeof parent.getAttribute("removeBtnMargin") === "string" &&
+      //   !isNaN(parseInt(parent.getAttribute("removeBtnMargin")))
+      // ) {
+      //   options.removeBtnMargin = parseInt(
+      //     parent.getAttribute("removeBtnMargin")
+      //   );
+      // }
+      // if (typeof parent.getAttribute("modalText") === "string") {
+      //   options.modalText = parent.getAttribute("modalText");
+      // }
+      // if (typeof parent.getAttribute("removeAlertText") === "string") {
+      //   options.removeAlertText = parent.getAttribute("removeAlertText");
+      // }
+      // if (typeof parent.getAttribute("addAlertText") === "string") {
+      //   options.addAlertText = parent.getAttribute("addAlertText");
+      // }
+      // if (parent.getAttribute("showAddAlerts") === "true") {
+      //   options.showAddAlerts = true;
+      // } else if (parent.getAttribute("showAddAlerts") === "false") {
+      //   options.showAddAlerts = false;
+      // }
+      // if (parent.getAttribute("showRemoveAlerts") === "true") {
+      //   options.showRemoveAlerts = true;
+      // } else if (parent.getAttribute("showRemoveAlerts") === "false") {
+      //   options.showRemoveAlerts = false;
+      // }
+      // if (parent.getAttribute("removeBtnCircle") === "true") {
+      //   options.removeBtnCircle = true;
+      // } else if (parent.getAttribute("removeBtnCircle") === "false") {
+      //   options.removeBtnCircle = false;
+      // }
+      // if (parent.getAttribute("outlineItemOnHover") === "true") {
+      //   options.outlineItemOnHover = true;
+      // } else if (parent.getAttribute("outlineItemOnHover") === "false") {
+      //   options.outlineItemOnHover = false;
+      // }
+      // if (
+      //   typeof parent.getAttribute("nestingLevel") === "string" &&
+      //   parseInt(parent.getAttribute("nestingLevel")) > 0
+      // ) {
+      //   options.nestingLevel = parseInt(parent.getAttribute("nestingLevel"));
+      // }
+      // if (
+      //   typeof parent.getAttribute("flipAnimDuration") === "string" &&
+      //   parseInt(parent.getAttribute("flipAnimDuration")) > 0
+      // ) {
+      //   options.flipAnimDuration = parseInt(
+      //     parent.getAttribute("flipAnimDuration")
+      //   );
+      // }
+      // let easeAttr = parent.getAttribute("flipAnimEasing");
+      // if (typeof easeAttr === "string") {
+      //   if (
+      //     easeAttr !== "linear" &&
+      //     easeAttr !== "ease" &&
+      //     easeAttr !== "ease-in-out" &&
+      //     easeAttr !== "ease-in" &&
+      //     easeAttr !== "ease-out" &&
+      //     easeAttr.indexOf("cubic-bezier(") === -1
+      //   ) {
+      //     console.error(
+      //       " - Itemize error - \n 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n"
+      //     );
+      //   } else {
+      //     options.flipAnimEasing = easeAttr;
+      //   }
+      // }
+      // if (
+      //   typeof parent.getAttribute("animRemoveTranslateX") === "string" &&
+      //   !isNaN(parseInt(parent.getAttribute("animRemoveTranslateX")))
+      // ) {
+      //   options.animRemoveTranslateX = parseInt(
+      //     parent.getAttribute("animRemoveTranslateX")
+      //   );
+      // }
+      // if (
+      //   typeof parent.getAttribute("animRemoveTranslateY") === "string" &&
+      //   !isNaN(parseInt(parent.getAttribute("animRemoveTranslateY")))
+      // ) {
+      //   options.animRemoveTranslateY = parseInt(
+      //     parent.getAttribute("animRemoveTranslateY")
+      //   );
+      // }
+      // if (
+      //   typeof parent.getAttribute("animAddTranslateY") === "string" &&
+      //   !isNaN(parseInt(parent.getAttribute("animAddTranslateY")))
+      // ) {
+      //   options.animAddTranslateY = parseInt(
+      //     parent.getAttribute("animAddTranslateY")
+      //   );
+      // }
+      // if (
+      //   typeof parent.getAttribute("animAddTranslateX") === "string" &&
+      //   !isNaN(parseInt(parent.getAttribute("animAddTranslateX")))
+      // ) {
+      //   options.animAddTranslateX = parseInt(
+      //     parent.getAttribute("animAddTranslateX")
+      //   );
+      // }
+      // if (
+      //   typeof parent.getAttribute("removeBtnThickness") === "string" &&
+      //   parseInt(parent.getAttribute("removeBtnThickness")) > 0
+      // ) {
+      //   options.removeBtnThickness = parseInt(
+      //     parent.getAttribute("removeBtnThickness")
+      //   );
+      // }
 
-      if (typeof parent.getAttribute("removeBtnWidth") === "string" && parseInt(parent.getAttribute("removeBtnWidth")) > 0) {
-        options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
-      }
-
-      if (typeof parent.getAttribute("removeBtnColor") === "string") {
-        options.removeBtnColor = parent.getAttribute("removeBtnColor");
-      }
-
-      if (typeof parent.getAttribute("removeBtnHoverColor") === "string") {
-        options.removeBtnHoverColor = parent.getAttribute("removeBtnHoverColor");
-      }
-
-      if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
-        options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
-      }
-
-      if (typeof parent.getAttribute("removeBtnPosition") === "string") {
-        options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
-      }
-
-      if (typeof parent.getAttribute("removeBtnBgColor") === "string") {
-        options.removeBtnBgColor = parent.getAttribute("removeBtnBgColor");
-      }
-
-      if (typeof parent.getAttribute("removeBtnBgHoverColor") === "string") {
-        options.removeBtnBgHoverColor = parent.getAttribute("removeBtnBgHoverColor");
-      }
-
-      if (typeof parent.getAttribute("removeBtnMargin") === "string" && parseInt(parent.getAttribute("removeBtnMargin")) !== NaN) {
-        options.removeBtnMargin = parseInt(parent.getAttribute("removeBtnMargin"));
-      }
-
-      if (typeof parent.getAttribute("modalText") === "string") {
-        options.modalText = parent.getAttribute("modalText");
-      }
-
-      if (typeof parent.getAttribute("removeAlertText") === "string") {
-        options.removeAlertText = parent.getAttribute("removeAlertText");
-      }
-
-      if (typeof parent.getAttribute("addAlertText") === "string") {
-        options.addAlertText = parent.getAttribute("addAlertText");
-      }
-
-      if (parent.getAttribute("showAddAlerts") === "true") {
-        options.showAddAlerts = true;
-      } else if (parent.getAttribute("showAddAlerts") === "false") {
-        options.showAddAlerts = false;
-      }
-
-      if (parent.getAttribute("showRemoveAlerts") === "true") {
-        options.showRemoveAlerts = true;
-      } else if (parent.getAttribute("showRemoveAlerts") === "false") {
-        options.showRemoveAlerts = false;
-      }
-
-      if (parent.getAttribute("removeBtnCircle") === "true") {
-        options.removeBtnCircle = true;
-      } else if (parent.getAttribute("removeBtnCircle") === "false") {
-        options.removeBtnCircle = false;
-      }
-
-      if (typeof parent.getAttribute("flipAnimDuration") === "string" && parseInt(parent.getAttribute("flipAnimDuration")) > 0) {
-        options.flipAnimDuration = parseInt(parent.getAttribute("flipAnimDuration"));
-      }
-
-      var easeAttr = parent.getAttribute("flipAnimEasing");
-
-      if (typeof easeAttr === "string") {
-        if (easeAttr !== "linear" && easeAttr !== "ease" && easeAttr !== "ease-in-out" && easeAttr !== "ease-in" && easeAttr !== "ease-out" && easeAttr.indexOf("cubic-bezier(") === -1) {
-          console.error("- Itemize - ERROR:\n 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n");
-        } else {
-          options.flipAnimEasing = easeAttr;
-        }
-      }
-
-      if (typeof parent.getAttribute("animRemoveTranslateX") === "string" && parseInt(parent.getAttribute("animRemoveTranslateX")) !== NaN) {
-        options.animRemoveTranslateX = parseInt(parent.getAttribute("animRemoveTranslateX"));
-      }
-
-      if (typeof parent.getAttribute("animRemoveTranslateY") === "string" && parseInt(parent.getAttribute("animRemoveTranslateY")) !== NaN) {
-        options.animRemoveTranslateY = parseInt(parent.getAttribute("animRemoveTranslateY"));
-      }
-
-      if (typeof parent.getAttribute("animAddTranslateY") === "string" && parseInt(parent.getAttribute("animAddTranslateY")) !== NaN) {
-        options.animAddTranslateY = parseInt(parent.getAttribute("animAddTranslateY"));
-      }
-
-      if (typeof parent.getAttribute("animAddTranslateX") === "string" && parseInt(parent.getAttribute("animAddTranslateX")) !== NaN) {
-        options.animAddTranslateX = parseInt(parent.getAttribute("animAddTranslateX"));
-      }
-
-      if (typeof parent.getAttribute("removeBtnThickness") === "string" && parseInt(parent.getAttribute("removeBtnThickness")) > 0) {
-        options.removeBtnThickness = parseInt(parent.getAttribute("removeBtnThickness"));
-      }
 
       return options;
     }
@@ -1657,3 +1882,7 @@ function () {
 
   return Itemize;
 }();
+
+try {
+  module.exports = Itemize;
+} catch (_unused) {}
