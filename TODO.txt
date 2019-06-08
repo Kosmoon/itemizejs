@@ -6,7 +6,7 @@
 [x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
 [x] - removeBtnBackgroundHoverCOlor
 [ ] - option type check utile? on supprime?
-[ ] - DEFI important: empecher le click sur lelement en dessous du boutton d'arriver ET empecher le redimentionement des elements lors d'un apply (exemple spotifty)
+[ ] - DEFI important:  empecher le redimentionement des elements lors d'un apply (exemple spotifty)
 [ ] - performance removeBtn svg? ou css? ou base64 ? ou autre
 [ ] - cancel en nested aussi
 [ ] - loading message en fixed ('applying itemize')

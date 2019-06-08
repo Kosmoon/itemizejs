@@ -27,7 +27,7 @@ body {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    color: #d1cfcf
+    color: #d1cfcf91
 }
 
 .closable {
