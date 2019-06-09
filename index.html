@@ -69,9 +69,10 @@
       <div class="remove_btn">test</div>
     </li>
   </div>
-  <div class="c_of_c" itemize removeBtnPosition="top-right" showRemoveAlerts="true" alertTimer="1000"
-    outlineItemOnHover="false">
-    <div class="c">
+  <div class="c_of_c" itemize  removeBtnPosition="top-right" showRemoveAlerts="true" alertTimer="1000"
+    outlineItemOnHover="false" animRemoveTranslateX="50" animRemoveTranslateY="0">
+    <button notItemize id="add_elem2">ADD</button>
+    <div class="c" animRemoveTranslateX="50" animRemoveTranslateY="0">
       CHILD1
       <div class="c_in_c">BLABLA</div>
       <div class="c_in_c">BLABLA</div>
@@ -87,19 +88,19 @@
       <div class="c_in_c">BLABLA</div>
       <div class="c_in_c">BLABLA</div>
     </div>
-    <div class="c">
+    <div class="c" animRemoveTranslateX="50" animRemoveTranslateY="0">
       CHILD3
-      <div class="c_in_c">
+      <div class="c_in_c" animRemoveTranslateX="50" animRemoveTranslateY="0">
         BLABLA
         <div class="c_in_c_in_c">CINCINC</div>
         <div class="c_in_c_in_c">CINCINC</div>
         <div class="c_in_c_in_c">CINCINC</div>
         <div class="c_in_c_in_c">CINCINC</div>
       </div>
-      <div class="c_in_c">
+      <div class="c_in_c" animRemoveTranslateX="50" animRemoveTranslateY="0">
         BLABLA
 
-        <div class="c_in_c_in_c">
+        <div class="c_in_c_in_c" animRemoveTranslateX="50" animRemoveTranslateY="0">
           CINCINC
           <div class="c_in_c_in_c_in_c">CINCINCINC</div>
           <div class="c_in_c_in_c_in_c">CINCINCINC</div>
@@ -233,6 +234,13 @@
       go3.after(go);
       // go3.after(go5);
     };
+    document.querySelector("#add_elem2").onclick = function () {
+      let go = document.createElement("div");
+      go.classList.add("new_elem2");
+      go.textContent = "LOREM PSUDITUM PLAROD";
+      var go3 = document.querySelector(".c_in_c");
+      go3.prepend(go);
+    };
   </script>
   <script>
     var itemizeManager = new Itemize({
@@ -253,8 +261,9 @@
       //   });
       // }
     });
-    itemizeManager.apply(".c_of_c", {
-      nestingLevel: 1
+    itemizeManager.apply({
+      nestingLevel: 1,
+      itemizeAddedElement: false
     });
     console.log(itemizeManager);
     console.log("L'execution à continué");

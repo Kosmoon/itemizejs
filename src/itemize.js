@@ -1,5 +1,5 @@
 /*
- -- itemize.js v0.40--
+ -- itemize.js v0.45--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -37,17 +37,13 @@ class Itemize {
         this.lastTargetedContainers &&
         this.lastTargetedContainers.length > 0
       ) {
-        childItemizedNb += this.applyItemize(
-          this.lastTargetedContainers,
-          false
-        );
+        childItemizedNb += this.applyItemize(this.lastTargetedContainers);
         let nestingApply = (containers, nestingLevel) => {
           let nestingNb = 1;
           if (containers.length > 0 && nestingNb < nestingLevel) {
             for (let i = 0; i < containers.length; i++) {
               childItemizedNb += this.applyItemize(
                 containers[i].children,
-                false,
                 options
               );
               nestingNb++;
@@ -125,7 +121,7 @@ class Itemize {
       }
     }
   }
-  applyItemize(parents, withoutObs, applyOptions) {
+  applyItemize(parents, applyOptions) {
     let childItemizedNb = 0;
     let knownErrors = "";
     try {
@@ -172,7 +168,7 @@ class Itemize {
           options = this.getOptionsFromAttributes(parent, options);
           parent.itemizeOptions = options;
           // node added OBSERVER
-          if (!withoutObs) {
+          if (parent.itemizeOptions.itemizeAddedElement) {
             let config = {
               attributes: true,
               childList: true,
@@ -304,7 +300,9 @@ class Itemize {
           let computedStyle = getComputedStyle(child);
           if (
             child.style.position !== "absolute" &&
-            child.style.position !== "fixed" && computedStyle.position !== "absolute" && computedStyle.position !== "fixed"
+            child.style.position !== "fixed" &&
+            computedStyle.position !== "absolute" &&
+            computedStyle.position !== "fixed"
           ) {
             child.style.position = "relative";
           }
@@ -1654,7 +1652,8 @@ class Itemize {
         animAddTranslateY: -100,
         beforeRemove: null,
         outlineItemOnHover: false,
-        nestingLevel: 1
+        nestingLevel: 1,
+        itemizeAddedElement: true
       };
       for (var key in newOptions) {
         if (newOptions.hasOwnProperty(key)) {
@@ -1794,7 +1793,7 @@ class Itemize {
           } else if (parent.getAttribute(key) === "true") {
             options[key] = true;
           } else if (intAttributes.indexOf(key) !== -1) {
-            if (parseInt(parent.getAttribute(key)) > 0) {
+            if (!isNaN(parseInt(parent.getAttribute(key)))) {
               options[key] = parseInt(parent.getAttribute(key));
             }
           } else {
