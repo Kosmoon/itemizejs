@@ -13,17 +13,23 @@ class Itemize {
     this.modalDisappearTimeout = null;
     this.elPos = {};
     this.lastTargetedContainers = null;
+    window.requestAnimationFrame =
+      window.requestAnimationFrame ||
+      window.mozRequestAnimationFrame ||
+      window.webkitRequestAnimationFrame ||
+      window.msRequestAnimationFrame;
     // let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     // if (optionCheckResult !== "valid") {
     //   console.error("- Itemize - TYPE error:\n" + optionCheckResult);
     // }
   }
   apply(target, options) {
+    let opts = { ...this.globalOptions };
     if (typeof target === "object") {
-      this.globalOptions = this.mergeOptions(target);
+      opts = this.mergeOptions(target);
       target = [null];
     } else if (options) {
-      this.globalOptions = this.mergeOptions(options);
+      opts = this.mergeOptions(options);
     }
     if (!Array.isArray(target)) {
       target = [target];
@@ -37,14 +43,14 @@ class Itemize {
         this.lastTargetedContainers &&
         this.lastTargetedContainers.length > 0
       ) {
-        childItemizedNb += this.applyItemize(this.lastTargetedContainers);
+        childItemizedNb += this.applyItemize(this.lastTargetedContainers, opts);
         let nestingApply = (containers, nestingLevel) => {
           let nestingNb = 1;
           if (containers.length > 0 && nestingNb < nestingLevel) {
             for (let i = 0; i < containers.length; i++) {
               childItemizedNb += this.applyItemize(
                 containers[i].children,
-                options
+                opts
               );
               nestingNb++;
               if (containers.length > 0 && nestingNb < nestingLevel) {
@@ -53,10 +59,7 @@ class Itemize {
             }
           }
         };
-        nestingApply(
-          this.lastTargetedContainers,
-          this.globalOptions.nestingLevel
-        );
+        nestingApply(this.lastTargetedContainers, opts.nestingLevel);
       } else {
         console.error(" - Itemize error - \n no valid target found.\n");
       }
@@ -142,6 +145,7 @@ class Itemize {
                 this.containers[p].itemizeContainerId
             ) {
               parentInList = true;
+              break;
             }
           }
           if (!parentInList) {
@@ -160,8 +164,8 @@ class Itemize {
             }
           }
           parent.classList.add(`itmz_parent`);
-          parent.classList.add(`itemize_parent_${parentItemizeId}`); // refresh parent with a new itemizeContainerId class
-          let options = Object.assign({}, this.globalOptions); // cloning options
+          parent.classList.add(`itemize_parent_${parentItemizeId}`);
+          let options = { ...this.globalOptions }; // cloning options
           if (applyOptions) {
             options = this.mergeOptions(applyOptions);
           }
@@ -170,9 +174,7 @@ class Itemize {
           // node added OBSERVER
           if (parent.itemizeOptions.itemizeAddedElement) {
             let config = {
-              attributes: true,
-              childList: true,
-              subtree: true
+              childList: true
             };
             let scope = this;
             let callback = function(mutationsList, observer) {
@@ -191,9 +193,7 @@ class Itemize {
                         }
                       });
                       if (newNode) {
-                        if (node.getAttribute("notItemize")) {
-                          console.log("not itemize element added");
-                        } else if (
+                         if (!node.getAttribute("notItemize") &&
                           node.parentElement &&
                           node.type !== "text/css" &&
                           node.tagName !== "BR" &&
@@ -216,6 +216,9 @@ class Itemize {
                           } else {
                             scope.itemizeChild(node, node.parentElement, true);
                           }
+                        }
+                        if (parent.itemizeOptions.onAddItem) {
+                          parent.itemizeOptions.onAddItem(node);
                         }
                       }
                     }
@@ -272,12 +275,6 @@ class Itemize {
     );
   }
   itemizeChild(child, parent, fromObserver) {
-    window.requestAnimationFrame =
-      window.requestAnimationFrame ||
-      window.mozRequestAnimationFrame ||
-      window.webkitRequestAnimationFrame ||
-      window.msRequestAnimationFrame;
-
     if (this.childIsItemizable(child, parent)) {
       child.itemizeItemId = this.makeId(8);
       this.items.push(child);
@@ -287,7 +284,7 @@ class Itemize {
         child.onclick = e => {
           e.stopPropagation();
           if (parent.itemizeOptions.modalConfirm) {
-            this.modalConfirm(child.itemizeItemId);
+            this.modalConfirm(child);
           } else {
             this.remove(child.itemizeItemId);
           }
@@ -315,7 +312,7 @@ class Itemize {
           button.onclick = e => {
             e.stopPropagation();
             if (parent.itemizeOptions.modalConfirm) {
-              this.modalConfirm(child.itemizeItemId);
+              this.modalConfirm(child);
             } else {
               this.remove(child.itemizeItemId);
             }
@@ -341,7 +338,7 @@ class Itemize {
             button.onclick = e => {
               e.stopPropagation();
               if (parent.itemizeOptions.modalConfirm) {
-                this.modalConfirm(child.itemizeItemId);
+                this.modalConfirm(child);
               } else {
                 this.remove(child.itemizeItemId);
               }
@@ -607,39 +604,39 @@ class Itemize {
 
   modalConfirm(el) {
     try {
-      let item = null;
-      if (typeof el === "string") {
-        for (let i = 0; i < this.items.length; i++) {
-          if (this.items[i].itemizeItemId === el) {
-            item = this.items[i];
-          }
-        }
-        if (!item) {
-          item = document.querySelector(el);
-          if (!item || !item.itemizeItemId) {
-            throw new Error(
-              " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
-            );
-          }
-        }
-        if (!item) {
-          throw new Error(
-            " - Itemize error - \n No item found, cannot create a confirm modal."
-          );
-        }
-      } else {
-        item = el;
-        if (!item) {
-          throw new Error(
-            " - Itemize error - \n No item found, cannot create a confirm modal."
-          );
-        }
-        if (!item.itemizeItemId) {
-          throw new Error(
-            " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
-          );
-        }
-      }
+      // let item = null;
+      // if (typeof el === "string") {
+      //   for (let i = 0; i < this.items.length; i++) {
+      //     if (this.items[i].itemizeItemId === el) {
+      //       item = this.items[i];
+      //     }
+      //   }
+      //   if (!item) {
+      //     item = document.querySelector(el);
+      //     if (!item || !item.itemizeItemId) {
+      //       throw new Error(
+      //         " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
+      //       );
+      //     }
+      //   }
+      //   if (!item) {
+      //     throw new Error(
+      //       " - Itemize error - \n No item found, cannot create a confirm modal."
+      //     );
+      //   }
+      // } else {
+      //   item = el;
+      //   if (!item) {
+      //     throw new Error(
+      //       " - Itemize error - \n No item found, cannot create a confirm modal."
+      //     );
+      //   }
+      //   if (!item.itemizeItemId) {
+      //     throw new Error(
+      //       " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
+      //     );
+      //   }
+      // }
       const modalAnimDuration = 150;
       const backDrop = document.createElement("div");
       const modal = document.createElement("div");
@@ -657,7 +654,7 @@ class Itemize {
       btnConfirm.classList.add("itemize_modal_btnConfirm");
       btnCancel.classList.add("itemize_modal_btnCancel");
       crossClose.classList.add("itemize_modal_cross");
-      alertText.textContent = item.parentElement.itemizeOptions.modalText;
+      alertText.textContent = el.parentElement.itemizeOptions.modalText;
       btnConfirm.innerHTML = "Yes";
       btnCancel.innerHTML = "Cancel";
       btnContainer.appendChild(btnCancel);
@@ -1622,7 +1619,7 @@ class Itemize {
 
   mergeOptions(newOptions) {
     try {
-      const defaultOptions = {
+      let defaultOptions = {
         removeBtn: true,
         removeBtnWidth: 20,
         removeBtnThickness: 2,
@@ -1653,14 +1650,19 @@ class Itemize {
         beforeRemove: null,
         outlineItemOnHover: false,
         nestingLevel: 1,
-        itemizeAddedElement: true
+        itemizeAddedElement: true,
+        onAddItem: null
       };
-      for (var key in newOptions) {
-        if (newOptions.hasOwnProperty(key)) {
-          defaultOptions[key] = newOptions[key];
-        }
+      if (this.globalOptions) {
+        defaultOptions = { ...this.globalOptions };
       }
-      return defaultOptions;
+      let mergedOptions = { ...defaultOptions, ...newOptions };
+      // for (var key in newOptions) {
+      //   if (newOptions.hasOwnProperty(key)) {
+      //     defaultOptions[key] = newOptions[key];
+      //   }
+      // }
+      return mergedOptions;
     } catch (error) {
       console.error(error);
     }

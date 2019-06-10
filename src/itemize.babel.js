@@ -1,5 +1,11 @@
 "use strict";
 
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; var ownKeys = Object.keys(source); if (typeof Object.getOwnPropertySymbols === 'function') { ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) { return Object.getOwnPropertyDescriptor(source, sym).enumerable; })); } ownKeys.forEach(function (key) { _defineProperty(target, key, source[key]); }); } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -7,7 +13,7 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 /*
- -- itemize.js v0.40--
+ -- itemize.js v0.45--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -24,11 +30,10 @@ function () {
     this.modalDisappearTimeout = null;
     this.elPos = {};
     this.lastTargetedContainers = null;
-    var optionCheckResult = this.optionsTypeCheck(this.globalOptions);
-
-    if (optionCheckResult !== "valid") {
-      console.error("- Itemize - TYPE error:\n" + optionCheckResult);
-    }
+    window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame; // let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
+    // if (optionCheckResult !== "valid") {
+    //   console.error("- Itemize - TYPE error:\n" + optionCheckResult);
+    // }
   }
 
   _createClass(Itemize, [{
@@ -36,26 +41,34 @@ function () {
     value: function apply(target, options) {
       var _this = this;
 
-      this.globalOptions = this.mergeOptions(options);
-      var childItemizedNb = 0;
+      var opts = _objectSpread({}, this.globalOptions);
+
+      if (_typeof(target) === "object") {
+        opts = this.mergeOptions(target);
+        target = [null];
+      } else if (options) {
+        opts = this.mergeOptions(options);
+      }
 
       if (!Array.isArray(target)) {
         target = [target];
       }
+
+      var childItemizedNb = 0;
 
       for (var i = 0; i < target.length; i++) {
         this.lastTargetedContainers = this.getTargetElements(target[i]);
 
         if (this.lastTargetedContainers && this.lastTargetedContainers.length > 0) {
           (function () {
-            childItemizedNb += _this.applyItemize(_this.lastTargetedContainers, false);
+            childItemizedNb += _this.applyItemize(_this.lastTargetedContainers, opts);
 
             var nestingApply = function nestingApply(containers, nestingLevel) {
               var nestingNb = 1;
 
               if (containers.length > 0 && nestingNb < nestingLevel) {
                 for (var _i = 0; _i < containers.length; _i++) {
-                  childItemizedNb += _this.applyItemize(containers[_i].children, false, options);
+                  childItemizedNb += _this.applyItemize(containers[_i].children, opts);
                   nestingNb++;
 
                   if (containers.length > 0 && nestingNb < nestingLevel) {
@@ -65,10 +78,10 @@ function () {
               }
             };
 
-            nestingApply(_this.lastTargetedContainers, _this.globalOptions.nestingLevel);
+            nestingApply(_this.lastTargetedContainers, opts.nestingLevel);
           })();
         } else {
-          console.error(" - Itemize error - \n " + target[i] + " not found.\n");
+          console.error(" - Itemize error - \n no valid target found.\n");
         }
       }
 
@@ -139,34 +152,36 @@ function () {
     }
   }, {
     key: "applyItemize",
-    value: function applyItemize(parents, withoutObs, applyOptions) {
+    value: function applyItemize(parents, applyOptions) {
       var _this2 = this;
 
       var childItemizedNb = 0;
       var knownErrors = "";
 
       try {
-        for (var i = 0; i < parents.length; i++) {
+        var _loop = function _loop(i) {
           var parent = parents[i];
 
           if (!parent.classList.contains("itemize_remove_btn") && parent.type !== "text/css" && parent.tagName !== "BR" && parent.tagName !== "SCRIPT" && parent.tagName !== "STYLE") {
             var parentInList = false;
 
-            for (var p = 0; p < this.containers.length; p++) {
-              if (parent.itemizeContainerId && parent.itemizeContainerId === this.containers[p].itemizeContainerId) {
+            for (var p = 0; p < _this2.containers.length; p++) {
+              if (parent.itemizeContainerId && parent.itemizeContainerId === _this2.containers[p].itemizeContainerId) {
                 parentInList = true;
+                break;
               }
             }
 
             if (!parentInList) {
-              this.containers.push(parent);
+              _this2.containers.push(parent);
             }
 
             if (parent.itemizeContainerId) {
-              this.clearObservers(parent.itemizeContainerId);
+              _this2.clearObservers(parent.itemizeContainerId);
             }
 
-            var parentItemizeId = this.makeId(8);
+            var parentItemizeId = _this2.makeId(8);
+
             parent.itemizeContainerId = parentItemizeId;
 
             for (var _i2 = parent.classList.length - 1; _i2 >= 0; _i2--) {
@@ -178,104 +193,107 @@ function () {
             }
 
             parent.classList.add("itmz_parent");
-            parent.classList.add("itemize_parent_".concat(parentItemizeId)); // refresh parent with a new itemizeContainerId class
+            parent.classList.add("itemize_parent_".concat(parentItemizeId));
 
-            var options = Object.assign({}, this.globalOptions); // cloning options
+            var options = _objectSpread({}, _this2.globalOptions); // cloning options
+
 
             if (applyOptions) {
-              options = this.mergeOptions(applyOptions);
+              options = _this2.mergeOptions(applyOptions);
             }
 
-            options = this.getOptionsFromAttributes(parent, options);
+            options = _this2.getOptionsFromAttributes(parent, options);
             parent.itemizeOptions = options; // node added OBSERVER
 
-            if (!withoutObs) {
-              (function () {
-                var config = {
-                  attributes: true,
-                  childList: true,
-                  subtree: true
-                };
-                var scope = _this2;
+            if (parent.itemizeOptions.itemizeAddedElement) {
+              var config = {
+                childList: true
+              };
+              var scope = _this2;
 
-                var callback = function callback(mutationsList, observer) {
-                  var _iteratorNormalCompletion = true;
-                  var _didIteratorError = false;
-                  var _iteratorError = undefined;
+              var callback = function callback(mutationsList, observer) {
+                var _iteratorNormalCompletion = true;
+                var _didIteratorError = false;
+                var _iteratorError = undefined;
 
-                  try {
-                    for (var _iterator = mutationsList[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                      var mutation = _step.value;
+                try {
+                  for (var _iterator = mutationsList[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var mutation = _step.value;
 
-                      if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-                        mutation.addedNodes.forEach(function (node) {
-                          var newNode = true;
+                    if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                      mutation.addedNodes.forEach(function (node) {
+                        var newNode = true;
 
-                          if (node.classList) {
-                            node.classList.forEach(function (className) {
-                              if (className.indexOf("itemize_") !== -1) {
-                                // check si le child n'est pas un element deja added qui passe par un flipAnim
-                                newNode = false;
-                              }
-                            });
+                        if (node.classList) {
+                          node.classList.forEach(function (className) {
+                            if (className.indexOf("itemize_") !== -1) {
+                              // check si le child n'est pas un element deja added qui passe par un flipAnim
+                              newNode = false;
+                            }
+                          });
 
-                            if (newNode) {
-                              if (node.getAttribute("notItemize")) {
-                                console.log("not itemize element added");
-                              } else if (node.parentElement && node.type !== "text/css" && node.tagName !== "BR" && node.tagName !== "SCRIPT" && node.parentElement.itemizeContainerId && node.tagName !== "STYLE") {
-                                if (node.parentElement.itemizeOptions && node.parentElement.itemizeOptions.flipAnimation) {
-                                  node.classList.add("itemize_hide");
-                                  scope.itemizeChild(node, node.parentElement, true);
-                                  scope.flipRead(scope.items);
-                                  scope.flipAdd(node);
-                                  scope.flipPlay(scope.items, node.parentElement.itemizeOptions.flipAnimDuration);
-                                } else {
-                                  scope.itemizeChild(node, node.parentElement, true);
-                                }
+                          if (newNode) {
+                            if (!node.getAttribute("notItemize") && node.parentElement && node.type !== "text/css" && node.tagName !== "BR" && node.tagName !== "SCRIPT" && node.parentElement.itemizeContainerId && node.tagName !== "STYLE") {
+                              if (node.parentElement.itemizeOptions && node.parentElement.itemizeOptions.flipAnimation) {
+                                node.classList.add("itemize_hide");
+                                scope.itemizeChild(node, node.parentElement, true);
+                                scope.flipRead(scope.items);
+                                scope.flipAdd(node);
+                                scope.flipPlay(scope.items, node.parentElement.itemizeOptions.flipAnimDuration);
+                              } else {
+                                scope.itemizeChild(node, node.parentElement, true);
                               }
                             }
+
+                            if (parent.itemizeOptions.onAddItem) {
+                              parent.itemizeOptions.onAddItem(node);
+                            }
                           }
-                        });
-                      }
-                    }
-                  } catch (err) {
-                    _didIteratorError = true;
-                    _iteratorError = err;
-                  } finally {
-                    try {
-                      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-                        _iterator["return"]();
-                      }
-                    } finally {
-                      if (_didIteratorError) {
-                        throw _iteratorError;
-                      }
+                        }
+                      });
                     }
                   }
-                };
-
-                if (window.itemizeObservers) {
-                  // ajout des observer de facon global et suppression/deconnection quand parent n'est plus present
-                  window.itemizeObservers.push(new MutationObserver(callback));
-                } else {
-                  window.itemizeObservers = [new MutationObserver(callback)];
+                } catch (err) {
+                  _didIteratorError = true;
+                  _iteratorError = err;
+                } finally {
+                  try {
+                    if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+                      _iterator["return"]();
+                    }
+                  } finally {
+                    if (_didIteratorError) {
+                      throw _iteratorError;
+                    }
+                  }
                 }
+              };
 
-                window.itemizeObservers[window.itemizeObservers.length - 1].observe(parent, config);
-                window.itemizeObservers[window.itemizeObservers.length - 1].itemizeContainerId = parent.itemizeContainerId;
-              })();
+              if (window.itemizeObservers) {
+                // ajout des observer de facon global et suppression/deconnection quand parent n'est plus present
+                window.itemizeObservers.push(new MutationObserver(callback));
+              } else {
+                window.itemizeObservers = [new MutationObserver(callback)];
+              }
+
+              window.itemizeObservers[window.itemizeObservers.length - 1].observe(parent, config);
+              window.itemizeObservers[window.itemizeObservers.length - 1].itemizeContainerId = parent.itemizeContainerId;
             }
 
-            this.applyCss(parent);
+            _this2.applyCss(parent);
 
             for (var z = 0; z < parent.children.length; z++) {
               var child = parent.children[z];
 
-              if (this.itemizeChild(child, parent)) {
+              if (_this2.itemizeChild(child, parent)) {
                 childItemizedNb++;
               }
             }
           }
+        };
+
+        for (var i = 0; i < parents.length; i++) {
+          _loop(i);
         }
 
         return childItemizedNb;
@@ -294,8 +312,6 @@ function () {
     value: function itemizeChild(child, parent, fromObserver) {
       var _this3 = this;
 
-      window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
-
       if (this.childIsItemizable(child, parent)) {
         child.itemizeItemId = this.makeId(8);
         this.items.push(child);
@@ -307,7 +323,7 @@ function () {
             e.stopPropagation();
 
             if (parent.itemizeOptions.modalConfirm) {
-              _this3.modalConfirm(child.itemizeItemId);
+              _this3.modalConfirm(child);
             } else {
               _this3.remove(child.itemizeItemId);
             }
@@ -318,7 +334,9 @@ function () {
           }
         } else {
           if (!parent.itemizeOptions.removeBtnClass) {
-            if (child.style.position !== "absolute" && child.style.position !== "fixed") {
+            var computedStyle = getComputedStyle(child);
+
+            if (child.style.position !== "absolute" && child.style.position !== "fixed" && computedStyle.position !== "absolute" && computedStyle.position !== "fixed") {
               child.style.position = "relative";
             }
 
@@ -331,7 +349,7 @@ function () {
               e.stopPropagation();
 
               if (parent.itemizeOptions.modalConfirm) {
-                _this3.modalConfirm(child.itemizeItemId);
+                _this3.modalConfirm(child);
               } else {
                 _this3.remove(child.itemizeItemId);
               }
@@ -352,7 +370,7 @@ function () {
                 e.stopPropagation();
 
                 if (parent.itemizeOptions.modalConfirm) {
-                  _this3.modalConfirm(child.itemizeItemId);
+                  _this3.modalConfirm(child);
                 } else {
                   _this3.remove(child.itemizeItemId);
                 }
@@ -497,7 +515,7 @@ function () {
             break;
         }
 
-        styles += ".itemize_parent_".concat(parent.itemizeContainerId, " .itemize_remove_btn{z-index:1000000!important;position:absolute;top:").concat(btnPos.top, "!important;right:").concat(btnPos.right, "!important;bottom:").concat(btnPos.bottom, "!important;left:").concat(btnPos.left, "!important;width:").concat(options.removeBtnWidth, "px!important;height:").concat(options.removeBtnWidth, "px!important;overflow:hidden;cursor:pointer;margin:").concat(btnPos.marginTop, " ").concat(btnPos.marginRight, " ").concat(btnPos.marginBottom, " ").concat(btnPos.marginLeft, ";transform:").concat(btnPos.transform, ";border-radius:").concat(options.removeBtnCircle ? "50%" : "0%", ";background-color:").concat(options.removeBtnBgColor, "}.itemize_remove_btn:hover{background-color:").concat(options.removeBtnBgHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::before{transition:background 0.2s ease-in-out;background:").concat(options.removeBtnHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{content:'';position:absolute;height:").concat(options.removeBtnThickness, "px;transition:background 0.2s ease-in-out;width:").concat(options.removeBtnWidth / 2, "px;top:50%;left:25%;margin-top:").concat(options.removeBtnThickness * 0.5 < 1 ? -1 : -options.removeBtnThickness * 0.5, "px;background:").concat(options.removeBtnColor, ";border-radius:").concat(options.removeBtnSharpness, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}");
+        styles += ".itemize_parent_".concat(parent.itemizeContainerId, " .itemize_remove_btn{z-index:1000000!important;position:absolute;top:").concat(btnPos.top, "!important;right:").concat(btnPos.right, "!important;bottom:").concat(btnPos.bottom, "!important;left:").concat(btnPos.left, "!important;width:").concat(options.removeBtnWidth, "px!important;height:").concat(options.removeBtnWidth, "px!important;overflow:hidden;cursor:pointer;margin:").concat(btnPos.marginTop, " ").concat(btnPos.marginRight, " ").concat(btnPos.marginBottom, " ").concat(btnPos.marginLeft, ";transform:").concat(btnPos.transform, ";border-radius:").concat(options.removeBtnCircle ? "50%" : "0%", ";background-color:").concat(options.removeBtnBgColor, "}.itemize_remove_btn:hover{background-color:").concat(options.removeBtnBgHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::before{transition:background 150ms ease-in-out;background:").concat(options.removeBtnHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{content:'';position:absolute;height:").concat(options.removeBtnThickness, "px;transition:background 150ms ease-in-out;width:").concat(options.removeBtnWidth / 2, "px;top:50%;left:25%;margin-top:").concat(options.removeBtnThickness * 0.5 < 1 ? -1 : -options.removeBtnThickness * 0.5, "px;background:").concat(options.removeBtnColor, ";border-radius:").concat(options.removeBtnSharpness, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}");
       }
 
       if (css.styleSheet) {
@@ -621,38 +639,39 @@ function () {
       var _this4 = this;
 
       try {
-        var item = null;
-
-        if (typeof el === "string") {
-          for (var i = 0; i < this.items.length; i++) {
-            if (this.items[i].itemizeItemId === el) {
-              item = this.items[i];
-            }
-          }
-
-          if (!item) {
-            item = document.querySelector(el);
-
-            if (!item || !item.itemizeItemId) {
-              throw new Error(" - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal.");
-            }
-          }
-
-          if (!item) {
-            throw new Error(" - Itemize error - \n No item found, cannot create a confirm modal.");
-          }
-        } else {
-          item = el;
-
-          if (!item) {
-            throw new Error(" - Itemize error - \n No item found, cannot create a confirm modal.");
-          }
-
-          if (!item.itemizeItemId) {
-            throw new Error(" - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal.");
-          }
-        }
-
+        // let item = null;
+        // if (typeof el === "string") {
+        //   for (let i = 0; i < this.items.length; i++) {
+        //     if (this.items[i].itemizeItemId === el) {
+        //       item = this.items[i];
+        //     }
+        //   }
+        //   if (!item) {
+        //     item = document.querySelector(el);
+        //     if (!item || !item.itemizeItemId) {
+        //       throw new Error(
+        //         " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
+        //       );
+        //     }
+        //   }
+        //   if (!item) {
+        //     throw new Error(
+        //       " - Itemize error - \n No item found, cannot create a confirm modal."
+        //     );
+        //   }
+        // } else {
+        //   item = el;
+        //   if (!item) {
+        //     throw new Error(
+        //       " - Itemize error - \n No item found, cannot create a confirm modal."
+        //     );
+        //   }
+        //   if (!item.itemizeItemId) {
+        //     throw new Error(
+        //       " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
+        //     );
+        //   }
+        // }
         var modalAnimDuration = 150;
         var backDrop = document.createElement("div");
         var modal = document.createElement("div");
@@ -670,7 +689,7 @@ function () {
         btnConfirm.classList.add("itemize_modal_btnConfirm");
         btnCancel.classList.add("itemize_modal_btnCancel");
         crossClose.classList.add("itemize_modal_cross");
-        alertText.textContent = item.parentElement.itemizeOptions.modalText;
+        alertText.textContent = el.parentElement.itemizeOptions.modalText;
         btnConfirm.innerHTML = "Yes";
         btnCancel.innerHTML = "Cancel";
         btnContainer.appendChild(btnCancel);
@@ -788,7 +807,7 @@ function () {
           justifyContent: "center",
           textAlign: "center",
           fontFamily: "helvetica",
-          zIndex: 1000000
+          zIndex: 100000000
         });
         var modalCss = ".itemize_modal_btnConfirm:hover{ background-color: #c83e34 !important; transition: background-color 0.3s ease-in-out }.itemize_modal_btnCancel:hover{ background-color: #4a5055 !important; transition: background-color 0.3s ease-in-out }.itemize_modal_cross {cursor:pointer;position: absolute;right: 5px;top: 5px;width: 18px;height:18px;opacity:0.3;}.itemize_modal_cross:hover{opacity:1;}.itemize_modal_cross:before,.itemize_modal_cross:after{position:absolute;left:9px;content:' ';height: 19px;width:2px;background-color:#333;}.itemize_modal_cross:before{transform:rotate(45deg);}.itemize_modal_cross:after{transform:rotate(-45deg);}";
         var styleEl = document.createElement("style");
@@ -836,7 +855,7 @@ function () {
           width: "100%",
           height: "100%",
           background: "rgba(0, 0, 0,0.7)",
-          zIndex: 100000
+          zIndex: 10000000
         });
         body.prepend(modal);
         body.prepend(backDrop);
@@ -1521,7 +1540,7 @@ function () {
           removeBtnPosition: "top-right",
           removeBtnMargin: 2,
           removeBtnCircle: true,
-          removeBtnBgColor: "#d1cfcf",
+          removeBtnBgColor: "#d1cfcf91",
           removeBtnBgHoverColor: "#959595",
           removeBtnClass: null,
           modalConfirm: false,
@@ -1541,149 +1560,132 @@ function () {
           animAddTranslateY: -100,
           beforeRemove: null,
           outlineItemOnHover: false,
-          nestingLevel: 1
+          nestingLevel: 1,
+          itemizeAddedElement: true,
+          onAddItem: null
         };
 
-        for (var key in newOptions) {
-          if (newOptions.hasOwnProperty(key)) {
-            defaultOptions[key] = newOptions[key];
-          }
+        if (this.globalOptions) {
+          defaultOptions = _objectSpread({}, this.globalOptions);
         }
 
-        return defaultOptions;
+        var mergedOptions = _objectSpread({}, defaultOptions, newOptions); // for (var key in newOptions) {
+        //   if (newOptions.hasOwnProperty(key)) {
+        //     defaultOptions[key] = newOptions[key];
+        //   }
+        // }
+
+
+        return mergedOptions;
       } catch (error) {
         console.error(error);
       }
-    }
-  }, {
-    key: "optionsTypeCheck",
-    value: function optionsTypeCheck(options) {
-      var error = "";
+    } // optionsTypeCheck(options) {
+    //   let error = "";
+    //   if (typeof options.removeBtn !== "boolean") {
+    //     error += "option 'button' must be a Boolean\n";
+    //   }
+    //   if (typeof options.modalConfirm !== "boolean") {
+    //     error += "option 'modalConfirm' must be a Boolean\n";
+    //   }
+    //   if (typeof options.removeBtnWidth !== "number") {
+    //     error += "option 'removeBtnWidth' must be a Number\n";
+    //   }
+    //   if (typeof options.removeBtnThickness !== "number") {
+    //     error += "option 'removeBtnThickness' must be a Number\n";
+    //   }
+    //   if (typeof options.alertTimer !== "number") {
+    //     error += "option 'alertTimer' must be a Number\n";
+    //   }
+    //   if (options.removeBtnClass && typeof options.removeBtnClass !== "string") {
+    //     error += "option 'buttonClass' must be a String\n";
+    //   }
+    //   if (typeof options.removeBtnHoverColor !== "string") {
+    //     error += "option 'removeBtnHoverColor' must be a String\n";
+    //   }
+    //   if (typeof options.removeBtnSharpness !== "string") {
+    //     error += "option 'removeBtnSharpness' must be a String\n";
+    //   }
+    //   if (typeof options.removeBtnPosition !== "string") {
+    //     error += "option 'removeBtnPosition' must be a String\n";
+    //   }
+    //   if (typeof options.removeBtnBgColor !== "string") {
+    //     error += "option 'removeBtnBgColor' must be a String\n";
+    //   }
+    //   if (typeof options.removeBtnBgHoverColor !== "string") {
+    //     error += "option 'removeBtnBgHoverColor' must be a String\n";
+    //   }
+    //   if (typeof options.removeBtnCircle !== "boolean") {
+    //     error += "option 'removeBtnCircle' must be a Boolean\n";
+    //   }
+    //   if (typeof options.removeBtnMargin !== "number") {
+    //     error += "option 'removeBtnMargin' must be a Number\n";
+    //   }
+    //   if (typeof options.modalText !== "string") {
+    //     error += "option 'modalText' must be a String\n";
+    //   }
+    //   if (typeof options.removeAlertText !== "string") {
+    //     error += "option 'removeAlertText' must be a String\n";
+    //   }
+    //   if (typeof options.addAlertText !== "string") {
+    //     error += "option 'addAlertText' must be a String\n";
+    //   }
+    //   if (typeof options.showRemoveAlerts !== "boolean") {
+    //     error += "option 'showRemoveAlerts' must be a Boolean\n";
+    //   }
+    //   if (typeof options.showAddAlerts !== "boolean") {
+    //     error += "option 'showAddAlerts' must be a Boolean\n";
+    //   }
+    //   if (typeof options.alertPosition !== "string") {
+    //     error += "option 'alertPosition' must be a String\n";
+    //   }
+    //   if (typeof options.flipAnimation !== "boolean") {
+    //     error += "option 'flipAnimation' must be a Boolean\n";
+    //   }
+    //   if (typeof options.outlineItemOnHover !== "boolean") {
+    //     error += "option 'outlineItemOnHover' must be a Boolean\n";
+    //   }
+    //   if (typeof options.nestingLevel !== "number") {
+    //     error += "option 'nestingLevel' must be a Number\n";
+    //   }
+    //   if (typeof options.flipAnimDuration !== "number") {
+    //     error += "option 'flipAnimDuration' must be a Number\n";
+    //   }
+    //   if (typeof options.flipAnimEasing !== "string") {
+    //     error += "option 'flipAnimEasing' must be a String\n";
+    //   } else if (
+    //     options.flipAnimEasing !== "linear" &&
+    //     options.flipAnimEasing !== "ease" &&
+    //     options.flipAnimEasing !== "ease-in-out" &&
+    //     options.flipAnimEasing !== "ease-in" &&
+    //     options.flipAnimEasing !== "ease-out" &&
+    //     options.flipAnimEasing.indexOf("cubic-bezier(") === -1
+    //   ) {
+    //     error +=
+    //       "option 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n";
+    //   }
+    //   if (typeof options.animRemoveTranslateX !== "number") {
+    //     error += "option 'animRemoveTranslateX' must be a Number\n";
+    //   }
+    //   if (typeof options.animRemoveTranslateY !== "number") {
+    //     error += "option 'animRemoveTranslateY' must be a Number\n";
+    //   }
+    //   if (typeof options.animAddTranslateY !== "number") {
+    //     error += "option 'animAddTranslateY' must be a Number\n";
+    //   }
+    //   if (typeof options.animAddTranslateX !== "number") {
+    //     error += "option 'animAddTranslateX' must be a Number\n";
+    //   }
+    //   if (options.beforeRemove && typeof options.beforeRemove !== "function") {
+    //     error += "option 'beforeRemove' must be a Function\n";
+    //   }
+    //   if (error === "") {
+    //     return "valid";
+    //   } else {
+    //     return error;
+    //   }
+    // }
 
-      if (typeof options.removeBtn !== "boolean") {
-        error += "option 'button' must be a Boolean\n";
-      }
-
-      if (typeof options.modalConfirm !== "boolean") {
-        error += "option 'modalConfirm' must be a Boolean\n";
-      }
-
-      if (typeof options.removeBtnWidth !== "number") {
-        error += "option 'removeBtnWidth' must be a Number\n";
-      }
-
-      if (typeof options.removeBtnThickness !== "number") {
-        error += "option 'removeBtnThickness' must be a Number\n";
-      }
-
-      if (typeof options.alertTimer !== "number") {
-        error += "option 'alertTimer' must be a Number\n";
-      }
-
-      if (options.removeBtnClass && typeof options.removeBtnClass !== "string") {
-        error += "option 'buttonClass' must be a String\n";
-      }
-
-      if (typeof options.removeBtnHoverColor !== "string") {
-        error += "option 'removeBtnHoverColor' must be a String\n";
-      }
-
-      if (typeof options.removeBtnSharpness !== "string") {
-        error += "option 'removeBtnSharpness' must be a String\n";
-      }
-
-      if (typeof options.removeBtnPosition !== "string") {
-        error += "option 'removeBtnPosition' must be a String\n";
-      }
-
-      if (typeof options.removeBtnBgColor !== "string") {
-        error += "option 'removeBtnBgColor' must be a String\n";
-      }
-
-      if (typeof options.removeBtnBgHoverColor !== "string") {
-        error += "option 'removeBtnBgHoverColor' must be a String\n";
-      }
-
-      if (typeof options.removeBtnCircle !== "boolean") {
-        error += "option 'removeBtnCircle' must be a Boolean\n";
-      }
-
-      if (typeof options.removeBtnMargin !== "number") {
-        error += "option 'removeBtnMargin' must be a Number\n";
-      }
-
-      if (typeof options.modalText !== "string") {
-        error += "option 'modalText' must be a String\n";
-      }
-
-      if (typeof options.removeAlertText !== "string") {
-        error += "option 'removeAlertText' must be a String\n";
-      }
-
-      if (typeof options.addAlertText !== "string") {
-        error += "option 'addAlertText' must be a String\n";
-      }
-
-      if (typeof options.showRemoveAlerts !== "boolean") {
-        error += "option 'showRemoveAlerts' must be a Boolean\n";
-      }
-
-      if (typeof options.showAddAlerts !== "boolean") {
-        error += "option 'showAddAlerts' must be a Boolean\n";
-      }
-
-      if (typeof options.alertPosition !== "string") {
-        error += "option 'alertPosition' must be a String\n";
-      }
-
-      if (typeof options.flipAnimation !== "boolean") {
-        error += "option 'flipAnimation' must be a Boolean\n";
-      }
-
-      if (typeof options.outlineItemOnHover !== "boolean") {
-        error += "option 'outlineItemOnHover' must be a Boolean\n";
-      }
-
-      if (typeof options.nestingLevel !== "number") {
-        error += "option 'nestingLevel' must be a Number\n";
-      }
-
-      if (typeof options.flipAnimDuration !== "number") {
-        error += "option 'flipAnimDuration' must be a Number\n";
-      }
-
-      if (typeof options.flipAnimEasing !== "string") {
-        error += "option 'flipAnimEasing' must be a String\n";
-      } else if (options.flipAnimEasing !== "linear" && options.flipAnimEasing !== "ease" && options.flipAnimEasing !== "ease-in-out" && options.flipAnimEasing !== "ease-in" && options.flipAnimEasing !== "ease-out" && options.flipAnimEasing.indexOf("cubic-bezier(") === -1) {
-        error += "option 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n";
-      }
-
-      if (typeof options.animRemoveTranslateX !== "number") {
-        error += "option 'animRemoveTranslateX' must be a Number\n";
-      }
-
-      if (typeof options.animRemoveTranslateY !== "number") {
-        error += "option 'animRemoveTranslateY' must be a Number\n";
-      }
-
-      if (typeof options.animAddTranslateY !== "number") {
-        error += "option 'animAddTranslateY' must be a Number\n";
-      }
-
-      if (typeof options.animAddTranslateX !== "number") {
-        error += "option 'animAddTranslateX' must be a Number\n";
-      }
-
-      if (options.beforeRemove && typeof options.beforeRemove !== "function") {
-        error += "option 'beforeRemove' must be a Function\n";
-      }
-
-      if (error === "") {
-        return "valid";
-      } else {
-        return error;
-      }
-    }
   }, {
     key: "getOptionsFromAttributes",
     value: function getOptionsFromAttributes(parent, options) {
@@ -1697,7 +1699,7 @@ function () {
             } else if (parent.getAttribute(key) === "true") {
               options[key] = true;
             } else if (intAttributes.indexOf(key) !== -1) {
-              if (parseInt(parent.getAttribute(key)) > 0) {
+              if (!isNaN(parseInt(parent.getAttribute(key)))) {
                 options[key] = parseInt(parent.getAttribute(key));
               }
             } else {
