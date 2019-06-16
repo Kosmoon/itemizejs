@@ -1,5 +1,5 @@
 /*
- -- itemize.js v0.45--
+ -- itemize.js v0.50--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -9,7 +9,7 @@ class Itemize {
     this.containers = [];
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
-    this.alertNb = 0;
+    this.notificationNb = 0;
     this.modalDisappearTimeout = null;
     this.elPos = {};
     this.lastTargetedContainers = null;
@@ -193,7 +193,8 @@ class Itemize {
                         }
                       });
                       if (newNode) {
-                         if (!node.getAttribute("notItemize") &&
+                        if (
+                          !node.getAttribute("notItemize") &&
                           node.parentElement &&
                           node.type !== "text/css" &&
                           node.tagName !== "BR" &&
@@ -350,7 +351,7 @@ class Itemize {
         }
       }
       if (fromObserver) {
-        this.showAlert("added", child);
+        this.showNotification("added", child);
       }
       return true;
     } else {
@@ -640,7 +641,7 @@ class Itemize {
       const modalAnimDuration = 150;
       const backDrop = document.createElement("div");
       const modal = document.createElement("div");
-      const alertText = document.createElement("div");
+      const notificationText = document.createElement("div");
       const btnContainer = document.createElement("div");
       const btnConfirm = document.createElement("button");
       const btnCancel = document.createElement("button");
@@ -650,16 +651,16 @@ class Itemize {
       // body.style.overflow = "hidden";
       backDrop.classList.add("itemize_modal_backdrop");
       modal.classList.add("itemize_modal");
-      alertText.classList.add("itemize_modal_text");
+      notificationText.classList.add("itemize_modal_text");
       btnConfirm.classList.add("itemize_modal_btnConfirm");
       btnCancel.classList.add("itemize_modal_btnCancel");
       crossClose.classList.add("itemize_modal_cross");
-      alertText.textContent = el.parentElement.itemizeOptions.modalText;
+      notificationText.textContent = el.parentElement.itemizeOptions.modalText;
       btnConfirm.innerHTML = "Yes";
       btnCancel.innerHTML = "Cancel";
       btnContainer.appendChild(btnCancel);
       btnContainer.appendChild(btnConfirm);
-      modal.appendChild(alertText);
+      modal.appendChild(notificationText);
       modal.appendChild(btnContainer);
       modal.appendChild(crossClose);
       let hideModal = (bdy, bckdrop, mdal) => {
@@ -805,7 +806,7 @@ class Itemize {
       }
       modal.appendChild(styleEl);
 
-      Object.assign(alertText.style, {
+      Object.assign(notificationText.style, {
         marginBottom: "25px"
       });
       Object.assign(btnContainer.style, {
@@ -926,90 +927,98 @@ class Itemize {
     }
   }
 
-  showAlert(action, element) {
+  showNotification(action, element) {
     if (
-      (element.parentElement.itemizeOptions.showAddAlerts &&
+      (element.parentElement.itemizeOptions.showAddNotifications &&
         action === "added") ||
-      (element.parentElement.itemizeOptions.showRemoveAlerts &&
+      (element.parentElement.itemizeOptions.showRemoveNotifications &&
         action === "removed")
     ) {
-      let alertClassName = "";
-      let alertTextClassName = "";
-      let alertBackground = "";
-      let alertTimerColor = "";
-      let alertTextContent = "";
-      let alertLeftPos = "";
-      let alertTopPos = "";
-      let alertTranslateX = "";
+      let notificationClassName = "";
+      let notificationTextClassName = "";
+      let notificationBackground = "";
+      let notificationTimerColor = "";
+      let notificationTextContent = "";
+      let notificationLeftPos = "";
+      let notificationTopPos = "";
+      let notificationTranslateX = "";
       let minusOrNothing = "-";
-      let alertIsTop = false;
-      let alertTimerDuration = element.parentElement.itemizeOptions.alertTimer;
+      let notificationIsTop = false;
+      let notificationTimerDuration =
+        element.parentElement.itemizeOptions.notificationTimer;
       if (
-        element.parentElement.itemizeOptions.alertPosition === "bottom-center"
+        element.parentElement.itemizeOptions.notificationPosition ===
+        "bottom-center"
       ) {
-        alertLeftPos = "50%";
-        alertTopPos = "100%";
-        alertTranslateX = "-50%";
+        notificationLeftPos = "50%";
+        notificationTopPos = "100%";
+        notificationTranslateX = "-50%";
       } else if (
-        element.parentElement.itemizeOptions.alertPosition === "bottom-right"
+        element.parentElement.itemizeOptions.notificationPosition ===
+        "bottom-right"
       ) {
-        alertLeftPos = "100%";
-        alertTopPos = "100%";
-        alertTranslateX = "-100%";
+        notificationLeftPos = "100%";
+        notificationTopPos = "100%";
+        notificationTranslateX = "-100%";
       } else if (
-        element.parentElement.itemizeOptions.alertPosition === "bottom-left"
+        element.parentElement.itemizeOptions.notificationPosition ===
+        "bottom-left"
       ) {
-        alertLeftPos = "0%";
-        alertTopPos = "100%";
-        alertTranslateX = "0%";
+        notificationLeftPos = "0%";
+        notificationTopPos = "100%";
+        notificationTranslateX = "0%";
       } else if (
-        element.parentElement.itemizeOptions.alertPosition === "top-center"
+        element.parentElement.itemizeOptions.notificationPosition ===
+        "top-center"
       ) {
-        alertLeftPos = "50%";
-        alertTopPos = "0%";
-        alertTranslateX = "-50%";
+        notificationLeftPos = "50%";
+        notificationTopPos = "0%";
+        notificationTranslateX = "-50%";
         minusOrNothing = "";
-        alertIsTop = true;
+        notificationIsTop = true;
       } else if (
-        element.parentElement.itemizeOptions.alertPosition === "top-right"
+        element.parentElement.itemizeOptions.notificationPosition ===
+        "top-right"
       ) {
-        alertLeftPos = "100%";
-        alertTopPos = "0%";
-        alertTranslateX = "-100%";
+        notificationLeftPos = "100%";
+        notificationTopPos = "0%";
+        notificationTranslateX = "-100%";
         minusOrNothing = "";
-        alertIsTop = true;
+        notificationIsTop = true;
       } else if (
-        element.parentElement.itemizeOptions.alertPosition === "top-left"
+        element.parentElement.itemizeOptions.notificationPosition === "top-left"
       ) {
-        alertLeftPos = "0%";
-        alertTopPos = "0%";
-        alertTranslateX = "0%";
+        notificationLeftPos = "0%";
+        notificationTopPos = "0%";
+        notificationTranslateX = "0%";
         minusOrNothing = "";
-        alertIsTop = true;
+        notificationIsTop = true;
       }
       if (action === "removed") {
-        alertClassName = "itemize_remove_alert";
-        alertTextClassName = "itemize_remove_alert_text";
-        alertBackground = "#BD5B5B";
-        alertTimerColor = "#DEADAD";
-        alertTextContent = element.parentElement.itemizeOptions.removeAlertText;
+        notificationClassName = "itemize_remove_notification";
+        notificationTextClassName = "itemize_remove_notification_text";
+        notificationBackground = "#BD5B5B";
+        notificationTimerColor = "#DEADAD";
+        notificationTextContent =
+          element.parentElement.itemizeOptions.removeNotificationText;
       } else if (action === "added") {
-        alertClassName = "itemize_add_alert";
-        alertTextClassName = "itemize_add_alert_text";
-        alertBackground = "#00AF66";
-        alertTimerColor = "#80D7B3";
-        alertTextContent = element.parentElement.itemizeOptions.addAlertText;
+        notificationClassName = "itemize_add_notification";
+        notificationTextClassName = "itemize_add_notification_text";
+        notificationBackground = "#00AF66";
+        notificationTimerColor = "#80D7B3";
+        notificationTextContent =
+          element.parentElement.itemizeOptions.addNotificationText;
       }
-      this.alertNb++;
-      let popAlert = document.createElement("div");
-      popAlert.alertId = this.alertNb;
-      let alertTimer = document.createElement("div");
-      let alertText = document.createElement("div");
-      popAlert.classList.add(alertClassName);
-      popAlert.classList.add("itemize_alert");
-      alertText.classList.add(alertTextClassName);
-      alertText.textContent = alertTextContent;
-      Object.assign(alertText.style, {
+      this.notificationNb++;
+      let popNotification = document.createElement("div");
+      popNotification.notificationId = this.notificationNb;
+      let notificationTimer = document.createElement("div");
+      let notificationText = document.createElement("div");
+      popNotification.classList.add(notificationClassName);
+      popNotification.classList.add("itemize_notification");
+      notificationText.classList.add(notificationTextClassName);
+      notificationText.textContent = notificationTextContent;
+      Object.assign(notificationText.style, {
         boxSizing: "border-box",
         width: "100%",
         height: "100%",
@@ -1017,35 +1026,67 @@ class Itemize {
         whiteSpace: "nowrap",
         padding: "10px 15px 10px 15px"
       });
-      Object.assign(alertTimer.style, {
-        background: alertTimerColor,
+      Object.assign(notificationTimer.style, {
+        background: notificationTimerColor,
         width: "100%",
         height: "5px"
       });
-      Object.assign(popAlert.style, {
+      Object.assign(popNotification.style, {
         boxSizing: "border-box",
         position: "fixed",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        top: alertTopPos,
-        left: alertLeftPos,
-        border: "solid 1px " + alertTimerColor,
+        top: notificationTopPos,
+        left: notificationLeftPos,
+        border: "solid 1px " + notificationTimerColor,
         borderRadius: "4px",
-        transform: `translate(${alertTranslateX}, ${minusOrNothing}${this
-          .alertNb *
+        transform: `translate(${notificationTranslateX}, ${minusOrNothing}${this
+          .notificationNb *
           100 -
-          (alertIsTop ? 100 : 0)}%)`,
+          (notificationIsTop ? 100 : 0)}%)`,
         fontFamily: "helvetica",
-        background: alertBackground,
+        background: notificationBackground,
         color: "#FFFFFF",
-        zIndex: 100000
+        zIndex: 100000000
       });
-      document.querySelector("body").appendChild(popAlert);
-      popAlert.appendChild(alertTimer);
-      popAlert.appendChild(alertText);
-      if (alertTimer.animate) {
-        alertTimer.animate(
+      document.querySelector("body").appendChild(popNotification);
+      popNotification.appendChild(notificationTimer);
+      popNotification.appendChild(notificationText);
+      if (popNotification.animate) {
+        popNotification.animate(
+          [
+            {
+              opacity: 0
+            },
+            {
+              opacity: 1
+            }
+          ],
+          {
+            duration: 300,
+            easing: "linear",
+            fill: "both"
+          }
+        );
+      } else {
+        this.animateRAF(
+          popNotification,
+          [
+            {
+              opacity: 0
+            }
+          ],
+          [
+            {
+              opacity: 1
+            }
+          ],
+          300
+        );
+      }
+      if (notificationTimer.animate) {
+        notificationTimer.animate(
           [
             {
               width: "100%"
@@ -1055,14 +1096,14 @@ class Itemize {
             }
           ],
           {
-            duration: alertTimerDuration,
+            duration: notificationTimerDuration,
             easing: "linear",
             fill: "both"
           }
         );
       } else {
         this.animateRAF(
-          alertTimer,
+          notificationTimer,
           [
             {
               width: {
@@ -1079,30 +1120,32 @@ class Itemize {
               }
             }
           ],
-          alertTimerDuration
+          notificationTimerDuration
         );
       }
       setTimeout(() => {
-        let alertList = document.querySelectorAll(".itemize_alert");
-        for (let i = 0; i < alertList.length; i++) {
-          if (alertList[i].alertId > 0) {
+        let notificationList = document.querySelectorAll(
+          ".itemize_notification"
+        );
+        for (let i = 0; i < notificationList.length; i++) {
+          if (notificationList[i].notificationId > 0) {
             let translateYStart = parseInt(
-              `${minusOrNothing}${alertList[i].alertId * 100 -
-                (alertIsTop ? 100 : 0)}`
+              `${minusOrNothing}${notificationList[i].notificationId * 100 -
+                (notificationIsTop ? 100 : 0)}`
             );
             let translateYEnd = parseInt(
-              `${minusOrNothing}${alertList[i].alertId * 100 -
-                (alertIsTop ? 100 : 0) -
+              `${minusOrNothing}${notificationList[i].notificationId * 100 -
+                (notificationIsTop ? 100 : 0) -
                 100}`
             );
-            if (alertList[i].animate) {
-              alertList[i].animate(
+            if (notificationList[i].animate) {
+              notificationList[i].animate(
                 [
                   {
-                    transform: `translate(${alertTranslateX}, ${translateYStart}%)`
+                    transform: `translate(${notificationTranslateX}, ${translateYStart}%)`
                   },
                   {
-                    transform: `translate(${alertTranslateX}, ${translateYEnd}%)`
+                    transform: `translate(${notificationTranslateX}, ${translateYEnd}%)`
                   }
                 ],
                 {
@@ -1113,11 +1156,11 @@ class Itemize {
               );
             } else {
               this.animateRAF(
-                alertList[i],
+                notificationList[i],
                 [
                   {
                     transform: {
-                      translateX: parseInt(alertTranslateX),
+                      translateX: parseInt(notificationTranslateX),
                       translateY: translateYStart,
                       unit: "%"
                     }
@@ -1126,7 +1169,7 @@ class Itemize {
                 [
                   {
                     transform: {
-                      translateX: parseInt(alertTranslateX),
+                      translateX: parseInt(notificationTranslateX),
                       translateY: translateYEnd,
                       unit: "%"
                     }
@@ -1135,14 +1178,14 @@ class Itemize {
                 150
               );
             }
-            alertList[i].alertId--;
+            notificationList[i].notificationId--;
           }
         }
-        this.alertNb--;
+        this.notificationNb--;
         setTimeout(() => {
-          document.querySelector("body").removeChild(popAlert);
+          document.querySelector("body").removeChild(popNotification);
         }, 300);
-      }, alertTimerDuration);
+      }, notificationTimerDuration);
     }
   }
 
@@ -1217,13 +1260,13 @@ class Itemize {
                         closeBtn.onclick = null;
                       }
                     }
-                    this.showAlert("removed", item);
+                    this.showNotification("removed", item);
                     this.flipRead(this.items);
                     this.flipRemove(item);
                     this.cleanItem(item);
                     this.items.splice(item.arrayPosition, 1);
                   } else {
-                    this.showAlert("removed", item);
+                    this.showNotification("removed", item);
                     item.removeStatus = null;
                     item.remove();
                     this.cleanItem(item);
@@ -1251,13 +1294,13 @@ class Itemize {
                     closeBtn.onclick = null;
                   }
                 }
-                this.showAlert("removed", item);
+                this.showNotification("removed", item);
                 this.flipRead(this.items);
                 this.flipRemove(item);
                 this.cleanItem(item);
                 this.items.splice(item.arrayPosition, 1);
               } else {
-                this.showAlert("removed", item);
+                this.showNotification("removed", item);
                 item.removeStatus = null;
                 item.remove();
                 this.items.splice(item.arrayPosition, 1);
@@ -1279,13 +1322,13 @@ class Itemize {
                   closeBtn.onclick = null;
                 }
               }
-              this.showAlert("removed", item);
+              this.showNotification("removed", item);
               this.flipRead(this.items);
               this.flipRemove(item);
               this.cleanItem(item);
               this.items.splice(item.arrayPosition, 1);
             } else {
-              this.showAlert("removed", item);
+              this.showNotification("removed", item);
               item.removeStatus = null;
               item.remove();
               this.cleanItem(item);
@@ -1634,12 +1677,12 @@ class Itemize {
         removeBtnClass: null,
         modalConfirm: false,
         modalText: "Are you sure to remove this item?",
-        removeAlertText: "Item removed",
-        addAlertText: "Item added",
-        showRemoveAlerts: false,
-        showAddAlerts: false,
-        alertPosition: "bottom-right",
-        alertTimer: 4000,
+        removeNotificationText: "Item removed",
+        addNotificationText: "Item added",
+        showRemoveNotifications: false,
+        showAddNotifications: false,
+        notificationPosition: "bottom-right",
+        notificationTimer: 4000,
         flipAnimation: true,
         flipAnimEasing: "ease-in-out",
         flipAnimDuration: 500,
@@ -1682,8 +1725,8 @@ class Itemize {
   //   if (typeof options.removeBtnThickness !== "number") {
   //     error += "option 'removeBtnThickness' must be a Number\n";
   //   }
-  //   if (typeof options.alertTimer !== "number") {
-  //     error += "option 'alertTimer' must be a Number\n";
+  //   if (typeof options.notificationTimer !== "number") {
+  //     error += "option 'notificationTimer' must be a Number\n";
   //   }
   //   if (options.removeBtnClass && typeof options.removeBtnClass !== "string") {
   //     error += "option 'buttonClass' must be a String\n";
@@ -1712,20 +1755,20 @@ class Itemize {
   //   if (typeof options.modalText !== "string") {
   //     error += "option 'modalText' must be a String\n";
   //   }
-  //   if (typeof options.removeAlertText !== "string") {
-  //     error += "option 'removeAlertText' must be a String\n";
+  //   if (typeof options.removeNotificationText !== "string") {
+  //     error += "option 'removeNotificationText' must be a String\n";
   //   }
-  //   if (typeof options.addAlertText !== "string") {
-  //     error += "option 'addAlertText' must be a String\n";
+  //   if (typeof options.addNotificationText !== "string") {
+  //     error += "option 'addNotificationText' must be a String\n";
   //   }
-  //   if (typeof options.showRemoveAlerts !== "boolean") {
-  //     error += "option 'showRemoveAlerts' must be a Boolean\n";
+  //   if (typeof options.showRemoveNotifications !== "boolean") {
+  //     error += "option 'showRemoveNotifications' must be a Boolean\n";
   //   }
-  //   if (typeof options.showAddAlerts !== "boolean") {
-  //     error += "option 'showAddAlerts' must be a Boolean\n";
+  //   if (typeof options.showAddNotifications !== "boolean") {
+  //     error += "option 'showAddNotifications' must be a Boolean\n";
   //   }
-  //   if (typeof options.alertPosition !== "string") {
-  //     error += "option 'alertPosition' must be a String\n";
+  //   if (typeof options.notificationPosition !== "string") {
+  //     error += "option 'notificationPosition' must be a String\n";
   //   }
   //   if (typeof options.flipAnimation !== "boolean") {
   //     error += "option 'flipAnimation' must be a Boolean\n";
@@ -1785,7 +1828,7 @@ class Itemize {
       "animAddTranslateX",
       "animAddTranslateY",
       "removeBtnThickness",
-      "alertTimer"
+      "notificationTimer"
     ];
     for (var key in options) {
       if (options.hasOwnProperty(key)) {
@@ -1865,21 +1908,21 @@ class Itemize {
     // if (typeof parent.getAttribute("modalText") === "string") {
     //   options.modalText = parent.getAttribute("modalText");
     // }
-    // if (typeof parent.getAttribute("removeAlertText") === "string") {
-    //   options.removeAlertText = parent.getAttribute("removeAlertText");
+    // if (typeof parent.getAttribute("removeNotificationText") === "string") {
+    //   options.removeNotificationText = parent.getAttribute("removeNotificationText");
     // }
-    // if (typeof parent.getAttribute("addAlertText") === "string") {
-    //   options.addAlertText = parent.getAttribute("addAlertText");
+    // if (typeof parent.getAttribute("addNotificationText") === "string") {
+    //   options.addNotificationText = parent.getAttribute("addNotificationText");
     // }
-    // if (parent.getAttribute("showAddAlerts") === "true") {
-    //   options.showAddAlerts = true;
-    // } else if (parent.getAttribute("showAddAlerts") === "false") {
-    //   options.showAddAlerts = false;
+    // if (parent.getAttribute("showAddNotifications") === "true") {
+    //   options.showAddNotifications = true;
+    // } else if (parent.getAttribute("showAddNotifications") === "false") {
+    //   options.showAddNotifications = false;
     // }
-    // if (parent.getAttribute("showRemoveAlerts") === "true") {
-    //   options.showRemoveAlerts = true;
-    // } else if (parent.getAttribute("showRemoveAlerts") === "false") {
-    //   options.showRemoveAlerts = false;
+    // if (parent.getAttribute("showRemoveNotifications") === "true") {
+    //   options.showRemoveNotifications = true;
+    // } else if (parent.getAttribute("showRemoveNotifications") === "false") {
+    //   options.showRemoveNotifications = false;
     // }
     // if (parent.getAttribute("removeBtnCircle") === "true") {
     //   options.removeBtnCircle = true;

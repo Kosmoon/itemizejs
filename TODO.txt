@@ -6,6 +6,7 @@
 [x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
 [x] - removeBtnBackgroundHoverCOlor
 [x] - onAddedITEM
+[ ] - remove anim paramettre perso comme animjs, et peut etre une option remove anim duration
 [ ] - parentItemList variable sur le parent
 [ ] - option type check utile? on supprime?
 [x] - DEFI important:  empecher le redimentionement des elements lors d'un apply (exemple spotifty)

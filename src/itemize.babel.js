@@ -1,5 +1,3 @@
-"use strict";
-
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; var ownKeys = Object.keys(source); if (typeof Object.getOwnPropertySymbols === 'function') { ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) { return Object.getOwnPropertyDescriptor(source, sym).enumerable; })); } ownKeys.forEach(function (key) { _defineProperty(target, key, source[key]); }); } return target; }
@@ -13,7 +11,7 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 /*
- -- itemize.js v0.45--
+ -- itemize.js v0.50--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -26,7 +24,7 @@ function () {
     this.containers = [];
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
-    this.alertNb = 0;
+    this.notificationNb = 0;
     this.modalDisappearTimeout = null;
     this.elPos = {};
     this.lastTargetedContainers = null;
@@ -384,7 +382,7 @@ function () {
         }
 
         if (fromObserver) {
-          this.showAlert("added", child);
+          this.showNotification("added", child);
         }
 
         return true;
@@ -675,7 +673,7 @@ function () {
         var modalAnimDuration = 150;
         var backDrop = document.createElement("div");
         var modal = document.createElement("div");
-        var alertText = document.createElement("div");
+        var notificationText = document.createElement("div");
         var btnContainer = document.createElement("div");
         var btnConfirm = document.createElement("button");
         var btnCancel = document.createElement("button");
@@ -685,16 +683,16 @@ function () {
 
         backDrop.classList.add("itemize_modal_backdrop");
         modal.classList.add("itemize_modal");
-        alertText.classList.add("itemize_modal_text");
+        notificationText.classList.add("itemize_modal_text");
         btnConfirm.classList.add("itemize_modal_btnConfirm");
         btnCancel.classList.add("itemize_modal_btnCancel");
         crossClose.classList.add("itemize_modal_cross");
-        alertText.textContent = el.parentElement.itemizeOptions.modalText;
+        notificationText.textContent = el.parentElement.itemizeOptions.modalText;
         btnConfirm.innerHTML = "Yes";
         btnCancel.innerHTML = "Cancel";
         btnContainer.appendChild(btnCancel);
         btnContainer.appendChild(btnConfirm);
-        modal.appendChild(alertText);
+        modal.appendChild(notificationText);
         modal.appendChild(btnContainer);
         modal.appendChild(crossClose);
 
@@ -819,7 +817,7 @@ function () {
         }
 
         modal.appendChild(styleEl);
-        Object.assign(alertText.style, {
+        Object.assign(notificationText.style, {
           marginBottom: "25px"
         });
         Object.assign(btnContainer.style, {
@@ -912,79 +910,79 @@ function () {
       }
     }
   }, {
-    key: "showAlert",
-    value: function showAlert(action, element) {
+    key: "showNotification",
+    value: function showNotification(action, element) {
       var _this5 = this;
 
-      if (element.parentElement.itemizeOptions.showAddAlerts && action === "added" || element.parentElement.itemizeOptions.showRemoveAlerts && action === "removed") {
-        var alertClassName = "";
-        var alertTextClassName = "";
-        var alertBackground = "";
-        var alertTimerColor = "";
-        var alertTextContent = "";
-        var alertLeftPos = "";
-        var alertTopPos = "";
-        var alertTranslateX = "";
+      if (element.parentElement.itemizeOptions.showAddNotifications && action === "added" || element.parentElement.itemizeOptions.showRemoveNotifications && action === "removed") {
+        var notificationClassName = "";
+        var notificationTextClassName = "";
+        var notificationBackground = "";
+        var notificationTimerColor = "";
+        var notificationTextContent = "";
+        var notificationLeftPos = "";
+        var notificationTopPos = "";
+        var notificationTranslateX = "";
         var minusOrNothing = "-";
-        var alertIsTop = false;
-        var alertTimerDuration = element.parentElement.itemizeOptions.alertTimer;
+        var notificationIsTop = false;
+        var notificationTimerDuration = element.parentElement.itemizeOptions.notificationTimer;
 
-        if (element.parentElement.itemizeOptions.alertPosition === "bottom-center") {
-          alertLeftPos = "50%";
-          alertTopPos = "100%";
-          alertTranslateX = "-50%";
-        } else if (element.parentElement.itemizeOptions.alertPosition === "bottom-right") {
-          alertLeftPos = "100%";
-          alertTopPos = "100%";
-          alertTranslateX = "-100%";
-        } else if (element.parentElement.itemizeOptions.alertPosition === "bottom-left") {
-          alertLeftPos = "0%";
-          alertTopPos = "100%";
-          alertTranslateX = "0%";
-        } else if (element.parentElement.itemizeOptions.alertPosition === "top-center") {
-          alertLeftPos = "50%";
-          alertTopPos = "0%";
-          alertTranslateX = "-50%";
+        if (element.parentElement.itemizeOptions.notificationPosition === "bottom-center") {
+          notificationLeftPos = "50%";
+          notificationTopPos = "100%";
+          notificationTranslateX = "-50%";
+        } else if (element.parentElement.itemizeOptions.notificationPosition === "bottom-right") {
+          notificationLeftPos = "100%";
+          notificationTopPos = "100%";
+          notificationTranslateX = "-100%";
+        } else if (element.parentElement.itemizeOptions.notificationPosition === "bottom-left") {
+          notificationLeftPos = "0%";
+          notificationTopPos = "100%";
+          notificationTranslateX = "0%";
+        } else if (element.parentElement.itemizeOptions.notificationPosition === "top-center") {
+          notificationLeftPos = "50%";
+          notificationTopPos = "0%";
+          notificationTranslateX = "-50%";
           minusOrNothing = "";
-          alertIsTop = true;
-        } else if (element.parentElement.itemizeOptions.alertPosition === "top-right") {
-          alertLeftPos = "100%";
-          alertTopPos = "0%";
-          alertTranslateX = "-100%";
+          notificationIsTop = true;
+        } else if (element.parentElement.itemizeOptions.notificationPosition === "top-right") {
+          notificationLeftPos = "100%";
+          notificationTopPos = "0%";
+          notificationTranslateX = "-100%";
           minusOrNothing = "";
-          alertIsTop = true;
-        } else if (element.parentElement.itemizeOptions.alertPosition === "top-left") {
-          alertLeftPos = "0%";
-          alertTopPos = "0%";
-          alertTranslateX = "0%";
+          notificationIsTop = true;
+        } else if (element.parentElement.itemizeOptions.notificationPosition === "top-left") {
+          notificationLeftPos = "0%";
+          notificationTopPos = "0%";
+          notificationTranslateX = "0%";
           minusOrNothing = "";
-          alertIsTop = true;
+          notificationIsTop = true;
         }
 
         if (action === "removed") {
-          alertClassName = "itemize_remove_alert";
-          alertTextClassName = "itemize_remove_alert_text";
-          alertBackground = "#BD5B5B";
-          alertTimerColor = "#DEADAD";
-          alertTextContent = element.parentElement.itemizeOptions.removeAlertText;
+          notificationClassName = "itemize_remove_notification";
+          notificationTextClassName = "itemize_remove_notification_text";
+          notificationBackground = "#BD5B5B";
+          notificationTimerColor = "#DEADAD";
+          notificationTextContent = element.parentElement.itemizeOptions.removeNotificationText;
         } else if (action === "added") {
-          alertClassName = "itemize_add_alert";
-          alertTextClassName = "itemize_add_alert_text";
-          alertBackground = "#00AF66";
-          alertTimerColor = "#80D7B3";
-          alertTextContent = element.parentElement.itemizeOptions.addAlertText;
+          notificationClassName = "itemize_add_notification";
+          notificationTextClassName = "itemize_add_notification_text";
+          notificationBackground = "#00AF66";
+          notificationTimerColor = "#80D7B3";
+          notificationTextContent = element.parentElement.itemizeOptions.addNotificationText;
         }
 
-        this.alertNb++;
-        var popAlert = document.createElement("div");
-        popAlert.alertId = this.alertNb;
-        var alertTimer = document.createElement("div");
-        var alertText = document.createElement("div");
-        popAlert.classList.add(alertClassName);
-        popAlert.classList.add("itemize_alert");
-        alertText.classList.add(alertTextClassName);
-        alertText.textContent = alertTextContent;
-        Object.assign(alertText.style, {
+        this.notificationNb++;
+        var popNotification = document.createElement("div");
+        popNotification.notificationId = this.notificationNb;
+        var notificationTimer = document.createElement("div");
+        var notificationText = document.createElement("div");
+        popNotification.classList.add(notificationClassName);
+        popNotification.classList.add("itemize_notification");
+        notificationText.classList.add(notificationTextClassName);
+        notificationText.textContent = notificationTextContent;
+        Object.assign(notificationText.style, {
           boxSizing: "border-box",
           width: "100%",
           height: "100%",
@@ -992,43 +990,61 @@ function () {
           whiteSpace: "nowrap",
           padding: "10px 15px 10px 15px"
         });
-        Object.assign(alertTimer.style, {
-          background: alertTimerColor,
+        Object.assign(notificationTimer.style, {
+          background: notificationTimerColor,
           width: "100%",
           height: "5px"
         });
-        Object.assign(popAlert.style, {
+        Object.assign(popNotification.style, {
           boxSizing: "border-box",
           position: "fixed",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          top: alertTopPos,
-          left: alertLeftPos,
-          border: "solid 1px " + alertTimerColor,
+          top: notificationTopPos,
+          left: notificationLeftPos,
+          border: "solid 1px " + notificationTimerColor,
           borderRadius: "4px",
-          transform: "translate(".concat(alertTranslateX, ", ").concat(minusOrNothing).concat(this.alertNb * 100 - (alertIsTop ? 100 : 0), "%)"),
+          transform: "translate(".concat(notificationTranslateX, ", ").concat(minusOrNothing).concat(this.notificationNb * 100 - (notificationIsTop ? 100 : 0), "%)"),
           fontFamily: "helvetica",
-          background: alertBackground,
+          background: notificationBackground,
           color: "#FFFFFF",
-          zIndex: 100000
+          zIndex: 100000000
         });
-        document.querySelector("body").appendChild(popAlert);
-        popAlert.appendChild(alertTimer);
-        popAlert.appendChild(alertText);
+        document.querySelector("body").appendChild(popNotification);
+        popNotification.appendChild(notificationTimer);
+        popNotification.appendChild(notificationText);
 
-        if (alertTimer.animate) {
-          alertTimer.animate([{
-            width: "100%"
+        if (popNotification.animate) {
+          popNotification.animate([{
+            opacity: 0
           }, {
-            width: "0%"
+            opacity: 1
           }], {
-            duration: alertTimerDuration,
+            duration: 300,
             easing: "linear",
             fill: "both"
           });
         } else {
-          this.animateRAF(alertTimer, [{
+          this.animateRAF(popNotification, [{
+            opacity: 0
+          }], [{
+            opacity: 1
+          }], 300);
+        }
+
+        if (notificationTimer.animate) {
+          notificationTimer.animate([{
+            width: "100%"
+          }, {
+            width: "0%"
+          }], {
+            duration: notificationTimerDuration,
+            easing: "linear",
+            fill: "both"
+          });
+        } else {
+          this.animateRAF(notificationTimer, [{
             width: {
               value: 100,
               unit: "%"
@@ -1038,52 +1054,52 @@ function () {
               value: 0,
               unit: "%"
             }
-          }], alertTimerDuration);
+          }], notificationTimerDuration);
         }
 
         setTimeout(function () {
-          var alertList = document.querySelectorAll(".itemize_alert");
+          var notificationList = document.querySelectorAll(".itemize_notification");
 
-          for (var i = 0; i < alertList.length; i++) {
-            if (alertList[i].alertId > 0) {
-              var translateYStart = parseInt("".concat(minusOrNothing).concat(alertList[i].alertId * 100 - (alertIsTop ? 100 : 0)));
-              var translateYEnd = parseInt("".concat(minusOrNothing).concat(alertList[i].alertId * 100 - (alertIsTop ? 100 : 0) - 100));
+          for (var i = 0; i < notificationList.length; i++) {
+            if (notificationList[i].notificationId > 0) {
+              var translateYStart = parseInt("".concat(minusOrNothing).concat(notificationList[i].notificationId * 100 - (notificationIsTop ? 100 : 0)));
+              var translateYEnd = parseInt("".concat(minusOrNothing).concat(notificationList[i].notificationId * 100 - (notificationIsTop ? 100 : 0) - 100));
 
-              if (alertList[i].animate) {
-                alertList[i].animate([{
-                  transform: "translate(".concat(alertTranslateX, ", ").concat(translateYStart, "%)")
+              if (notificationList[i].animate) {
+                notificationList[i].animate([{
+                  transform: "translate(".concat(notificationTranslateX, ", ").concat(translateYStart, "%)")
                 }, {
-                  transform: "translate(".concat(alertTranslateX, ", ").concat(translateYEnd, "%)")
+                  transform: "translate(".concat(notificationTranslateX, ", ").concat(translateYEnd, "%)")
                 }], {
                   duration: 150,
                   easing: "ease-in-out",
                   fill: "both"
                 });
               } else {
-                _this5.animateRAF(alertList[i], [{
+                _this5.animateRAF(notificationList[i], [{
                   transform: {
-                    translateX: parseInt(alertTranslateX),
+                    translateX: parseInt(notificationTranslateX),
                     translateY: translateYStart,
                     unit: "%"
                   }
                 }], [{
                   transform: {
-                    translateX: parseInt(alertTranslateX),
+                    translateX: parseInt(notificationTranslateX),
                     translateY: translateYEnd,
                     unit: "%"
                   }
                 }], 150);
               }
 
-              alertList[i].alertId--;
+              notificationList[i].notificationId--;
             }
           }
 
-          _this5.alertNb--;
+          _this5.notificationNb--;
           setTimeout(function () {
-            document.querySelector("body").removeChild(popAlert);
+            document.querySelector("body").removeChild(popNotification);
           }, 300);
-        }, alertTimerDuration);
+        }, notificationTimerDuration);
       }
     }
   }, {
@@ -1165,7 +1181,7 @@ function () {
                       }
                     }
 
-                    _this6.showAlert("removed", item);
+                    _this6.showNotification("removed", item);
 
                     _this6.flipRead(_this6.items);
 
@@ -1175,7 +1191,7 @@ function () {
 
                     _this6.items.splice(item.arrayPosition, 1);
                   } else {
-                    _this6.showAlert("removed", item);
+                    _this6.showNotification("removed", item);
 
                     item.removeStatus = null;
                     item.remove();
@@ -1205,13 +1221,13 @@ function () {
                     }
                   }
 
-                  this.showAlert("removed", item);
+                  this.showNotification("removed", item);
                   this.flipRead(this.items);
                   this.flipRemove(item);
                   this.cleanItem(item);
                   this.items.splice(item.arrayPosition, 1);
                 } else {
-                  this.showAlert("removed", item);
+                  this.showNotification("removed", item);
                   item.removeStatus = null;
                   item.remove();
                   this.items.splice(item.arrayPosition, 1);
@@ -1234,13 +1250,13 @@ function () {
                   }
                 }
 
-                this.showAlert("removed", item);
+                this.showNotification("removed", item);
                 this.flipRead(this.items);
                 this.flipRemove(item);
                 this.cleanItem(item);
                 this.items.splice(item.arrayPosition, 1);
               } else {
-                this.showAlert("removed", item);
+                this.showNotification("removed", item);
                 item.removeStatus = null;
                 item.remove();
                 this.cleanItem(item);
@@ -1545,12 +1561,12 @@ function () {
           removeBtnClass: null,
           modalConfirm: false,
           modalText: "Are you sure to remove this item?",
-          removeAlertText: "Item removed",
-          addAlertText: "Item added",
-          showRemoveAlerts: false,
-          showAddAlerts: false,
-          alertPosition: "bottom-right",
-          alertTimer: 4000,
+          removeNotificationText: "Item removed",
+          addNotificationText: "Item added",
+          showRemoveNotifications: false,
+          showAddNotifications: false,
+          notificationPosition: "bottom-right",
+          notificationTimer: 4000,
           flipAnimation: true,
           flipAnimEasing: "ease-in-out",
           flipAnimDuration: 500,
@@ -1594,8 +1610,8 @@ function () {
     //   if (typeof options.removeBtnThickness !== "number") {
     //     error += "option 'removeBtnThickness' must be a Number\n";
     //   }
-    //   if (typeof options.alertTimer !== "number") {
-    //     error += "option 'alertTimer' must be a Number\n";
+    //   if (typeof options.notificationTimer !== "number") {
+    //     error += "option 'notificationTimer' must be a Number\n";
     //   }
     //   if (options.removeBtnClass && typeof options.removeBtnClass !== "string") {
     //     error += "option 'buttonClass' must be a String\n";
@@ -1624,20 +1640,20 @@ function () {
     //   if (typeof options.modalText !== "string") {
     //     error += "option 'modalText' must be a String\n";
     //   }
-    //   if (typeof options.removeAlertText !== "string") {
-    //     error += "option 'removeAlertText' must be a String\n";
+    //   if (typeof options.removeNotificationText !== "string") {
+    //     error += "option 'removeNotificationText' must be a String\n";
     //   }
-    //   if (typeof options.addAlertText !== "string") {
-    //     error += "option 'addAlertText' must be a String\n";
+    //   if (typeof options.addNotificationText !== "string") {
+    //     error += "option 'addNotificationText' must be a String\n";
     //   }
-    //   if (typeof options.showRemoveAlerts !== "boolean") {
-    //     error += "option 'showRemoveAlerts' must be a Boolean\n";
+    //   if (typeof options.showRemoveNotifications !== "boolean") {
+    //     error += "option 'showRemoveNotifications' must be a Boolean\n";
     //   }
-    //   if (typeof options.showAddAlerts !== "boolean") {
-    //     error += "option 'showAddAlerts' must be a Boolean\n";
+    //   if (typeof options.showAddNotifications !== "boolean") {
+    //     error += "option 'showAddNotifications' must be a Boolean\n";
     //   }
-    //   if (typeof options.alertPosition !== "string") {
-    //     error += "option 'alertPosition' must be a String\n";
+    //   if (typeof options.notificationPosition !== "string") {
+    //     error += "option 'notificationPosition' must be a String\n";
     //   }
     //   if (typeof options.flipAnimation !== "boolean") {
     //     error += "option 'flipAnimation' must be a Boolean\n";
@@ -1689,7 +1705,7 @@ function () {
   }, {
     key: "getOptionsFromAttributes",
     value: function getOptionsFromAttributes(parent, options) {
-      var intAttributes = ["removeBtnWidth", "removeBtnThickness", "removeBtnMargin", "nestingLevel", "flipAnimDuration", "animRemoveTranslateX", "animRemoveTranslateY", "animAddTranslateX", "animAddTranslateY", "removeBtnThickness", "alertTimer"];
+      var intAttributes = ["removeBtnWidth", "removeBtnThickness", "removeBtnMargin", "nestingLevel", "flipAnimDuration", "animRemoveTranslateX", "animRemoveTranslateY", "animAddTranslateX", "animAddTranslateY", "removeBtnThickness", "notificationTimer"];
 
       for (var key in options) {
         if (options.hasOwnProperty(key)) {
@@ -1766,21 +1782,21 @@ function () {
       // if (typeof parent.getAttribute("modalText") === "string") {
       //   options.modalText = parent.getAttribute("modalText");
       // }
-      // if (typeof parent.getAttribute("removeAlertText") === "string") {
-      //   options.removeAlertText = parent.getAttribute("removeAlertText");
+      // if (typeof parent.getAttribute("removeNotificationText") === "string") {
+      //   options.removeNotificationText = parent.getAttribute("removeNotificationText");
       // }
-      // if (typeof parent.getAttribute("addAlertText") === "string") {
-      //   options.addAlertText = parent.getAttribute("addAlertText");
+      // if (typeof parent.getAttribute("addNotificationText") === "string") {
+      //   options.addNotificationText = parent.getAttribute("addNotificationText");
       // }
-      // if (parent.getAttribute("showAddAlerts") === "true") {
-      //   options.showAddAlerts = true;
-      // } else if (parent.getAttribute("showAddAlerts") === "false") {
-      //   options.showAddAlerts = false;
+      // if (parent.getAttribute("showAddNotifications") === "true") {
+      //   options.showAddNotifications = true;
+      // } else if (parent.getAttribute("showAddNotifications") === "false") {
+      //   options.showAddNotifications = false;
       // }
-      // if (parent.getAttribute("showRemoveAlerts") === "true") {
-      //   options.showRemoveAlerts = true;
-      // } else if (parent.getAttribute("showRemoveAlerts") === "false") {
-      //   options.showRemoveAlerts = false;
+      // if (parent.getAttribute("showRemoveNotifications") === "true") {
+      //   options.showRemoveNotifications = true;
+      // } else if (parent.getAttribute("showRemoveNotifications") === "false") {
+      //   options.showRemoveNotifications = false;
       // }
       // if (parent.getAttribute("removeBtnCircle") === "true") {
       //   options.removeBtnCircle = true;
