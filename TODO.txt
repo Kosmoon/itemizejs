@@ -6,6 +6,11 @@
 [x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
 [x] - removeBtnBackgroundHoverCOlor
 [x] - onAddedITEM
+[ ] - add plusieur item en meme temps
+[ ] - itemize is a zero-dependency library that loads ...
+[x] - notif bottom center et bottom right qui ne vont pas ensemble, (decalage)
+[ ] - renommer "flipAnim" ?
+[ ] - enchainer les remove fait bugger l'anim (itemisesite ex4)
 [ ] - remove anim paramettre perso comme animjs, et peut etre une option remove anim duration
 [ ] - parentItemList variable sur le parent
 [ ] - option type check utile? on supprime?
