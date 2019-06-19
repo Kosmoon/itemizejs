@@ -1351,7 +1351,7 @@ class Itemize {
     if (item.parentNode && item.parentNode.itemizeItems) {
       for (let i = 0; i < item.parentNode.itemizeItems.length; i++) {
         if (
-          (item.parentNode.itemizeItems[i].itemizeItemId = item.itemizeItemId)
+          item.parentNode.itemizeItems[i].itemizeItemId === item.itemizeItemId
         ) {
           item.parentNode.itemizeItems.splice(i, 1);
           break;
