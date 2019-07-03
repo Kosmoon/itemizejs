@@ -1,9 +1,40 @@
 /*
- -- itemize.js v0.55--
+ -- itemize.js v0.62--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
 
+if (typeof Object.assign != "function") {
+  // Must be writable: true, enumerable: false, configurable: true
+  Object.defineProperty(Object, "assign", {
+    value: function assign(target, varArgs) {
+      // .length of function is 2
+      if (target == null) {
+        // TypeError if undefined or null
+        throw new TypeError("Cannot convert undefined or null to object");
+      }
+
+      var to = Object(target);
+
+      for (var index = 1; index < arguments.length; index++) {
+        var nextSource = arguments[index];
+
+        if (nextSource != null) {
+          // Skip over if undefined or null
+          for (var nextKey in nextSource) {
+            // Avoid bugs when hasOwnProperty is shadowed
+            if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+              to[nextKey] = nextSource[nextKey];
+            }
+          }
+        }
+      }
+      return to;
+    },
+    writable: true,
+    configurable: true
+  });
+}
 class Itemize {
   constructor(options) {
     this.containers = [];
@@ -13,7 +44,6 @@ class Itemize {
     this.modalDisappearTimeout = null;
     this.elPos = {};
     this.flipPlayId = "";
-    this.inFlipPlay = false;
     this.elemToRemove = [];
     this.lastTargetedContainers = null;
     window.requestAnimationFrame =
@@ -391,7 +421,7 @@ class Itemize {
     let options = parent.itemizeOptions;
     let oldStyle = parent.querySelector(".itemize_style");
     if (oldStyle) {
-      parent.querySelector(".itemize_style").remove();
+      parent.removeChild(parent.querySelector(".itemize_style"));
     }
     let css = document.createElement("style");
     css.classList.add("itemize_style");
@@ -587,7 +617,7 @@ class Itemize {
       if (!parent.itemizeOptions.removeBtnClass) {
         let btn = child.querySelector(".itemize_remove_btn");
         if (btn) {
-          btn.remove();
+          btn.removeChild(btn.parentNode);
         }
       } else {
         const button = child.querySelector(
@@ -600,7 +630,7 @@ class Itemize {
     }
     let oldStyle = parent.querySelector(".itemize_style");
     if (oldStyle) {
-      parent.querySelector(".itemize_style").remove();
+      parent.removeChild(parent.querySelector(".itemize_style"));
     }
     for (let s = child.classList.length - 1; s >= 0; s--) {
       if (child.classList[s].indexOf("itemize_item_") !== -1) {
@@ -785,7 +815,7 @@ class Itemize {
       };
 
       Object.assign(modal.style, {
-        position: "fixed ",
+        position: "fixed",
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
@@ -852,8 +882,8 @@ class Itemize {
         background: "rgba(0, 0, 0,0.7)",
         zIndex: 10000000
       });
-      body.prepend(modal);
-      body.prepend(backDrop);
+      body.insertBefore(modal, body.childNodes[0]);
+      body.insertBefore(backDrop, body.childNodes[0]);
       if (backDrop.animate) {
         backDrop.animate(
           [
@@ -1231,7 +1261,7 @@ class Itemize {
       ) {
         if (
           (!item.removeStatus || item.removeStatus !== "pending") &&
-          !this.inFlipPlay
+          !item.inFlipAnim
         ) {
           if (this.globalOptions.beforeRemove) {
             item.removeStatus = "pending";
@@ -1266,7 +1296,7 @@ class Itemize {
                   } else {
                     this.showNotification("removed", item);
                     item.removeStatus = null;
-                    item.remove();
+                    item.parentNode.removeChild(item);
                     this.cleanItem(item);
                     this.items.splice(item.arrayPosition, 1);
                   }
@@ -1299,7 +1329,7 @@ class Itemize {
               } else {
                 this.showNotification("removed", item);
                 item.removeStatus = null;
-                item.remove();
+                item.parentNode.removeChild(item);
                 this.items.splice(item.arrayPosition, 1);
                 this.cleanItem(item);
               }
@@ -1325,7 +1355,7 @@ class Itemize {
             } else {
               this.showNotification("removed", item);
               item.removeStatus = null;
-              item.remove();
+              item.parentNode.removeChild(item);
               this.cleanItem(item);
               this.items.splice(item.arrayPosition, 1);
             }
@@ -1367,12 +1397,12 @@ class Itemize {
         "." + item.parentNode.itemizeOptions.removeBtnClass
       );
       if (btn) {
-        btn.remove();
+        btn.parentNode.removeChild(btn);
       }
     } else {
       let btn = item.querySelector(".itemize_remove_btn");
       if (btn) {
-        btn.remove();
+        btn.parentNode.removeChild(btn);
       }
     }
     if (item.itemizeContainerId) {
@@ -1451,23 +1481,18 @@ class Itemize {
   }
   flipRemove(elem) {
     elem.onclick = null;
-    // elem.parentElement.appendChild(elem);
     let options = elem.parentElement.itemizeOptions;
-    const newPos = elem.getBoundingClientRect();
-    const oldPos = this.elPos[elem.itemizeItemId];
-    const deltaX = oldPos.left - newPos.left;
-    const deltaY = oldPos.top - newPos.top;
     if (elem.animate) {
       elem.animate(
         [
           {
-            transform: `translate(${deltaX}px, ${deltaY}px)`,
+            transform: `translate(0px, 0px)`,
             opacity: 1
           },
           {
-            transform: `translate(${deltaX +
-              options.animRemoveTranslateX}px, ${deltaY +
-              options.animRemoveTranslateY}px)`,
+            transform: `translate(${options.animRemoveTranslateX}px, ${
+              options.animRemoveTranslateY
+            }px)`,
             opacity: 0
           }
         ],
@@ -1486,8 +1511,8 @@ class Itemize {
           },
           {
             transform: {
-              translateX: deltaX,
-              translateY: deltaY,
+              translateX: 0,
+              translateY: 0,
               unit: "px"
             }
           }
@@ -1498,8 +1523,8 @@ class Itemize {
           },
           {
             transform: {
-              translateX: deltaX + options.animRemoveTranslateX,
-              translateY: deltaY + options.animRemoveTranslateY,
+              translateX: options.animRemoveTranslateX,
+              translateY: options.animRemoveTranslateY,
               unit: "px"
             }
           }
@@ -1512,39 +1537,23 @@ class Itemize {
     setTimeout(() => {
       this.elemToRemove.push(elem);
       if (this.flipPlayId === flipPlayId) {
+        this.flipRead(this.items);
         for (let i = 0; i < this.elemToRemove.length; i++) {
           this.cleanItem(this.elemToRemove[i]);
           this.elemToRemove[i].removeStatus = null;
-          this.elemToRemove[i].remove();
+          this.elemToRemove[i].parentNode.removeChild(this.elemToRemove[i]);
         }
         this.elemToRemove = [];
         this.flipPlay(this.items, options.animDuration * 0.5);
       }
-    }, options.animDuration * 0.5);
+    }, options.animDuration * 0.6);
   }
   flipAdd(elem) {
     elem.classList.remove("itemize_hide");
     elem.inAddAnim = true;
-    this.elPos[elem.itemizeItemId] =
-      elem.oldAddPos || elem.getBoundingClientRect();
     let options = elem.parentElement.itemizeOptions;
-    const newPos = elem.getBoundingClientRect();
-    const oldPos = elem.oldAddPos || this.elPos[elem.itemizeItemId];
-    const deltaX = oldPos.left - newPos.left;
-    const deltaY = oldPos.top - newPos.top;
-    let deltaW = oldPos.width / newPos.width;
-    let deltaH = oldPos.height / newPos.height;
-    if (isNaN(deltaW) || deltaW === Infinity) {
-      deltaW = 1;
-    }
-    if (isNaN(deltaH) || deltaH === Infinity) {
-      deltaH = 1;
-    }
-    elem.newAddPos = newPos;
-    elem.oldAddPos = oldPos;
-    let translateXStart = deltaX + options.animAddTranslateX;
-    let translateYStart = deltaY + options.animAddTranslateY;
-
+    let translateXStart = options.animAddTranslateX;
+    let translateYStart = options.animAddTranslateY;
     if (elem.animate) {
       elem.animate(
         [
@@ -1559,8 +1568,7 @@ class Itemize {
         ],
         {
           duration: options.animDuration,
-          easing: options.animEasing,
-          fill: "both"
+          easing: options.animEasing
         }
       );
     } else {
@@ -1598,24 +1606,21 @@ class Itemize {
       elem.inAddAnim = false;
       elem.newAddPos = null;
       elem.oldPos = null;
+      elem.style.transform = "none";
+      elem.style.opacity = 1;
     }, options.animDuration);
   }
   flipRead(elems) {
-    // this.elPos = {};
     for (let i = 0; i < elems.length; i++) {
       this.elPos[elems[i].itemizeItemId] = elems[i].getBoundingClientRect();
     }
   }
-
   flipPlay(elems, duration) {
     for (let i = 0; i < elems.length; i++) {
-      if (
-        !elems[i].inAddAnim &&
-        elems[i].parentNode &&
-        elems[i].parentNode.itemizeOptions
-      ) {
-        const newPos = elems[i].getBoundingClientRect();
-        const oldPos = this.elPos[elems[i].itemizeItemId];
+      let el = elems[i];
+      if (!el.inAddAnim && el.parentNode && el.parentNode.itemizeOptions) {
+        const newPos = el.getBoundingClientRect();
+        const oldPos = this.elPos[el.itemizeItemId];
         const deltaX = oldPos.left - newPos.left;
         const deltaY = oldPos.top - newPos.top;
         let deltaW = oldPos.width / newPos.width;
@@ -1628,9 +1633,9 @@ class Itemize {
         }
 
         if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
-          this.inFlipPlay = true;
-          if (elems[i].animate) {
-            elems[i].animate(
+          el.inFlipAnim = true;
+          if (el.animate) {
+            el.animate(
               [
                 {
                   transform: `translate(${deltaX}px, ${deltaY}px)`
@@ -1641,13 +1646,12 @@ class Itemize {
               ],
               {
                 duration: duration,
-                easing: elems[i].parentNode.itemizeOptions.animEasing,
-                fill: "both"
+                easing: el.parentNode.itemizeOptions.animEasing
               }
             );
           } else {
             this.animateRAF(
-              elems[i],
+              el,
               [
                 {
                   transform: {
@@ -1670,7 +1674,10 @@ class Itemize {
             );
           }
           setTimeout(() => {
-            this.inFlipPlay = false;
+            if (el) {
+              el.style.transform = "none";
+              el.inFlipAnim = false;
+            }
           }, duration);
         }
       }

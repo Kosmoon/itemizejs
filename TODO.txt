@@ -6,13 +6,14 @@
 [x] - clear observer en les mettant dans la variable window et en y assignant l'itemizeID du parent
 [x] - removeBtnBackgroundHoverCOlor
 [x] - onAddedITEM
-[ ] - add plusieur item en meme temps
+[ ] - add plusieur item en meme temps anim resoudre avec un petit decalage setimout pour voir si plusieur elem sont aded
+[ ] - remettre la property inAnim sans lutiliser, juste au cas ou luser ai besoin de savoir, et en chercher d'autre genre inRemove ou autres
 [ ] - itemize is a zero-dependency library that loads ...
 [x] - notif bottom center et bottom right qui ne vont pas ensemble, (decalage)
-[ ] - renommer "flipAnim" ?
-[ ] - enchainer les remove fait bugger l'anim (itemisesite ex4)
+[x] - renommer "flipAnim" ?
+[x] - enchainer les remove fait bugger l'anim (itemisesite ex4)
 [ ] - remove anim paramettre perso comme animjs, et peut etre une option remove anim duration
-[ ] - parentItemList variable sur le parent
+[x] - parentItemList variable sur le parent
 [ ] - option type check utile? on supprime?
 [x] - DEFI important:  empecher le redimentionement des elements lors d'un apply (exemple spotifty)
 [ ] - performance removeBtn svg? ou css? ou base64 ? ou autre

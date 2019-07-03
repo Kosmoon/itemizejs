@@ -1,3 +1,5 @@
+"use strict";
+
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; var ownKeys = Object.keys(source); if (typeof Object.getOwnPropertySymbols === 'function') { ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) { return Object.getOwnPropertyDescriptor(source, sym).enumerable; })); } ownKeys.forEach(function (key) { _defineProperty(target, key, source[key]); }); } return target; }
@@ -11,10 +13,43 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 /*
- -- itemize.js v0.50--
+ -- itemize.js v0.62--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
+if (typeof Object.assign != "function") {
+  // Must be writable: true, enumerable: false, configurable: true
+  Object.defineProperty(Object, "assign", {
+    value: function assign(target, varArgs) {
+      // .length of function is 2
+      if (target == null) {
+        // TypeError if undefined or null
+        throw new TypeError("Cannot convert undefined or null to object");
+      }
+
+      var to = Object(target);
+
+      for (var index = 1; index < arguments.length; index++) {
+        var nextSource = arguments[index];
+
+        if (nextSource != null) {
+          // Skip over if undefined or null
+          for (var nextKey in nextSource) {
+            // Avoid bugs when hasOwnProperty is shadowed
+            if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+              to[nextKey] = nextSource[nextKey];
+            }
+          }
+        }
+      }
+
+      return to;
+    },
+    writable: true,
+    configurable: true
+  });
+}
+
 var Itemize =
 /*#__PURE__*/
 function () {
@@ -24,9 +59,11 @@ function () {
     this.containers = [];
     this.items = [];
     this.globalOptions = this.mergeOptions(options);
-    this.notificationNb = 0;
+    this.notificationNbs = {};
     this.modalDisappearTimeout = null;
     this.elPos = {};
+    this.flipPlayId = "";
+    this.elemToRemove = [];
     this.lastTargetedContainers = null;
     window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame; // let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     // if (optionCheckResult !== "valid") {
@@ -232,12 +269,12 @@ function () {
 
                           if (newNode) {
                             if (!node.getAttribute("notItemize") && node.parentElement && node.type !== "text/css" && node.tagName !== "BR" && node.tagName !== "SCRIPT" && node.parentElement.itemizeContainerId && node.tagName !== "STYLE") {
-                              if (node.parentElement.itemizeOptions && node.parentElement.itemizeOptions.flipAnimation) {
+                              if (node.parentElement.itemizeOptions && node.parentElement.itemizeOptions.anim) {
                                 node.classList.add("itemize_hide");
                                 scope.itemizeChild(node, node.parentElement, true);
                                 scope.flipRead(scope.items);
                                 scope.flipAdd(node);
-                                scope.flipPlay(scope.items, node.parentElement.itemizeOptions.flipAnimDuration);
+                                scope.flipPlay(scope.items, node.parentElement.itemizeOptions.animDuration);
                               } else {
                                 scope.itemizeChild(node, node.parentElement, true);
                               }
@@ -313,6 +350,13 @@ function () {
       if (this.childIsItemizable(child, parent)) {
         child.itemizeItemId = this.makeId(8);
         this.items.push(child);
+
+        if (parent.itemizeItems) {
+          parent.itemizeItems.push(child);
+        } else {
+          parent.itemizeItems = [child];
+        }
+
         child.classList.add("itemize_item_" + child.itemizeItemId);
         child.classList.add("itmz_item");
 
@@ -424,7 +468,7 @@ function () {
       var oldStyle = parent.querySelector(".itemize_style");
 
       if (oldStyle) {
-        parent.querySelector(".itemize_style").remove();
+        parent.removeChild(parent.querySelector(".itemize_style"));
       }
 
       var css = document.createElement("style");
@@ -513,7 +557,7 @@ function () {
             break;
         }
 
-        styles += ".itemize_parent_".concat(parent.itemizeContainerId, " .itemize_remove_btn{z-index:1000000!important;position:absolute;top:").concat(btnPos.top, "!important;right:").concat(btnPos.right, "!important;bottom:").concat(btnPos.bottom, "!important;left:").concat(btnPos.left, "!important;width:").concat(options.removeBtnWidth, "px!important;height:").concat(options.removeBtnWidth, "px!important;overflow:hidden;cursor:pointer;margin:").concat(btnPos.marginTop, " ").concat(btnPos.marginRight, " ").concat(btnPos.marginBottom, " ").concat(btnPos.marginLeft, ";transform:").concat(btnPos.transform, ";border-radius:").concat(options.removeBtnCircle ? "50%" : "0%", ";background-color:").concat(options.removeBtnBgColor, "}.itemize_remove_btn:hover{background-color:").concat(options.removeBtnBgHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::before{transition:background 150ms ease-in-out;background:").concat(options.removeBtnHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{content:'';position:absolute;height:").concat(options.removeBtnThickness, "px;transition:background 150ms ease-in-out;width:").concat(options.removeBtnWidth / 2, "px;top:50%;left:25%;margin-top:").concat(options.removeBtnThickness * 0.5 < 1 ? -1 : -options.removeBtnThickness * 0.5, "px;background:").concat(options.removeBtnColor, ";border-radius:").concat(options.removeBtnSharpness, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}");
+        styles += ".itemize_parent_".concat(parent.itemizeContainerId, " .itemize_remove_btn{position:absolute;top:").concat(btnPos.top, "!important;right:").concat(btnPos.right, "!important;bottom:").concat(btnPos.bottom, "!important;left:").concat(btnPos.left, "!important;width:").concat(options.removeBtnWidth, "px!important;height:").concat(options.removeBtnWidth, "px!important;overflow:hidden;cursor:pointer;margin:").concat(btnPos.marginTop, " ").concat(btnPos.marginRight, " ").concat(btnPos.marginBottom, " ").concat(btnPos.marginLeft, ";transform:").concat(btnPos.transform, ";border-radius:").concat(options.removeBtnCircle ? "50%" : "0%", ";background-color:").concat(options.removeBtnBgColor, "}.itemize_remove_btn:hover{background-color:").concat(options.removeBtnBgHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn:hover::before{transition:background 150ms ease-in-out;background:").concat(options.removeBtnHoverColor, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after,.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{content:'';position:absolute;height:").concat(options.removeBtnThickness, "px;transition:background 150ms ease-in-out;width:").concat(options.removeBtnWidth / 2, "px;top:50%;left:25%;margin-top:").concat(options.removeBtnThickness * 0.5 < 1 ? -1 : -options.removeBtnThickness * 0.5, "px;background:").concat(options.removeBtnColor, ";border-radius:").concat(options.removeBtnSharpness, "}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::before{-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);-o-transform:rotate(45deg);transform:rotate(45deg)}.itemize_parent_").concat(parent.itemizeContainerId, " .itemize_remove_btn::after{-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-o-transform:rotate(-45deg);transform:rotate(-45deg)}");
       }
 
       if (css.styleSheet) {
@@ -605,7 +649,7 @@ function () {
           var btn = child.querySelector(".itemize_remove_btn");
 
           if (btn) {
-            btn.remove();
+            btn.removeChild(btn.parentNode);
           }
         } else {
           var button = child.querySelector("." + parent.itemizeOptions.removeBtnClass);
@@ -619,7 +663,7 @@ function () {
       var oldStyle = parent.querySelector(".itemize_style");
 
       if (oldStyle) {
-        parent.querySelector(".itemize_style").remove();
+        parent.removeChild(parent.querySelector(".itemize_style"));
       }
 
       for (var s = child.classList.length - 1; s >= 0; s--) {
@@ -790,7 +834,7 @@ function () {
         };
 
         Object.assign(modal.style, {
-          position: "fixed ",
+          position: "fixed",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
@@ -855,8 +899,8 @@ function () {
           background: "rgba(0, 0, 0,0.7)",
           zIndex: 10000000
         });
-        body.prepend(modal);
-        body.prepend(backDrop);
+        body.insertBefore(modal, body.childNodes[0]);
+        body.insertBefore(backDrop, body.childNodes[0]);
 
         if (backDrop.animate) {
           backDrop.animate([{
@@ -926,32 +970,33 @@ function () {
         var minusOrNothing = "-";
         var notificationIsTop = false;
         var notificationTimerDuration = element.parentElement.itemizeOptions.notificationTimer;
+        var notifPos = element.parentElement.itemizeOptions.notificationPosition;
 
-        if (element.parentElement.itemizeOptions.notificationPosition === "bottom-center") {
+        if (notifPos === "bottom-center") {
           notificationLeftPos = "50%";
           notificationTopPos = "100%";
           notificationTranslateX = "-50%";
-        } else if (element.parentElement.itemizeOptions.notificationPosition === "bottom-right") {
+        } else if (notifPos === "bottom-right") {
           notificationLeftPos = "100%";
           notificationTopPos = "100%";
           notificationTranslateX = "-100%";
-        } else if (element.parentElement.itemizeOptions.notificationPosition === "bottom-left") {
+        } else if (notifPos === "bottom-left") {
           notificationLeftPos = "0%";
           notificationTopPos = "100%";
           notificationTranslateX = "0%";
-        } else if (element.parentElement.itemizeOptions.notificationPosition === "top-center") {
+        } else if (notifPos === "top-center") {
           notificationLeftPos = "50%";
           notificationTopPos = "0%";
           notificationTranslateX = "-50%";
           minusOrNothing = "";
           notificationIsTop = true;
-        } else if (element.parentElement.itemizeOptions.notificationPosition === "top-right") {
+        } else if (notifPos === "top-right") {
           notificationLeftPos = "100%";
           notificationTopPos = "0%";
           notificationTranslateX = "-100%";
           minusOrNothing = "";
           notificationIsTop = true;
-        } else if (element.parentElement.itemizeOptions.notificationPosition === "top-left") {
+        } else if (notifPos === "top-left") {
           notificationLeftPos = "0%";
           notificationTopPos = "0%";
           notificationTranslateX = "0%";
@@ -973,13 +1018,18 @@ function () {
           notificationTextContent = element.parentElement.itemizeOptions.addNotificationText;
         }
 
-        this.notificationNb++;
+        if (this.notificationNbs[notifPos]) {
+          this.notificationNbs[notifPos]++;
+        } else {
+          this.notificationNbs[notifPos] = 1;
+        }
+
         var popNotification = document.createElement("div");
-        popNotification.notificationId = this.notificationNb;
+        popNotification.notificationId = this.notificationNbs[notifPos];
         var notificationTimer = document.createElement("div");
         var notificationText = document.createElement("div");
         popNotification.classList.add(notificationClassName);
-        popNotification.classList.add("itemize_notification");
+        popNotification.classList.add("itemize_notification_" + notifPos);
         notificationText.classList.add(notificationTextClassName);
         notificationText.textContent = notificationTextContent;
         Object.assign(notificationText.style, {
@@ -1005,7 +1055,7 @@ function () {
           left: notificationLeftPos,
           border: "solid 1px " + notificationTimerColor,
           borderRadius: "4px",
-          transform: "translate(".concat(notificationTranslateX, ", ").concat(minusOrNothing).concat(this.notificationNb * 100 - (notificationIsTop ? 100 : 0), "%)"),
+          transform: "translate(".concat(notificationTranslateX, ", ").concat(minusOrNothing).concat(this.notificationNbs[notifPos] * 100 - (notificationIsTop ? 100 : 0), "%)"),
           fontFamily: "helvetica",
           background: notificationBackground,
           color: "#FFFFFF",
@@ -1058,7 +1108,7 @@ function () {
         }
 
         setTimeout(function () {
-          var notificationList = document.querySelectorAll(".itemize_notification");
+          var notificationList = document.querySelectorAll(".itemize_notification_" + notifPos);
 
           for (var i = 0; i < notificationList.length; i++) {
             if (notificationList[i].notificationId > 0) {
@@ -1095,7 +1145,7 @@ function () {
             }
           }
 
-          _this5.notificationNb--;
+          _this5.notificationNbs[notifPos]--;
           setTimeout(function () {
             document.querySelector("body").removeChild(popNotification);
           }, 300);
@@ -1154,7 +1204,7 @@ function () {
         }
 
         if ((item.arrayPosition || item.arrayPosition === 0) && item.parentElement && item.parentElement.itemizeOptions) {
-          if (!item.removeStatus || item.removeStatus !== "pending") {
+          if ((!item.removeStatus || item.removeStatus !== "pending") && !item.inFlipAnim) {
             if (this.globalOptions.beforeRemove) {
               item.removeStatus = "pending";
               var confirmRemove = this.globalOptions.beforeRemove(item);
@@ -1164,11 +1214,11 @@ function () {
               }
 
               if (typeof confirmRemove.then === "function") {
-                var animDuration = item.parentElement.itemizeOptions.flipAnimDuration;
+                var animDuration = item.parentElement.itemizeOptions.animDuration;
                 var onClickFn = item.onclick;
                 item.onclick = null;
                 confirmRemove.then(function (response) {
-                  if (item.parentElement.itemizeOptions.flipAnimation) {
+                  if (item.parentElement.itemizeOptions.anim) {
                     var closeBtn = item.querySelector(".itemize_remove_btn");
 
                     if (closeBtn) {
@@ -1187,14 +1237,12 @@ function () {
 
                     _this6.flipRemove(item);
 
-                    _this6.cleanItem(item);
-
                     _this6.items.splice(item.arrayPosition, 1);
                   } else {
                     _this6.showNotification("removed", item);
 
                     item.removeStatus = null;
-                    item.remove();
+                    item.parentNode.removeChild(item);
 
                     _this6.cleanItem(item);
 
@@ -1206,8 +1254,8 @@ function () {
                   item.removeStatus = null;
                 });
               } else if (confirmRemove) {
-                if (item.parentElement.itemizeOptions.flipAnimation) {
-                  var _animDuration = item.parentElement.itemizeOptions.flipAnimDuration;
+                if (item.parentElement.itemizeOptions.anim) {
+                  var _animDuration = item.parentElement.itemizeOptions.animDuration;
                   var closeBtn = item.querySelector(".itemize_remove_btn");
                   item.onclick = null;
 
@@ -1224,19 +1272,18 @@ function () {
                   this.showNotification("removed", item);
                   this.flipRead(this.items);
                   this.flipRemove(item);
-                  this.cleanItem(item);
                   this.items.splice(item.arrayPosition, 1);
                 } else {
                   this.showNotification("removed", item);
                   item.removeStatus = null;
-                  item.remove();
+                  item.parentNode.removeChild(item);
                   this.items.splice(item.arrayPosition, 1);
                   this.cleanItem(item);
                 }
               }
             } else {
-              if (item.parentElement.itemizeOptions.flipAnimation) {
-                var _animDuration2 = item.parentElement.itemizeOptions.flipAnimDuration;
+              if (item.parentElement.itemizeOptions.anim) {
+                var _animDuration2 = item.parentElement.itemizeOptions.animDuration;
 
                 var _closeBtn = item.querySelector(".itemize_remove_btn");
 
@@ -1253,12 +1300,11 @@ function () {
                 this.showNotification("removed", item);
                 this.flipRead(this.items);
                 this.flipRemove(item);
-                this.cleanItem(item);
                 this.items.splice(item.arrayPosition, 1);
               } else {
                 this.showNotification("removed", item);
                 item.removeStatus = null;
-                item.remove();
+                item.parentNode.removeChild(item);
                 this.cleanItem(item);
                 this.items.splice(item.arrayPosition, 1);
               }
@@ -1283,17 +1329,26 @@ function () {
         }
       }
 
+      if (item.parentNode && item.parentNode.itemizeItems) {
+        for (var i = 0; i < item.parentNode.itemizeItems.length; i++) {
+          if (item.parentNode.itemizeItems[i].itemizeItemId === item.itemizeItemId) {
+            item.parentNode.itemizeItems.splice(i, 1);
+            break;
+          }
+        }
+      }
+
       if (item.parentNode && item.parentNode.itemizeOptions && item.parentNode.itemizeOptions.removeBtnClass) {
         var btn = item.querySelector("." + item.parentNode.itemizeOptions.removeBtnClass);
 
         if (btn) {
-          btn.remove();
+          btn.parentNode.removeChild(btn);
         }
       } else {
         var _btn = item.querySelector(".itemize_remove_btn");
 
         if (_btn) {
-          _btn.remove();
+          _btn.parentNode.removeChild(_btn);
         }
       }
 
@@ -1302,9 +1357,9 @@ function () {
         var parentsInItem = item.querySelectorAll(".itmz_parent");
         this.cancelItemize(parentsInItem);
 
-        for (var i = 0; i < parentsInItem.length; i++) {
-          if (parentsInItem[i].itemizeContainerId) {
-            this.clearObservers(parentsInItem[i].itemizeContainerId);
+        for (var _i5 = 0; _i5 < parentsInItem.length; _i5++) {
+          if (parentsInItem[_i5].itemizeContainerId) {
+            this.clearObservers(parentsInItem[_i5].itemizeContainerId);
           }
         }
 
@@ -1324,7 +1379,6 @@ function () {
         if (!elem.startAnimTime) {
           elem.startAnimTime = timestamp;
           elem.animTicks = 0;
-
           for (var i = 0; i < from.length; i++) {
             for (var key in from[i]) {
               if (from[i].hasOwnProperty(key)) {
@@ -1342,15 +1396,15 @@ function () {
 
         progress = timestamp - elem.startAnimTime;
 
-        for (var _i5 = 0; _i5 < to.length; _i5++) {
-          for (var _key in to[_i5]) {
-            if (to[_i5].hasOwnProperty(_key)) {
+        for (var _i6 = 0; _i6 < to.length; _i6++) {
+          for (var _key in to[_i6]) {
+            if (to[_i6].hasOwnProperty(_key)) {
               if (_key === "transform") {
-                elem.style.transform = "translateX(".concat(from[_i5][_key].translateX - (from[_i5][_key].translateX - to[_i5][_key].translateX) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i5][_key].unit, ") translateY(").concat(from[_i5][_key].translateY - (from[_i5][_key].translateY - to[_i5][_key].translateY) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i5][_key].unit, ")");
+                elem.style.transform = "translateX(".concat(from[_i6][_key].translateX - (from[_i6][_key].translateX - to[_i6][_key].translateX) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i6][_key].unit, ") translateY(").concat(from[_i6][_key].translateY - (from[_i6][_key].translateY - to[_i6][_key].translateY) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i6][_key].unit, ")");
               } else if (_key === "opacity") {
-                elem.style.opacity = from[_i5][_key] - (from[_i5][_key] - to[_i5][_key]) / (duration * 60 / 1000) * elem.animTicks;
+                elem.style.opacity = from[_i6][_key] - (from[_i6][_key] - to[_i6][_key]) / (duration * 60 / 1000) * elem.animTicks;
               } else {
-                elem.style[_key] = "".concat(from[_i5][_key].value - (from[_i5][_key].value - to[_i5][_key].value) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i5][_key].unit);
+                elem.style[_key] = "".concat(from[_i6][_key].value - (from[_i6][_key].value - to[_i6][_key].value) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i6][_key].unit);
               }
             }
           }
@@ -1372,24 +1426,19 @@ function () {
     value: function flipRemove(elem) {
       var _this7 = this;
 
-      elem.onclick = null; // elem.parentElement.appendChild(elem);
-
+      elem.onclick = null;
       var options = elem.parentElement.itemizeOptions;
-      var newPos = elem.getBoundingClientRect();
-      var oldPos = this.elPos[elem.itemizeItemId];
-      var deltaX = oldPos.left - newPos.left;
-      var deltaY = oldPos.top - newPos.top;
 
       if (elem.animate) {
         elem.animate([{
-          transform: "translate(".concat(deltaX, "px, ").concat(deltaY, "px)"),
+          transform: "translate(0px, 0px)",
           opacity: 1
         }, {
-          transform: "translate(".concat(deltaX + options.animRemoveTranslateX, "px, ").concat(deltaY + options.animRemoveTranslateY, "px)"),
+          transform: "translate(".concat(options.animRemoveTranslateX, "px, ").concat(options.animRemoveTranslateY, "px)"),
           opacity: 0
         }], {
-          duration: options.flipAnimDuration * 0.5,
-          easing: options.flipAnimEasing,
+          duration: options.animDuration * 0.5,
+          easing: options.animEasing,
           fill: "both"
         });
       } else {
@@ -1397,54 +1446,51 @@ function () {
           opacity: 1
         }, {
           transform: {
-            translateX: deltaX,
-            translateY: deltaY,
+            translateX: 0,
+            translateY: 0,
             unit: "px"
           }
         }], [{
           opacity: 0
         }, {
           transform: {
-            translateX: deltaX + options.animRemoveTranslateX,
-            translateY: deltaY + options.animRemoveTranslateY,
+            translateX: options.animRemoveTranslateX,
+            translateY: options.animRemoveTranslateY,
             unit: "px"
           }
-        }], options.flipAnimDuration * 0.5);
+        }], options.animDuration * 0.5);
       }
 
+      var flipPlayId = this.makeId(6);
+      this.flipPlayId = flipPlayId;
       setTimeout(function () {
-        elem.removeStatus = null;
-        elem.remove();
+        _this7.elemToRemove.push(elem);
 
-        _this7.flipPlay(_this7.items, options.flipAnimDuration * 0.5);
-      }, options.flipAnimDuration * 0.5);
+        if (_this7.flipPlayId === flipPlayId) {
+          _this7.flipRead(_this7.items);
+
+          for (var i = 0; i < _this7.elemToRemove.length; i++) {
+            _this7.cleanItem(_this7.elemToRemove[i]);
+
+            _this7.elemToRemove[i].removeStatus = null;
+
+            _this7.elemToRemove[i].parentNode.removeChild(_this7.elemToRemove[i]);
+          }
+
+          _this7.elemToRemove = [];
+
+          _this7.flipPlay(_this7.items, options.animDuration * 0.5);
+        }
+      }, options.animDuration * 0.5);
     }
   }, {
     key: "flipAdd",
     value: function flipAdd(elem) {
       elem.classList.remove("itemize_hide");
       elem.inAddAnim = true;
-      this.elPos[elem.itemizeItemId] = elem.oldAddPos || elem.getBoundingClientRect();
       var options = elem.parentElement.itemizeOptions;
-      var newPos = elem.getBoundingClientRect();
-      var oldPos = elem.oldAddPos || this.elPos[elem.itemizeItemId];
-      var deltaX = oldPos.left - newPos.left;
-      var deltaY = oldPos.top - newPos.top;
-      var deltaW = oldPos.width / newPos.width;
-      var deltaH = oldPos.height / newPos.height;
-
-      if (isNaN(deltaW) || deltaW === Infinity) {
-        deltaW = 1;
-      }
-
-      if (isNaN(deltaH) || deltaH === Infinity) {
-        deltaH = 1;
-      }
-
-      elem.newAddPos = newPos;
-      elem.oldAddPos = oldPos;
-      var translateXStart = deltaX + options.animAddTranslateX;
-      var translateYStart = deltaY + options.animAddTranslateY;
+      var translateXStart = options.animAddTranslateX;
+      var translateYStart = options.animAddTranslateY;
 
       if (elem.animate) {
         elem.animate([{
@@ -1454,9 +1500,8 @@ function () {
           transform: "none",
           opacity: 1
         }], {
-          duration: options.flipAnimDuration,
-          easing: options.flipAnimEasing,
-          fill: "both"
+          duration: options.animDuration,
+          easing: options.animEasing
         });
       } else {
         this.animateRAF(elem, [{
@@ -1475,19 +1520,20 @@ function () {
             translateY: 0,
             unit: "px"
           }
-        }], options.flipAnimDuration);
+        }], options.animDuration);
       }
 
       setTimeout(function () {
         elem.inAddAnim = false;
         elem.newAddPos = null;
         elem.oldPos = null;
-      }, options.flipAnimDuration);
+        elem.style.transform = "none";
+        elem.style.opacity = 1;
+      }, options.animDuration);
     }
   }, {
     key: "flipRead",
     value: function flipRead(elems) {
-      // this.elPos = {};
       for (var i = 0; i < elems.length; i++) {
         this.elPos[elems[i].itemizeItemId] = elems[i].getBoundingClientRect();
       }
@@ -1495,10 +1541,14 @@ function () {
   }, {
     key: "flipPlay",
     value: function flipPlay(elems, duration) {
-      for (var i = 0; i < elems.length; i++) {
-        if (!elems[i].inAddAnim && elems[i].parentNode && elems[i].parentNode.itemizeOptions) {
-          var newPos = elems[i].getBoundingClientRect();
-          var oldPos = this.elPos[elems[i].itemizeItemId];
+      var _this8 = this;
+
+      var _loop2 = function _loop2(i) {
+        var el = elems[i];
+
+        if (!el.inAddAnim && el.parentNode && el.parentNode.itemizeOptions) {
+          var newPos = el.getBoundingClientRect();
+          var oldPos = _this8.elPos[el.itemizeItemId];
           var deltaX = oldPos.left - newPos.left;
           var deltaY = oldPos.top - newPos.top;
           var deltaW = oldPos.width / newPos.width;
@@ -1513,18 +1563,18 @@ function () {
           }
 
           if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
-            if (elems[i].animate) {
-              elems[i].animate([{
+            el.inFlipAnim = true;
+            if (el.animate) {
+              el.animate([{
                 transform: "translate(".concat(deltaX, "px, ").concat(deltaY, "px)")
               }, {
                 transform: "none"
               }], {
                 duration: duration,
-                easing: elems[i].parentNode.itemizeOptions.flipAnimEasing,
-                fill: "both"
+                easing: el.parentNode.itemizeOptions.animEasing
               });
             } else {
-              this.animateRAF(elems[i], [{
+              _this8.animateRAF(el, [{
                 transform: {
                   translateX: deltaX,
                   translateY: deltaY,
@@ -1538,8 +1588,18 @@ function () {
                 }
               }], duration);
             }
+            setTimeout(function () {
+              if (el) {
+                el.style.transform = "none";
+                el.inFlipAnim = false;
+              }
+            }, duration);
           }
         }
+      };
+
+      for (var i = 0; i < elems.length; i++) {
+        _loop2(i);
       }
     }
   }, {
@@ -1567,9 +1627,9 @@ function () {
           showAddNotifications: false,
           notificationPosition: "bottom-right",
           notificationTimer: 4000,
-          flipAnimation: true,
-          flipAnimEasing: "ease-in-out",
-          flipAnimDuration: 500,
+          anim: true,
+          animEasing: "ease-in-out",
+          animDuration: 500,
           animRemoveTranslateX: 0,
           animRemoveTranslateY: -100,
           animAddTranslateX: 0,
@@ -1655,8 +1715,8 @@ function () {
     //   if (typeof options.notificationPosition !== "string") {
     //     error += "option 'notificationPosition' must be a String\n";
     //   }
-    //   if (typeof options.flipAnimation !== "boolean") {
-    //     error += "option 'flipAnimation' must be a Boolean\n";
+    //   if (typeof options.anim !== "boolean") {
+    //     error += "option 'anim' must be a Boolean\n";
     //   }
     //   if (typeof options.outlineItemOnHover !== "boolean") {
     //     error += "option 'outlineItemOnHover' must be a Boolean\n";
@@ -1664,21 +1724,21 @@ function () {
     //   if (typeof options.nestingLevel !== "number") {
     //     error += "option 'nestingLevel' must be a Number\n";
     //   }
-    //   if (typeof options.flipAnimDuration !== "number") {
-    //     error += "option 'flipAnimDuration' must be a Number\n";
+    //   if (typeof options.animDuration !== "number") {
+    //     error += "option 'animDuration' must be a Number\n";
     //   }
-    //   if (typeof options.flipAnimEasing !== "string") {
-    //     error += "option 'flipAnimEasing' must be a String\n";
+    //   if (typeof options.animEasing !== "string") {
+    //     error += "option 'animEasing' must be a String\n";
     //   } else if (
-    //     options.flipAnimEasing !== "linear" &&
-    //     options.flipAnimEasing !== "ease" &&
-    //     options.flipAnimEasing !== "ease-in-out" &&
-    //     options.flipAnimEasing !== "ease-in" &&
-    //     options.flipAnimEasing !== "ease-out" &&
-    //     options.flipAnimEasing.indexOf("cubic-bezier(") === -1
+    //     options.animEasing !== "linear" &&
+    //     options.animEasing !== "ease" &&
+    //     options.animEasing !== "ease-in-out" &&
+    //     options.animEasing !== "ease-in" &&
+    //     options.animEasing !== "ease-out" &&
+    //     options.animEasing.indexOf("cubic-bezier(") === -1
     //   ) {
     //     error +=
-    //       "option 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n";
+    //       "option 'animEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n";
     //   }
     //   if (typeof options.animRemoveTranslateX !== "number") {
     //     error += "option 'animRemoveTranslateX' must be a Number\n";
@@ -1705,7 +1765,7 @@ function () {
   }, {
     key: "getOptionsFromAttributes",
     value: function getOptionsFromAttributes(parent, options) {
-      var intAttributes = ["removeBtnWidth", "removeBtnThickness", "removeBtnMargin", "nestingLevel", "flipAnimDuration", "animRemoveTranslateX", "animRemoveTranslateY", "animAddTranslateX", "animAddTranslateY", "removeBtnThickness", "notificationTimer"];
+      var intAttributes = ["removeBtnWidth", "removeBtnThickness", "removeBtnMargin", "nestingLevel", "animDuration", "animRemoveTranslateX", "animRemoveTranslateY", "animAddTranslateX", "animAddTranslateY", "removeBtnThickness", "notificationTimer"];
 
       for (var key in options) {
         if (options.hasOwnProperty(key)) {
@@ -1733,10 +1793,10 @@ function () {
       // } else if (parent.getAttribute("modalConfirm") === "true") {
       //   options.modalConfirm = true;
       // }
-      // if (parent.getAttribute("flipAnimation") === "false") {
-      //   options.flipAnimation = false;
-      // } else if (parent.getAttribute("flipAnimation") === "true") {
-      //   options.flipAnimation = true;
+      // if (parent.getAttribute("anim") === "false") {
+      //   options.anim = false;
+      // } else if (parent.getAttribute("anim") === "true") {
+      //   options.anim = true;
       // }
       // if (typeof parent.getAttribute("removeBtnClass") === "string") {
       //   if (parent.getAttribute("removeBtnClass") === "false") {
@@ -1815,14 +1875,14 @@ function () {
       //   options.nestingLevel = parseInt(parent.getAttribute("nestingLevel"));
       // }
       // if (
-      //   typeof parent.getAttribute("flipAnimDuration") === "string" &&
-      //   parseInt(parent.getAttribute("flipAnimDuration")) > 0
+      //   typeof parent.getAttribute("animDuration") === "string" &&
+      //   parseInt(parent.getAttribute("animDuration")) > 0
       // ) {
-      //   options.flipAnimDuration = parseInt(
-      //     parent.getAttribute("flipAnimDuration")
+      //   options.animDuration = parseInt(
+      //     parent.getAttribute("animDuration")
       //   );
       // }
-      // let easeAttr = parent.getAttribute("flipAnimEasing");
+      // let easeAttr = parent.getAttribute("animEasing");
       // if (typeof easeAttr === "string") {
       //   if (
       //     easeAttr !== "linear" &&
@@ -1833,10 +1893,10 @@ function () {
       //     easeAttr.indexOf("cubic-bezier(") === -1
       //   ) {
       //     console.error(
-      //       " - Itemize error - \n 'flipAnimEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n"
+      //       " - Itemize error - \n 'animEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n"
       //     );
       //   } else {
-      //     options.flipAnimEasing = easeAttr;
+      //     options.animEasing = easeAttr;
       //   }
       // }
       // if (
