@@ -1,5 +1,5 @@
 /*
- -- itemize.js v0.63--
+ -- itemize.js v0.65--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -61,13 +61,12 @@ class Itemize {
     if (typeof target === "object") {
       opts = this.mergeOptions(target);
       target = [null];
-    } else if (options) {
-      opts = this.mergeOptions(options);
-    }
-    if (!Array.isArray(target)) {
+    } else {
       target = [target];
     }
-
+    if (options) {
+      opts = this.mergeOptions(options);
+    }
     let childItemizedNb = 0;
 
     for (let i = 0; i < target.length; i++) {
@@ -632,7 +631,9 @@ class Itemize {
     }
     let oldStyle = parent.querySelector(".itemize_style");
     if (oldStyle) {
-      parent.removeChild(parent.querySelector(".itemize_style"));
+      try {
+        parent.removeChild(parent.querySelector(".itemize_style"));
+      } catch (error) {}
     }
     for (let s = child.classList.length - 1; s >= 0; s--) {
       if (child.classList[s].indexOf("itemize_item_") !== -1) {
@@ -1232,9 +1233,11 @@ class Itemize {
           (!item.removeStatus || item.removeStatus !== "pending") &&
           !item.inFlipAnim
         ) {
-          if (this.globalOptions.beforeRemove) {
+          if (item.parentElement.itemizeOptions.beforeRemove) {
             item.removeStatus = "pending";
-            let confirmRemove = this.globalOptions.beforeRemove(item);
+            let confirmRemove = item.parentElement.itemizeOptions.beforeRemove(
+              item
+            );
             if (confirmRemove === undefined) {
               throw new Error(
                 ' - Itemize error - \n The function "beforeErase" must return a Boolean or a Promise'
@@ -1390,26 +1393,26 @@ class Itemize {
     item.itemizeItemId = null;
   }
   animateRAF(elem, from, to, duration) {
+    for (let i = 0; i < from.length; i++) {
+      for (const key in from[i]) {
+        if (from[i].hasOwnProperty(key)) {
+          if (key === "transform") {
+            elem.style.transform = `translateX(${from[i][key].translateX}${
+              from[i][key].unit
+            }) translateY(${from[i][key].translateY}${from[i][key].unit})`;
+          } else if (key === "opacity") {
+            elem.style.opacity = from[i][key];
+          } else {
+            elem.style[key] = `${from[i][key].value}${from[i][key].unit}`;
+          }
+        }
+      }
+    }
     function anim(timestamp) {
       let progress;
       if (!elem.startAnimTime) {
         elem.startAnimTime = timestamp;
         elem.animTicks = 0;
-        for (let i = 0; i < from.length; i++) {
-          for (const key in from[i]) {
-            if (from[i].hasOwnProperty(key)) {
-              if (key === "transform") {
-                elem.style.transform = `translateX(${from[i][key].translateX}${
-                  from[i][key].unit
-                }) translateY(${from[i][key].translateY}${from[i][key].unit})`;
-              } else if (key === "opacity") {
-                elem.style.opacity = from[i][key];
-              } else {
-                elem.style[key] = `${from[i][key].value}${from[i][key].unit}`;
-              }
-            }
-          }
-        }
       }
       progress = timestamp - elem.startAnimTime;
       for (let i = 0; i < to.length; i++) {

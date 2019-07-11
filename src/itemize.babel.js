@@ -1357,25 +1357,25 @@ function () {
   }, {
     key: "animateRAF",
     value: function animateRAF(elem, from, to, duration) {
+      for (var i = 0; i < from.length; i++) {
+        for (var key in from[i]) {
+          if (from[i].hasOwnProperty(key)) {
+            if (key === "transform") {
+              elem.style.transform = "translateX(".concat(from[i][key].translateX).concat(from[i][key].unit, ") translateY(").concat(from[i][key].translateY).concat(from[i][key].unit, ")");
+            } else if (key === "opacity") {
+              elem.style.opacity = from[i][key];
+            } else {
+              elem.style[key] = "".concat(from[i][key].value).concat(from[i][key].unit);
+            }
+          }
+        }
+      }
       function anim(timestamp) {
         var progress;
 
         if (!elem.startAnimTime) {
           elem.startAnimTime = timestamp;
           elem.animTicks = 0;
-          for (var i = 0; i < from.length; i++) {
-            for (var key in from[i]) {
-              if (from[i].hasOwnProperty(key)) {
-                if (key === "transform") {
-                  elem.style.transform = "translateX(".concat(from[i][key].translateX).concat(from[i][key].unit, ") translateY(").concat(from[i][key].translateY).concat(from[i][key].unit, ")");
-                } else if (key === "opacity") {
-                  elem.style.opacity = from[i][key];
-                } else {
-                  elem.style[key] = "".concat(from[i][key].value).concat(from[i][key].unit);
-                }
-              }
-            }
-          }
         }
 
         progress = timestamp - elem.startAnimTime;
