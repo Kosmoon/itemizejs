@@ -1,5 +1,5 @@
 /*
- -- itemize.js v0.62--
+ -- itemize.js v0.63--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -211,20 +211,22 @@ class Itemize {
             };
             let scope = this;
             let callback = function(mutationsList, observer) {
-              for (var mutation of mutationsList) {
+              for (let z = 0; z < mutationsList.length; z++) {
+                let mutation = mutationsList[z];
                 if (
                   mutation.type === "childList" &&
                   mutation.addedNodes.length > 0
                 ) {
-                  mutation.addedNodes.forEach(node => {
+                  for (let x = 0; x < mutation.addedNodes.length; x++) {
+                    let node = mutation.addedNodes[x];
                     let newNode = true;
                     if (node.classList) {
-                      node.classList.forEach(className => {
-                        if (className.indexOf("itemize_") !== -1) {
+                      for (let y = 0; y < node.classList.length; y++) {
+                        if (node.classList[y].indexOf("itemize_") !== -1) {
                           // check si le child n'est pas un element deja added qui passe par un flipAnim
                           newNode = false;
                         }
-                      });
+                      }
                       if (newNode) {
                         if (
                           !node.getAttribute("notItemize") &&
@@ -256,7 +258,7 @@ class Itemize {
                         }
                       }
                     }
-                  });
+                  }
                 }
               }
             };
@@ -643,39 +645,6 @@ class Itemize {
 
   modalConfirm(el) {
     try {
-      // let item = null;
-      // if (typeof el === "string") {
-      //   for (let i = 0; i < this.items.length; i++) {
-      //     if (this.items[i].itemizeItemId === el) {
-      //       item = this.items[i];
-      //     }
-      //   }
-      //   if (!item) {
-      //     item = document.querySelector(el);
-      //     if (!item || !item.itemizeItemId) {
-      //       throw new Error(
-      //         " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
-      //       );
-      //     }
-      //   }
-      //   if (!item) {
-      //     throw new Error(
-      //       " - Itemize error - \n No item found, cannot create a confirm modal."
-      //     );
-      //   }
-      // } else {
-      //   item = el;
-      //   if (!item) {
-      //     throw new Error(
-      //       " - Itemize error - \n No item found, cannot create a confirm modal."
-      //     );
-      //   }
-      //   if (!item.itemizeItemId) {
-      //     throw new Error(
-      //       " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
-      //     );
-      //   }
-      // }
       const modalAnimDuration = 150;
       const backDrop = document.createElement("div");
       const modal = document.createElement("div");
@@ -1546,7 +1515,7 @@ class Itemize {
         this.elemToRemove = [];
         this.flipPlay(this.items, options.animDuration * 0.5);
       }
-    }, options.animDuration * 0.6);
+    }, options.animDuration * 0.5);
   }
   flipAdd(elem) {
     elem.classList.remove("itemize_hide");
@@ -1724,122 +1693,11 @@ class Itemize {
         defaultOptions = { ...this.globalOptions };
       }
       let mergedOptions = { ...defaultOptions, ...newOptions };
-      // for (var key in newOptions) {
-      //   if (newOptions.hasOwnProperty(key)) {
-      //     defaultOptions[key] = newOptions[key];
-      //   }
-      // }
       return mergedOptions;
     } catch (error) {
       console.error(error);
     }
   }
-
-  // optionsTypeCheck(options) {
-  //   let error = "";
-  //   if (typeof options.removeBtn !== "boolean") {
-  //     error += "option 'button' must be a Boolean\n";
-  //   }
-  //   if (typeof options.modalConfirm !== "boolean") {
-  //     error += "option 'modalConfirm' must be a Boolean\n";
-  //   }
-  //   if (typeof options.removeBtnWidth !== "number") {
-  //     error += "option 'removeBtnWidth' must be a Number\n";
-  //   }
-  //   if (typeof options.removeBtnThickness !== "number") {
-  //     error += "option 'removeBtnThickness' must be a Number\n";
-  //   }
-  //   if (typeof options.notificationTimer !== "number") {
-  //     error += "option 'notificationTimer' must be a Number\n";
-  //   }
-  //   if (options.removeBtnClass && typeof options.removeBtnClass !== "string") {
-  //     error += "option 'buttonClass' must be a String\n";
-  //   }
-  //   if (typeof options.removeBtnHoverColor !== "string") {
-  //     error += "option 'removeBtnHoverColor' must be a String\n";
-  //   }
-  //   if (typeof options.removeBtnSharpness !== "string") {
-  //     error += "option 'removeBtnSharpness' must be a String\n";
-  //   }
-  //   if (typeof options.removeBtnPosition !== "string") {
-  //     error += "option 'removeBtnPosition' must be a String\n";
-  //   }
-  //   if (typeof options.removeBtnBgColor !== "string") {
-  //     error += "option 'removeBtnBgColor' must be a String\n";
-  //   }
-  //   if (typeof options.removeBtnBgHoverColor !== "string") {
-  //     error += "option 'removeBtnBgHoverColor' must be a String\n";
-  //   }
-  //   if (typeof options.removeBtnCircle !== "boolean") {
-  //     error += "option 'removeBtnCircle' must be a Boolean\n";
-  //   }
-  //   if (typeof options.removeBtnMargin !== "number") {
-  //     error += "option 'removeBtnMargin' must be a Number\n";
-  //   }
-  //   if (typeof options.modalText !== "string") {
-  //     error += "option 'modalText' must be a String\n";
-  //   }
-  //   if (typeof options.removeNotificationText !== "string") {
-  //     error += "option 'removeNotificationText' must be a String\n";
-  //   }
-  //   if (typeof options.addNotificationText !== "string") {
-  //     error += "option 'addNotificationText' must be a String\n";
-  //   }
-  //   if (typeof options.showRemoveNotifications !== "boolean") {
-  //     error += "option 'showRemoveNotifications' must be a Boolean\n";
-  //   }
-  //   if (typeof options.showAddNotifications !== "boolean") {
-  //     error += "option 'showAddNotifications' must be a Boolean\n";
-  //   }
-  //   if (typeof options.notificationPosition !== "string") {
-  //     error += "option 'notificationPosition' must be a String\n";
-  //   }
-  //   if (typeof options.anim !== "boolean") {
-  //     error += "option 'anim' must be a Boolean\n";
-  //   }
-  //   if (typeof options.outlineItemOnHover !== "boolean") {
-  //     error += "option 'outlineItemOnHover' must be a Boolean\n";
-  //   }
-  //   if (typeof options.nestingLevel !== "number") {
-  //     error += "option 'nestingLevel' must be a Number\n";
-  //   }
-  //   if (typeof options.animDuration !== "number") {
-  //     error += "option 'animDuration' must be a Number\n";
-  //   }
-  //   if (typeof options.animEasing !== "string") {
-  //     error += "option 'animEasing' must be a String\n";
-  //   } else if (
-  //     options.animEasing !== "linear" &&
-  //     options.animEasing !== "ease" &&
-  //     options.animEasing !== "ease-in-out" &&
-  //     options.animEasing !== "ease-in" &&
-  //     options.animEasing !== "ease-out" &&
-  //     options.animEasing.indexOf("cubic-bezier(") === -1
-  //   ) {
-  //     error +=
-  //       "option 'animEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n";
-  //   }
-  //   if (typeof options.animRemoveTranslateX !== "number") {
-  //     error += "option 'animRemoveTranslateX' must be a Number\n";
-  //   }
-  //   if (typeof options.animRemoveTranslateY !== "number") {
-  //     error += "option 'animRemoveTranslateY' must be a Number\n";
-  //   }
-  //   if (typeof options.animAddTranslateY !== "number") {
-  //     error += "option 'animAddTranslateY' must be a Number\n";
-  //   }
-  //   if (typeof options.animAddTranslateX !== "number") {
-  //     error += "option 'animAddTranslateX' must be a Number\n";
-  //   }
-  //   if (options.beforeRemove && typeof options.beforeRemove !== "function") {
-  //     error += "option 'beforeRemove' must be a Function\n";
-  //   }
-  //   if (error === "") {
-  //     return "valid";
-  //   } else {
-  //     return error;
-  //   }
-  // }
   getOptionsFromAttributes(parent, options) {
     let intAttributes = [
       "removeBtnWidth",
@@ -1871,164 +1729,6 @@ class Itemize {
         }
       }
     }
-
-    // if (parent.getAttribute("removeBtn") === "false") {
-    //   options.removeBtn = false;
-    // } else if (parent.getAttribute("removeBtn") === "true") {
-    //   options.removeBtn = true;
-    // }
-    // if (parent.getAttribute("modalConfirm") === "false") {
-    //   options.modalConfirm = false;
-    // } else if (parent.getAttribute("modalConfirm") === "true") {
-    //   options.modalConfirm = true;
-    // }
-    // if (parent.getAttribute("anim") === "false") {
-    //   options.anim = false;
-    // } else if (parent.getAttribute("anim") === "true") {
-    //   options.anim = true;
-    // }
-    // if (typeof parent.getAttribute("removeBtnClass") === "string") {
-    //   if (parent.getAttribute("removeBtnClass") === "false") {
-    //     options.removeBtnClass = null;
-    //   } else {
-    //     options.removeBtnClass = parent.getAttribute("removeBtnClass");
-    //   }
-    // }
-    // if (
-    //   typeof parent.getAttribute("removeBtnWidth") === "string" &&
-    //   parseInt(parent.getAttribute("removeBtnWidth")) > 0
-    // ) {
-    //   options.removeBtnWidth = parseInt(parent.getAttribute("removeBtnWidth"));
-    // }
-    // if (typeof parent.getAttribute("removeBtnColor") === "string") {
-    //   options.removeBtnColor = parent.getAttribute("removeBtnColor");
-    // }
-
-    // if (typeof parent.getAttribute("removeBtnHoverColor") === "string") {
-    //   options.removeBtnHoverColor = parent.getAttribute("removeBtnHoverColor");
-    // }
-    // if (typeof parent.getAttribute("removeBtnSharpness") === "string") {
-    //   options.removeBtnSharpness = parent.getAttribute("removeBtnSharpness");
-    // }
-    // if (typeof parent.getAttribute("removeBtnPosition") === "string") {
-    //   options.removeBtnPosition = parent.getAttribute("removeBtnPosition");
-    // }
-    // if (typeof parent.getAttribute("removeBtnBgColor") === "string") {
-    //   options.removeBtnBgColor = parent.getAttribute("removeBtnBgColor");
-    // }
-    // if (typeof parent.getAttribute("removeBtnBgHoverColor") === "string") {
-    //   options.removeBtnBgHoverColor = parent.getAttribute(
-    //     "removeBtnBgHoverColor"
-    //   );
-    // }
-    // if (
-    //   typeof parent.getAttribute("removeBtnMargin") === "string" &&
-    //   !isNaN(parseInt(parent.getAttribute("removeBtnMargin")))
-    // ) {
-    //   options.removeBtnMargin = parseInt(
-    //     parent.getAttribute("removeBtnMargin")
-    //   );
-    // }
-    // if (typeof parent.getAttribute("modalText") === "string") {
-    //   options.modalText = parent.getAttribute("modalText");
-    // }
-    // if (typeof parent.getAttribute("removeNotificationText") === "string") {
-    //   options.removeNotificationText = parent.getAttribute("removeNotificationText");
-    // }
-    // if (typeof parent.getAttribute("addNotificationText") === "string") {
-    //   options.addNotificationText = parent.getAttribute("addNotificationText");
-    // }
-    // if (parent.getAttribute("showAddNotifications") === "true") {
-    //   options.showAddNotifications = true;
-    // } else if (parent.getAttribute("showAddNotifications") === "false") {
-    //   options.showAddNotifications = false;
-    // }
-    // if (parent.getAttribute("showRemoveNotifications") === "true") {
-    //   options.showRemoveNotifications = true;
-    // } else if (parent.getAttribute("showRemoveNotifications") === "false") {
-    //   options.showRemoveNotifications = false;
-    // }
-    // if (parent.getAttribute("removeBtnCircle") === "true") {
-    //   options.removeBtnCircle = true;
-    // } else if (parent.getAttribute("removeBtnCircle") === "false") {
-    //   options.removeBtnCircle = false;
-    // }
-    // if (parent.getAttribute("outlineItemOnHover") === "true") {
-    //   options.outlineItemOnHover = true;
-    // } else if (parent.getAttribute("outlineItemOnHover") === "false") {
-    //   options.outlineItemOnHover = false;
-    // }
-    // if (
-    //   typeof parent.getAttribute("nestingLevel") === "string" &&
-    //   parseInt(parent.getAttribute("nestingLevel")) > 0
-    // ) {
-    //   options.nestingLevel = parseInt(parent.getAttribute("nestingLevel"));
-    // }
-    // if (
-    //   typeof parent.getAttribute("animDuration") === "string" &&
-    //   parseInt(parent.getAttribute("animDuration")) > 0
-    // ) {
-    //   options.animDuration = parseInt(
-    //     parent.getAttribute("animDuration")
-    //   );
-    // }
-    // let easeAttr = parent.getAttribute("animEasing");
-    // if (typeof easeAttr === "string") {
-    //   if (
-    //     easeAttr !== "linear" &&
-    //     easeAttr !== "ease" &&
-    //     easeAttr !== "ease-in-out" &&
-    //     easeAttr !== "ease-in" &&
-    //     easeAttr !== "ease-out" &&
-    //     easeAttr.indexOf("cubic-bezier(") === -1
-    //   ) {
-    //     console.error(
-    //       " - Itemize error - \n 'animEasing' only accepts the pre-defined values 'linear', 'ease', 'ease-in', 'ease-out', and 'ease-in-out', or a custom 'cubic-bezier' value like 'cubic-bezier(0.42, 0, 0.58, 1)'. \n"
-    //     );
-    //   } else {
-    //     options.animEasing = easeAttr;
-    //   }
-    // }
-    // if (
-    //   typeof parent.getAttribute("animRemoveTranslateX") === "string" &&
-    //   !isNaN(parseInt(parent.getAttribute("animRemoveTranslateX")))
-    // ) {
-    //   options.animRemoveTranslateX = parseInt(
-    //     parent.getAttribute("animRemoveTranslateX")
-    //   );
-    // }
-    // if (
-    //   typeof parent.getAttribute("animRemoveTranslateY") === "string" &&
-    //   !isNaN(parseInt(parent.getAttribute("animRemoveTranslateY")))
-    // ) {
-    //   options.animRemoveTranslateY = parseInt(
-    //     parent.getAttribute("animRemoveTranslateY")
-    //   );
-    // }
-    // if (
-    //   typeof parent.getAttribute("animAddTranslateY") === "string" &&
-    //   !isNaN(parseInt(parent.getAttribute("animAddTranslateY")))
-    // ) {
-    //   options.animAddTranslateY = parseInt(
-    //     parent.getAttribute("animAddTranslateY")
-    //   );
-    // }
-    // if (
-    //   typeof parent.getAttribute("animAddTranslateX") === "string" &&
-    //   !isNaN(parseInt(parent.getAttribute("animAddTranslateX")))
-    // ) {
-    //   options.animAddTranslateX = parseInt(
-    //     parent.getAttribute("animAddTranslateX")
-    //   );
-    // }
-    // if (
-    //   typeof parent.getAttribute("removeBtnThickness") === "string" &&
-    //   parseInt(parent.getAttribute("removeBtnThickness")) > 0
-    // ) {
-    //   options.removeBtnThickness = parseInt(
-    //     parent.getAttribute("removeBtnThickness")
-    //   );
-    // }
     return options;
   }
   makeId(length) {
