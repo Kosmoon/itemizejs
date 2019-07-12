@@ -45,7 +45,7 @@ A few examples: https://itemize.js/index.html?example
 
 Kosmoon – [@YourTwitter](https://twitter.com/kosmoon) – kosmoonstudio@gmail.com
 
-Distributed under the MIT license. See ``LICENSE`` for more information.
+Distributed under the MIT license. [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [https://github.com/Kosmoon/itemizejs](https://github.com/Kosmoon/itemizejs)
 
