@@ -71,7 +71,7 @@ body {
 
 .c {
   margin: 10px;
-  background: #cf8989;
+  background: rgba(209, 207, 207, 0.569);
   -webkit-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
   -moz-box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);
   box-shadow: 2px 2px 17px -2px rgba(0, 0, 0, 0.75);

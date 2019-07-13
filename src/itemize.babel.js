@@ -15,7 +15,7 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 /*
- -- itemize.js v0.62--
+ -- itemize.js v0.65--
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -83,12 +83,12 @@ function () {
       if (_typeof(target) === "object") {
         opts = this.mergeOptions(target);
         target = [null];
-      } else if (options) {
-        opts = this.mergeOptions(options);
+      } else {
+        target = [target];
       }
 
-      if (!Array.isArray(target)) {
-        target = [target];
+      if (options) {
+        opts = this.mergeOptions(options);
       }
 
       var childItemizedNb = 0;
@@ -452,7 +452,7 @@ function () {
       var oldStyle = parent.querySelector(".itemize_style");
 
       if (oldStyle) {
-        parent.removeChild(parent.querySelector(".itemize_style"));
+        oldStyle.parentNode.removeChild(oldStyle);
       }
 
       var css = document.createElement("style");
@@ -633,7 +633,7 @@ function () {
           var btn = child.querySelector(".itemize_remove_btn");
 
           if (btn) {
-            btn.removeChild(btn.parentNode);
+            btn.parentNode.removeChild(btn);
           }
         } else {
           var button = child.querySelector("." + parent.itemizeOptions.removeBtnClass);
@@ -647,7 +647,7 @@ function () {
       var oldStyle = parent.querySelector(".itemize_style");
 
       if (oldStyle) {
-        parent.removeChild(parent.querySelector(".itemize_style"));
+        oldStyle.parentNode.removeChild(oldStyle);
       }
 
       for (var s = child.classList.length - 1; s >= 0; s--) {
@@ -665,39 +665,6 @@ function () {
       var _this4 = this;
 
       try {
-        // let item = null;
-        // if (typeof el === "string") {
-        //   for (let i = 0; i < this.items.length; i++) {
-        //     if (this.items[i].itemizeItemId === el) {
-        //       item = this.items[i];
-        //     }
-        //   }
-        //   if (!item) {
-        //     item = document.querySelector(el);
-        //     if (!item || !item.itemizeItemId) {
-        //       throw new Error(
-        //         " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
-        //       );
-        //     }
-        //   }
-        //   if (!item) {
-        //     throw new Error(
-        //       " - Itemize error - \n No item found, cannot create a confirm modal."
-        //     );
-        //   }
-        // } else {
-        //   item = el;
-        //   if (!item) {
-        //     throw new Error(
-        //       " - Itemize error - \n No item found, cannot create a confirm modal."
-        //     );
-        //   }
-        //   if (!item.itemizeItemId) {
-        //     throw new Error(
-        //       " - Itemize error - \n Not a valid Itemize element, cannot create a confirm modal."
-        //     );
-        //   }
-        // }
         var modalAnimDuration = 150;
         var backDrop = document.createElement("div");
         var modal = document.createElement("div");
@@ -1189,9 +1156,9 @@ function () {
 
         if ((item.arrayPosition || item.arrayPosition === 0) && item.parentElement && item.parentElement.itemizeOptions) {
           if ((!item.removeStatus || item.removeStatus !== "pending") && !item.inFlipAnim) {
-            if (this.globalOptions.beforeRemove) {
+            if (item.parentElement.itemizeOptions.beforeRemove) {
               item.removeStatus = "pending";
-              var confirmRemove = this.globalOptions.beforeRemove(item);
+              var confirmRemove = item.parentElement.itemizeOptions.beforeRemove(item);
 
               if (confirmRemove === undefined) {
                 throw new Error(' - Itemize error - \n The function "beforeErase" must return a Boolean or a Promise');
@@ -1356,50 +1323,90 @@ function () {
     }
   }, {
     key: "animateRAF",
-    value: function animateRAF(elem, from, to, duration) {
-      for (var i = 0; i < from.length; i++) {
-        for (var key in from[i]) {
-          if (from[i].hasOwnProperty(key)) {
-            if (key === "transform") {
-              elem.style.transform = "translateX(".concat(from[i][key].translateX).concat(from[i][key].unit, ") translateY(").concat(from[i][key].translateY).concat(from[i][key].unit, ")");
-            } else if (key === "opacity") {
-              elem.style.opacity = from[i][key];
-            } else {
-              elem.style[key] = "".concat(from[i][key].value).concat(from[i][key].unit);
+    value: function animateRAF(elems, from, to, duration) {
+      var fromData = null;
+
+      if (from !== "animList") {
+        elems = [elems];
+      }
+
+      for (var z = 0; z < elems.length; z++) {
+        var elem = elems[z];
+
+        if (from !== "animList") {
+          fromData = from;
+        } else {
+          fromData = elem.fromData;
+        }
+
+        if (fromData) {
+          for (var i = 0; i < fromData.length; i++) {
+            for (var key in fromData[i]) {
+              if (fromData[i].hasOwnProperty(key)) {
+                if (key === "transform") {
+                  elem.style.transform = "translateX(".concat(fromData[i][key].translateX).concat(fromData[i][key].unit, ") translateY(").concat(fromData[i][key].translateY).concat(fromData[i][key].unit, ")");
+                } else if (key === "opacity") {
+                  elem.style.opacity = fromData[i][key];
+                } else {
+                  elem.style[key] = "".concat(fromData[i][key].value).concat(fromData[i][key].unit);
+                }
+              }
             }
           }
         }
       }
-      function anim(timestamp) {
-        var progress;
 
-        if (!elem.startAnimTime) {
-          elem.startAnimTime = timestamp;
-          elem.animTicks = 0;
+      var startAnimTime = null;
+      var animTicks = 0;
+      var progress;
+
+      function anim(timestamp) {
+        if (!startAnimTime) {
+          startAnimTime = timestamp;
+          animTicks = 0;
         }
 
-        progress = timestamp - elem.startAnimTime;
+        progress = timestamp - startAnimTime;
 
-        for (var _i6 = 0; _i6 < to.length; _i6++) {
-          for (var _key in to[_i6]) {
-            if (to[_i6].hasOwnProperty(_key)) {
-              if (_key === "transform") {
-                elem.style.transform = "translateX(".concat(from[_i6][_key].translateX - (from[_i6][_key].translateX - to[_i6][_key].translateX) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i6][_key].unit, ") translateY(").concat(from[_i6][_key].translateY - (from[_i6][_key].translateY - to[_i6][_key].translateY) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i6][_key].unit, ")");
-              } else if (_key === "opacity") {
-                elem.style.opacity = from[_i6][_key] - (from[_i6][_key] - to[_i6][_key]) / (duration * 60 / 1000) * elem.animTicks;
-              } else {
-                elem.style[_key] = "".concat(from[_i6][_key].value - (from[_i6][_key].value - to[_i6][_key].value) / (duration * 60 / 1000) * elem.animTicks).concat(to[_i6][_key].unit);
+        for (var j = 0; j < elems.length; j++) {
+          var _elem = elems[j];
+
+          if (from !== "animList") {
+            fromData = from;
+          } else {
+            fromData = _elem.fromData;
+          }
+
+          if (fromData) {
+            for (var _i6 = 0; _i6 < to.length; _i6++) {
+              for (var _key in to[_i6]) {
+                if (to[_i6].hasOwnProperty(_key)) {
+                  if (_key === "transform") {
+                    _elem.style.transform = "translateX(".concat(fromData[_i6][_key].translateX - (fromData[_i6][_key].translateX - to[_i6][_key].translateX) / (duration * 60 / 1000) * animTicks).concat(to[_i6][_key].unit, ") translateY(").concat(fromData[_i6][_key].translateY - (fromData[_i6][_key].translateY - to[_i6][_key].translateY) / (duration * 60 / 1000) * animTicks).concat(to[_i6][_key].unit, ")");
+                  } else if (_key === "opacity") {
+                    _elem.style.opacity = fromData[_i6][_key] - (fromData[_i6][_key] - to[_i6][_key]) / (duration * 60 / 1000) * animTicks;
+                  } else {
+                    _elem.style[_key] = "".concat(fromData[_i6][_key].value - (fromData[_i6][_key].value - to[_i6][_key].value) / (duration * 60 / 1000) * animTicks).concat(to[_i6][_key].unit);
+                  }
+                }
               }
             }
           }
         }
 
         if (progress < duration - 1) {
-          elem.animTicks++;
+          animTicks++;
           requestAnimationFrame(anim);
         } else {
-          elem.startAnimTime = null;
-          elem.animTicks = 0;
+          startAnimTime = null;
+          animTicks = 0;
+
+          for (var u = 0; u < elems.length; u++) {
+            if (elems[u]) {
+              elems[u].style.transform = "none";
+              elems[u].inFlipAnim = false;
+            }
+          }
         }
       }
 
@@ -1464,7 +1471,6 @@ function () {
           _this7.elemToRemove = [];
 
           _this7.flipPlay(_this7.items, options.animDuration * 0.5);
-
         }
       }, options.animDuration * 0.5);
     }
@@ -1526,14 +1532,14 @@ function () {
   }, {
     key: "flipPlay",
     value: function flipPlay(elems, duration) {
-      var _this8 = this;
+      var animElems = false;
 
-      var _loop2 = function _loop2(i) {
+      for (var i = 0; i < elems.length; i++) {
         var el = elems[i];
 
         if (!el.inAddAnim && el.parentNode && el.parentNode.itemizeOptions) {
           var newPos = el.getBoundingClientRect();
-          var oldPos = _this8.elPos[el.itemizeItemId];
+          var oldPos = this.elPos[el.itemizeItemId];
           var deltaX = oldPos.left - newPos.left;
           var deltaY = oldPos.top - newPos.top;
           var deltaW = oldPos.width / newPos.width;
@@ -1549,6 +1555,7 @@ function () {
 
           if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
             el.inFlipAnim = true;
+            animElems = true;
 
             if (el.animate) {
               el.animate([{
@@ -1560,33 +1567,26 @@ function () {
                 easing: el.parentNode.itemizeOptions.animEasing
               });
             } else {
-              _this8.animateRAF(el, [{
+              el.fromData = [{
                 transform: {
                   translateX: deltaX,
                   translateY: deltaY,
                   unit: "px"
                 }
-              }], [{
-                transform: {
-                  translateX: 0,
-                  translateY: 0,
-                  unit: "px"
-                }
-              }], duration);
+              }];
             }
-
-            setTimeout(function () {
-              if (el) {
-                el.style.transform = "none";
-                el.inFlipAnim = false;
-              }
-            }, duration);
           }
         }
-      };
+      }
 
-      for (var i = 0; i < elems.length; i++) {
-        _loop2(i);
+      if (animElems && !document.querySelector("body").animate) {
+        this.animateRAF(elems, "animList", [{
+          transform: {
+            translateX: 0,
+            translateY: 0,
+            unit: "px"
+          }
+        }], duration);
       }
     }
   }, {
@@ -1603,7 +1603,7 @@ function () {
           removeBtnPosition: "top-right",
           removeBtnMargin: 2,
           removeBtnCircle: true,
-          removeBtnBgColor: "#d1cfcf91",
+          removeBtnBgColor: "rgba(209, 207, 207, 0.569)",
           removeBtnBgHoverColor: "#959595",
           removeBtnClass: null,
           modalConfirm: false,
@@ -1631,13 +1631,14 @@ function () {
         if (this.globalOptions) {
           defaultOptions = _objectSpread({}, this.globalOptions);
         }
-        var mergedOptions = _objectSpread({}, defaultOptions, {}, newOptions); // for (var key in newOptions) {
+
+        var mergedOptions = _objectSpread({}, defaultOptions, {}, newOptions);
+
         return mergedOptions;
       } catch (error) {
         console.error(error);
       }
     }
-
   }, {
     key: "getOptionsFromAttributes",
     value: function getOptionsFromAttributes(parent, options) {
@@ -1659,8 +1660,7 @@ function () {
             }
           }
         }
-      } 
-
+      }
 
       return options;
     }

@@ -1,0 +1,29 @@
+{
+  "name": "itemizejs",
+  "version": "1.0.1",
+  "description": "Turn any container's children into removable items",
+  "main": "itemize.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kosmoon/itemizejs.git"
+  },
+  "keywords": [
+    "javascript",
+    "library",
+    "itemizejs",
+    "itemize",
+    "item",
+    "manage",
+    "npm",
+    "js"
+  ],
+  "author": "Kosmoon",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Kosmoon/itemizejs/issues"
+  },
+  "homepage": "https://github.com/Kosmoon/itemizejs#readme"
+}

@@ -422,7 +422,7 @@ class Itemize {
     let options = parent.itemizeOptions;
     let oldStyle = parent.querySelector(".itemize_style");
     if (oldStyle) {
-      parent.removeChild(parent.querySelector(".itemize_style"));
+      oldStyle.parentNode.removeChild(oldStyle);
     }
     let css = document.createElement("style");
     css.classList.add("itemize_style");
@@ -618,7 +618,7 @@ class Itemize {
       if (!parent.itemizeOptions.removeBtnClass) {
         let btn = child.querySelector(".itemize_remove_btn");
         if (btn) {
-          btn.removeChild(btn.parentNode);
+          btn.parentNode.removeChild(btn);
         }
       } else {
         const button = child.querySelector(
@@ -631,9 +631,7 @@ class Itemize {
     }
     let oldStyle = parent.querySelector(".itemize_style");
     if (oldStyle) {
-      try {
-        parent.removeChild(parent.querySelector(".itemize_style"));
-      } catch (error) {}
+      oldStyle.parentNode.removeChild(oldStyle);
     }
     for (let s = child.classList.length - 1; s >= 0; s--) {
       if (child.classList[s].indexOf("itemize_item_") !== -1) {
@@ -1392,61 +1390,100 @@ class Itemize {
     }
     item.itemizeItemId = null;
   }
-  animateRAF(elem, from, to, duration) {
-    for (let i = 0; i < from.length; i++) {
-      for (const key in from[i]) {
-        if (from[i].hasOwnProperty(key)) {
-          if (key === "transform") {
-            elem.style.transform = `translateX(${from[i][key].translateX}${
-              from[i][key].unit
-            }) translateY(${from[i][key].translateY}${from[i][key].unit})`;
-          } else if (key === "opacity") {
-            elem.style.opacity = from[i][key];
-          } else {
-            elem.style[key] = `${from[i][key].value}${from[i][key].unit}`;
+  animateRAF(elems, from, to, duration) {
+    let fromData = null;
+    if (from !== "animList") {
+      elems = [elems];
+    }
+    for (let z = 0; z < elems.length; z++) {
+      let elem = elems[z];
+      if (from !== "animList") {
+        fromData = from;
+      } else {
+        fromData = elem.fromData;
+      }
+      if (fromData) {
+        for (let i = 0; i < fromData.length; i++) {
+          for (const key in fromData[i]) {
+            if (fromData[i].hasOwnProperty(key)) {
+              if (key === "transform") {
+                elem.style.transform = `translateX(${
+                  fromData[i][key].translateX
+                }${fromData[i][key].unit}) translateY(${
+                  fromData[i][key].translateY
+                }${fromData[i][key].unit})`;
+              } else if (key === "opacity") {
+                elem.style.opacity = fromData[i][key];
+              } else {
+                elem.style[key] = `${fromData[i][key].value}${
+                  fromData[i][key].unit
+                }`;
+              }
+            }
           }
         }
       }
     }
+    let startAnimTime = null;
+    let animTicks = 0;
+    let progress;
     function anim(timestamp) {
-      let progress;
-      if (!elem.startAnimTime) {
-        elem.startAnimTime = timestamp;
-        elem.animTicks = 0;
+      if (!startAnimTime) {
+        startAnimTime = timestamp;
+        animTicks = 0;
       }
-      progress = timestamp - elem.startAnimTime;
-      for (let i = 0; i < to.length; i++) {
-        for (const key in to[i]) {
-          if (to[i].hasOwnProperty(key)) {
-            if (key === "transform") {
-              elem.style.transform = `translateX(${from[i][key].translateX -
-                ((from[i][key].translateX - to[i][key].translateX) /
-                  ((duration * 60) / 1000)) *
-                  elem.animTicks}${to[i][key].unit}) translateY(${from[i][key]
-                .translateY -
-                ((from[i][key].translateY - to[i][key].translateY) /
-                  ((duration * 60) / 1000)) *
-                  elem.animTicks}${to[i][key].unit})`;
-            } else if (key === "opacity") {
-              elem.style.opacity =
-                from[i][key] -
-                ((from[i][key] - to[i][key]) / ((duration * 60) / 1000)) *
-                  elem.animTicks;
-            } else {
-              elem.style[key] = `${from[i][key].value -
-                ((from[i][key].value - to[i][key].value) /
-                  ((duration * 60) / 1000)) *
-                  elem.animTicks}${to[i][key].unit}`;
+      progress = timestamp - startAnimTime;
+      for (let j = 0; j < elems.length; j++) {
+        let elem = elems[j];
+        if (from !== "animList") {
+          fromData = from;
+        } else {
+          fromData = elem.fromData;
+        }
+        if (fromData) {
+          for (let i = 0; i < to.length; i++) {
+            for (const key in to[i]) {
+              if (to[i].hasOwnProperty(key)) {
+                if (key === "transform") {
+                  elem.style.transform = `translateX(${fromData[i][key]
+                    .translateX -
+                    ((fromData[i][key].translateX - to[i][key].translateX) /
+                      ((duration * 60) / 1000)) *
+                      animTicks}${to[i][key].unit}) translateY(${fromData[i][
+                    key
+                  ].translateY -
+                    ((fromData[i][key].translateY - to[i][key].translateY) /
+                      ((duration * 60) / 1000)) *
+                      animTicks}${to[i][key].unit})`;
+                } else if (key === "opacity") {
+                  elem.style.opacity =
+                    fromData[i][key] -
+                    ((fromData[i][key] - to[i][key]) /
+                      ((duration * 60) / 1000)) *
+                      animTicks;
+                } else {
+                  elem.style[key] = `${fromData[i][key].value -
+                    ((fromData[i][key].value - to[i][key].value) /
+                      ((duration * 60) / 1000)) *
+                      animTicks}${to[i][key].unit}`;
+                }
+              }
             }
           }
         }
       }
       if (progress < duration - 1) {
-        elem.animTicks++;
+        animTicks++;
         requestAnimationFrame(anim);
       } else {
-        elem.startAnimTime = null;
-        elem.animTicks = 0;
+        startAnimTime = null;
+        animTicks = 0;
+        for (let u = 0; u < elems.length; u++) {
+          if (elems[u]) {
+            elems[u].style.transform = "none";
+            elems[u].inFlipAnim = false;
+          }
+        }
       }
     }
     requestAnimationFrame(anim);
@@ -1588,6 +1625,7 @@ class Itemize {
     }
   }
   flipPlay(elems, duration) {
+    let animElems = false;
     for (let i = 0; i < elems.length; i++) {
       let el = elems[i];
       if (!el.inAddAnim && el.parentNode && el.parentNode.itemizeOptions) {
@@ -1606,6 +1644,7 @@ class Itemize {
 
         if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
           el.inFlipAnim = true;
+          animElems = true;
           if (el.animate) {
             el.animate(
               [
@@ -1622,37 +1661,34 @@ class Itemize {
               }
             );
           } else {
-            this.animateRAF(
-              el,
-              [
-                {
-                  transform: {
-                    translateX: deltaX,
-                    translateY: deltaY,
-                    unit: "px"
-                  }
+            el.fromData = [
+              {
+                transform: {
+                  translateX: deltaX,
+                  translateY: deltaY,
+                  unit: "px"
                 }
-              ],
-              [
-                {
-                  transform: {
-                    translateX: 0,
-                    translateY: 0,
-                    unit: "px"
-                  }
-                }
-              ],
-              duration
-            );
+              }
+            ];
           }
-          setTimeout(() => {
-            if (el) {
-              el.style.transform = "none";
-              el.inFlipAnim = false;
-            }
-          }, duration);
         }
       }
+    }
+    if (animElems && !document.querySelector("body").animate) {
+      this.animateRAF(
+        elems,
+        "animList",
+        [
+          {
+            transform: {
+              translateX: 0,
+              translateY: 0,
+              unit: "px"
+            }
+          }
+        ],
+        duration
+      );
     }
   }
 
@@ -1668,7 +1704,7 @@ class Itemize {
         removeBtnPosition: "top-right",
         removeBtnMargin: 2,
         removeBtnCircle: true,
-        removeBtnBgColor: "#d1cfcf91",
+        removeBtnBgColor: "rgba(209, 207, 207, 0.569)",
         removeBtnBgHoverColor: "#959595",
         removeBtnClass: null,
         modalConfirm: false,
