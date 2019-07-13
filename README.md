@@ -5,7 +5,11 @@
 [![Build Status][travis-image]][travis-url]
 [![Downloads Stats][npm-downloads]][npm-url]
 
+<<<<<<< HEAD
 ItemizeJS is a Javascript library which transforms any container’s children into manageable items in just two lines of code.
+=======
+ItemizeJS is a Javascript library which transforms any containerâ€™s children into manageable items in just two lines of code.
+>>>>>>> 684ef0eeb04fe5f6e40df3ac3ca8c59952943815
 
 Items will reorganize themselves with a nice animation when removed or added.
 
@@ -43,7 +47,11 @@ A few examples: https://itemize.js/index.html?example
 
 ## Meta
 
+<<<<<<< HEAD
 Kosmoon – [@YourTwitter](https://twitter.com/kosmoon) – kosmoonstudio@gmail.com
+=======
+Kosmoon â€“ [@YourTwitter](https://twitter.com/kosmoon) â€“ kosmoonstudio@gmail.com
+>>>>>>> 684ef0eeb04fe5f6e40df3ac3ca8c59952943815
 
 Distributed under the MIT license. [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -63,4 +71,8 @@ Distributed under the MIT license. [![License: MIT](https://img.shields.io/badge
 [npm-downloads]: https://img.shields.io/npm/dm/datadog-metrics.svg?style=flat-square
 [travis-image]: https://img.shields.io/travis/dbader/node-datadog-metrics/master.svg?style=flat-square
 [travis-url]: https://travis-ci.org/dbader/node-datadog-metrics
+<<<<<<< HEAD
 [wiki]: https://github.com/yourname/yourproject/wiki
+=======
+[wiki]: https://github.com/yourname/yourproject/wiki
+>>>>>>> 684ef0eeb04fe5f6e40df3ac3ca8c59952943815
