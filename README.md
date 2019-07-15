@@ -1,7 +1,7 @@
 # ItemizeJS
 > Turn any container's children into manageable items.
 
-![NPM Version]
+[<img width="30px" src="https://authy.com/wp-content/uploads/npm-logo.png">](https://www.npmjs.com/package/itemizejs) v 1.0.1
 
 ItemizeJS is a Javascript library which transforms any containers children into manageable items in just two lines of code.
 
