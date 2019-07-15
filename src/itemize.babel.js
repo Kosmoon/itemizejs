@@ -1323,89 +1323,52 @@ function () {
     }
   }, {
     key: "animateRAF",
-    value: function animateRAF(elems, from, to, duration) {
-      var fromData = null;
-
-      if (from !== "animList") {
-        elems = [elems];
-      }
-
-      for (var z = 0; z < elems.length; z++) {
-        var elem = elems[z];
-
-        if (from !== "animList") {
-          fromData = from;
-        } else {
-          fromData = elem.fromData;
-        }
-
-        if (fromData) {
-          for (var i = 0; i < fromData.length; i++) {
-            for (var key in fromData[i]) {
-              if (fromData[i].hasOwnProperty(key)) {
-                if (key === "transform") {
-                  elem.style.transform = "translateX(".concat(fromData[i][key].translateX).concat(fromData[i][key].unit, ") translateY(").concat(fromData[i][key].translateY).concat(fromData[i][key].unit, ")");
-                } else if (key === "opacity") {
-                  elem.style.opacity = fromData[i][key];
-                } else {
-                  elem.style[key] = "".concat(fromData[i][key].value).concat(fromData[i][key].unit);
-                }
-              }
+    value: function animateRAF(elem, from, to, duration) {
+      for (var i = 0; i < from.length; i++) {
+        for (var key in from[i]) {
+          if (from[i].hasOwnProperty(key)) {
+            if (key === "transform") {
+              elem.style.transform = "translateX(".concat(from[i][key].translateX).concat(from[i][key].unit, ") translateY(").concat(from[i][key].translateY).concat(from[i][key].unit, ")");
+            } else if (key === "opacity") {
+              elem.style.opacity = from[i][key];
+            } else {
+              elem.style[key] = "".concat(from[i][key].value).concat(from[i][key].unit);
             }
           }
         }
       }
 
-      var startAnimTime = null;
-      var animTicks = 0;
-      var progress;
-
       function anim(timestamp) {
-        if (!startAnimTime) {
-          startAnimTime = timestamp;
-          animTicks = 0;
+        var progress;
+
+        if (!elem.startAnimTime) {
+          elem.startAnimTime = timestamp;
         }
 
-        progress = timestamp - startAnimTime;
+        progress = timestamp - elem.startAnimTime;
 
-        for (var j = 0; j < elems.length; j++) {
-          var _elem = elems[j];
-
-          if (from !== "animList") {
-            fromData = from;
-          } else {
-            fromData = _elem.fromData;
-          }
-
-          if (fromData) {
-            for (var _i6 = 0; _i6 < to.length; _i6++) {
-              for (var _key in to[_i6]) {
-                if (to[_i6].hasOwnProperty(_key)) {
-                  if (_key === "transform") {
-                    _elem.style.transform = "translateX(".concat(fromData[_i6][_key].translateX - (fromData[_i6][_key].translateX - to[_i6][_key].translateX) / (duration * 60 / 1000) * animTicks).concat(to[_i6][_key].unit, ") translateY(").concat(fromData[_i6][_key].translateY - (fromData[_i6][_key].translateY - to[_i6][_key].translateY) / (duration * 60 / 1000) * animTicks).concat(to[_i6][_key].unit, ")");
-                  } else if (_key === "opacity") {
-                    _elem.style.opacity = fromData[_i6][_key] - (fromData[_i6][_key] - to[_i6][_key]) / (duration * 60 / 1000) * animTicks;
-                  } else {
-                    _elem.style[_key] = "".concat(fromData[_i6][_key].value - (fromData[_i6][_key].value - to[_i6][_key].value) / (duration * 60 / 1000) * animTicks).concat(to[_i6][_key].unit);
-                  }
-                }
+        for (var _i6 = 0; _i6 < to.length; _i6++) {
+          for (var _key in to[_i6]) {
+            if (to[_i6].hasOwnProperty(_key)) {
+              if (_key === "transform") {
+                elem.style.transform = "translateX(".concat(from[_i6][_key].translateX - (from[_i6][_key].translateX - to[_i6][_key].translateX) * parseInt(100 / (duration / progress)) / 100).concat(to[_i6][_key].unit, ") translateY(").concat(from[_i6][_key].translateY - (from[_i6][_key].translateY - to[_i6][_key].translateY) * parseInt(100 / (duration / progress)) / 100).concat(to[_i6][_key].unit, ")");
+              } else if (_key === "opacity") {
+                elem.style.opacity = from[_i6][_key] - (from[_i6][_key] - to[_i6][_key]) * parseInt(100 / (duration / progress)) / 100;
+              } else {
+                elem.style[_key] = "".concat(from[_i6][_key].value - (from[_i6][_key].value - to[_i6][_key].value) * parseInt(100 / (duration / progress)) / 100).concat(to[_i6][_key].unit);
               }
             }
           }
         }
 
         if (progress < duration - 1) {
-          animTicks++;
           requestAnimationFrame(anim);
         } else {
-          startAnimTime = null;
-          animTicks = 0;
+          elem.startAnimTime = null;
 
-          for (var u = 0; u < elems.length; u++) {
-            if (elems[u]) {
-              elems[u].style.transform = "none";
-              elems[u].inFlipAnim = false;
-            }
+          if (elem.inFlipAnim) {
+            elem.inFlipAnim = false;
+            elem.style.transform = "none";
           }
         }
       }
@@ -1532,14 +1495,14 @@ function () {
   }, {
     key: "flipPlay",
     value: function flipPlay(elems, duration) {
-      var animElems = false;
+      var _this8 = this;
 
-      for (var i = 0; i < elems.length; i++) {
+      var _loop2 = function _loop2(i) {
         var el = elems[i];
 
         if (!el.inAddAnim && el.parentNode && el.parentNode.itemizeOptions) {
           var newPos = el.getBoundingClientRect();
-          var oldPos = this.elPos[el.itemizeItemId];
+          var oldPos = _this8.elPos[el.itemizeItemId];
           var deltaX = oldPos.left - newPos.left;
           var deltaY = oldPos.top - newPos.top;
           var deltaW = oldPos.width / newPos.width;
@@ -1555,7 +1518,6 @@ function () {
 
           if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
             el.inFlipAnim = true;
-            animElems = true;
 
             if (el.animate) {
               el.animate([{
@@ -1567,26 +1529,35 @@ function () {
                 easing: el.parentNode.itemizeOptions.animEasing
               });
             } else {
-              el.fromData = [{
+              _this8.animateRAF(el, [{
                 transform: {
                   translateX: deltaX,
                   translateY: deltaY,
                   unit: "px"
                 }
-              }];
+              }], [{
+                transform: {
+                  translateX: 0,
+                  translateY: 0,
+                  unit: "px"
+                }
+              }], duration);
+            }
+
+            if (document.querySelector("body").animate) {
+              setTimeout(function () {
+                if (el) {
+                  el.style.transform = "none";
+                  el.inFlipAnim = false;
+                }
+              }, duration);
             }
           }
         }
-      }
+      };
 
-      if (animElems && !document.querySelector("body").animate) {
-        this.animateRAF(elems, "animList", [{
-          transform: {
-            translateX: 0,
-            translateY: 0,
-            unit: "px"
-          }
-        }], duration);
+      for (var i = 0; i < elems.length; i++) {
+        _loop2(i);
       }
     }
   }, {

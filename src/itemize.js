@@ -228,7 +228,7 @@ class Itemize {
                       }
                       if (newNode) {
                         if (
-                          !node.getAttribute("notItemize") &&
+                          !node.getAttribute("notitemize") &&
                           node.parentElement &&
                           node.type !== "text/css" &&
                           node.tagName !== "BR" &&
@@ -295,7 +295,7 @@ class Itemize {
   childIsItemizable(child, parent) {
     return (
       child.type !== "text/css" &&
-      typeof child.getAttribute("notItemize") !== "string" &&
+      typeof child.getAttribute("notitemize") !== "string" &&
       child.tagName !== "BR" &&
       child.tagName !== "SCRIPT" &&
       !child.itemizeItemId &&
@@ -1390,99 +1390,61 @@ class Itemize {
     }
     item.itemizeItemId = null;
   }
-  animateRAF(elems, from, to, duration) {
-    let fromData = null;
-    if (from !== "animList") {
-      elems = [elems];
-    }
-    for (let z = 0; z < elems.length; z++) {
-      let elem = elems[z];
-      if (from !== "animList") {
-        fromData = from;
-      } else {
-        fromData = elem.fromData;
-      }
-      if (fromData) {
-        for (let i = 0; i < fromData.length; i++) {
-          for (const key in fromData[i]) {
-            if (fromData[i].hasOwnProperty(key)) {
-              if (key === "transform") {
-                elem.style.transform = `translateX(${
-                  fromData[i][key].translateX
-                }${fromData[i][key].unit}) translateY(${
-                  fromData[i][key].translateY
-                }${fromData[i][key].unit})`;
-              } else if (key === "opacity") {
-                elem.style.opacity = fromData[i][key];
-              } else {
-                elem.style[key] = `${fromData[i][key].value}${
-                  fromData[i][key].unit
-                }`;
-              }
-            }
+  animateRAF(elem, from, to, duration) {
+    for (let i = 0; i < from.length; i++) {
+      for (const key in from[i]) {
+        if (from[i].hasOwnProperty(key)) {
+          if (key === "transform") {
+            elem.style.transform = `translateX(${from[i][key].translateX}${
+              from[i][key].unit
+            }) translateY(${from[i][key].translateY}${from[i][key].unit})`;
+          } else if (key === "opacity") {
+            elem.style.opacity = from[i][key];
+          } else {
+            elem.style[key] = `${from[i][key].value}${from[i][key].unit}`;
           }
         }
       }
     }
-    let startAnimTime = null;
-    let animTicks = 0;
-    let progress;
     function anim(timestamp) {
-      if (!startAnimTime) {
-        startAnimTime = timestamp;
-        animTicks = 0;
+      let progress;
+      if (!elem.startAnimTime) {
+        elem.startAnimTime = timestamp;
       }
-      progress = timestamp - startAnimTime;
-      for (let j = 0; j < elems.length; j++) {
-        let elem = elems[j];
-        if (from !== "animList") {
-          fromData = from;
-        } else {
-          fromData = elem.fromData;
-        }
-        if (fromData) {
-          for (let i = 0; i < to.length; i++) {
-            for (const key in to[i]) {
-              if (to[i].hasOwnProperty(key)) {
-                if (key === "transform") {
-                  elem.style.transform = `translateX(${fromData[i][key]
-                    .translateX -
-                    ((fromData[i][key].translateX - to[i][key].translateX) /
-                      ((duration * 60) / 1000)) *
-                      animTicks}${to[i][key].unit}) translateY(${fromData[i][
-                    key
-                  ].translateY -
-                    ((fromData[i][key].translateY - to[i][key].translateY) /
-                      ((duration * 60) / 1000)) *
-                      animTicks}${to[i][key].unit})`;
-                } else if (key === "opacity") {
-                  elem.style.opacity =
-                    fromData[i][key] -
-                    ((fromData[i][key] - to[i][key]) /
-                      ((duration * 60) / 1000)) *
-                      animTicks;
-                } else {
-                  elem.style[key] = `${fromData[i][key].value -
-                    ((fromData[i][key].value - to[i][key].value) /
-                      ((duration * 60) / 1000)) *
-                      animTicks}${to[i][key].unit}`;
-                }
-              }
+      progress = timestamp - elem.startAnimTime;
+      for (let i = 0; i < to.length; i++) {
+        for (const key in to[i]) {
+          if (to[i].hasOwnProperty(key)) {
+            if (key === "transform") {
+              elem.style.transform = `translateX(${from[i][key].translateX -
+                ((from[i][key].translateX - to[i][key].translateX) *
+                  parseInt(100 / (duration / progress))) /
+                  100}${to[i][key].unit}) translateY(${from[i][key].translateY -
+                ((from[i][key].translateY - to[i][key].translateY) *
+                  parseInt(100 / (duration / progress))) /
+                  100}${to[i][key].unit})`;
+            } else if (key === "opacity") {
+              elem.style.opacity =
+                from[i][key] -
+                ((from[i][key] - to[i][key]) *
+                  parseInt(100 / (duration / progress))) /
+                  100;
+            } else {
+              elem.style[key] = `${from[i][key].value -
+                ((from[i][key].value - to[i][key].value) *
+                  parseInt(100 / (duration / progress))) /
+                  100}${to[i][key].unit}`;
             }
           }
         }
       }
       if (progress < duration - 1) {
-        animTicks++;
         requestAnimationFrame(anim);
       } else {
-        startAnimTime = null;
-        animTicks = 0;
-        for (let u = 0; u < elems.length; u++) {
-          if (elems[u]) {
-            elems[u].style.transform = "none";
-            elems[u].inFlipAnim = false;
-          }
+        elem.startAnimTime = null;
+        if (elem.inFlipAnim) {
+          elem.inFlipAnim = false;
+          elem.style.transform = "none";
         }
       }
     }
@@ -1625,7 +1587,6 @@ class Itemize {
     }
   }
   flipPlay(elems, duration) {
-    let animElems = false;
     for (let i = 0; i < elems.length; i++) {
       let el = elems[i];
       if (!el.inAddAnim && el.parentNode && el.parentNode.itemizeOptions) {
@@ -1644,7 +1605,6 @@ class Itemize {
 
         if (deltaX !== 0 || deltaY !== 0 || deltaW !== 1 || deltaH !== 1) {
           el.inFlipAnim = true;
-          animElems = true;
           if (el.animate) {
             el.animate(
               [
@@ -1661,34 +1621,39 @@ class Itemize {
               }
             );
           } else {
-            el.fromData = [
-              {
-                transform: {
-                  translateX: deltaX,
-                  translateY: deltaY,
-                  unit: "px"
+            this.animateRAF(
+              el,
+              [
+                {
+                  transform: {
+                    translateX: deltaX,
+                    translateY: deltaY,
+                    unit: "px"
+                  }
                 }
+              ],
+              [
+                {
+                  transform: {
+                    translateX: 0,
+                    translateY: 0,
+                    unit: "px"
+                  }
+                }
+              ],
+              duration
+            );
+          }
+          if (document.querySelector("body").animate) {
+            setTimeout(() => {
+              if (el) {
+                el.style.transform = "none";
+                el.inFlipAnim = false;
               }
-            ];
+            }, duration);
           }
         }
       }
-    }
-    if (animElems && !document.querySelector("body").animate) {
-      this.animateRAF(
-        elems,
-        "animList",
-        [
-          {
-            transform: {
-              translateX: 0,
-              translateY: 0,
-              unit: "px"
-            }
-          }
-        ],
-        duration
-      );
     }
   }
 
@@ -1700,11 +1665,11 @@ class Itemize {
         removeBtnThickness: 2,
         removeBtnColor: "#565C67",
         removeBtnHoverColor: "#ffffff",
-        removeBtnSharpness: "0px",
+        removeBtnSharpness: "0%",
         removeBtnPosition: "top-right",
         removeBtnMargin: 2,
         removeBtnCircle: true,
-        removeBtnBgColor: "rgba(209, 207, 207, 0.569)",
+        removeBtnBgColor: "rgba(200, 200, 200, 0.5)",
         removeBtnBgHoverColor: "#959595",
         removeBtnClass: null,
         modalConfirm: false,

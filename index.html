@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <link rel="stylesheet" href="src/index.css" />
-  <script src="src/itemize.babel.js"></script>
+  <script src="src/itemize.js"></script>
 
   <title>Itemize</title>
 </head>
@@ -20,8 +20,9 @@
     <li>My component ITEM 04 <a href="#" class="remove">remove</a></li>
     <li>My component ITEM 05 <a href="#" class="remove">remove</a></li>
   </ul>
-  <div class="closable_container" itemize removeBtn="true" removeBtnCircle="true" removeBtnWidth="25">
-    <li class="closable clsbl1" notItemize>
+  <div class="closable_container" itemize removeBtn="true" removeBtnCircle="true" removeBtnWidth="55" animDuration="500"
+    removeBtnThickness="4" removeBtnSharpness="20%" notitemize>
+    <li class="closable clsbl1" notitemize>
       test1
       <div class="remove_btn">test1</div>
     </li>
@@ -41,7 +42,7 @@
       test5
       <div class="remove_btn">test</div>
     </li>
-    <button notItemize id="add_elem">ADD ELEM</button>
+    <button notitemize id="add_elem">ADD ELEM</button>
   </div>
 
   <div class="closable_container" itemize removeBtn="false">
@@ -70,7 +71,7 @@
   </div>
   <div class="c_of_c" itemize removeBtnPosition="top-right" showRemoveNotifications="true" notificationTimer="1000"
     outlineItemOnHover="false" animRemoveTranslateX="50" animRemoveTranslateY="0">
-    <button notItemize id="add_elem2">ADD</button>
+    <button notitemize id="add_elem2">ADD</button>
     <div class="c" animRemoveTranslateX="50" animRemoveTranslateY="0">
       CHILD1
       <div class="c_in_c">BLABLA</div>
