@@ -1,7 +1,7 @@
 # ItemizeJS
 > Turn any container's children into manageable items.
 
-[<img width="30px" src="https://authy.com/wp-content/uploads/npm-logo.png">](https://www.npmjs.com/package/itemizejs) v 1.0.1
+[<img src="https://img.shields.io/badge/npm-1.0.1-blue.svg">](https://www.npmjs.com/package/itemizejs)
 
 ItemizeJS is a Javascript library which transforms any containers children into manageable items in just two lines of code.
 
@@ -46,8 +46,6 @@ Created by Kosmoon – kosmoonstudio@gmail.com
 
 Distributed under the MIT license. [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[https://github.com/Kosmoon/itemizejs](https://github.com/Kosmoon/itemizejs)
-
 ## Contributing
 
 1. Fork it (<https://github.com/Kosmoon/itemizejs/fork>)
@@ -57,7 +55,7 @@ Distributed under the MIT license. [![License: MIT](https://img.shields.io/badge
 5. Create a new Pull Request
 
 <!-- Markdown link & img dfn's -->
-[npm-image]: https://img.shields.io/npm/v/datadog-metrics.svg?style=flat-square
+[npm-image]: https://img.shields.io/badge/npm-1.0.1-blue.svg
 [npm-url]: https://npmjs.org/package/datadog-metrics
 [npm-downloads]: https://img.shields.io/npm/dm/datadog-metrics.svg?style=flat-square
 [travis-image]: https://img.shields.io/travis/dbader/node-datadog-metrics/master.svg?style=flat-square
