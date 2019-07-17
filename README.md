@@ -51,7 +51,7 @@ https://itemizejs.com/index.html?example
 
 # Documentation
 
-https://www.itemizejs.com/docs.html
+https://itemizejs.com/docs.html
 
 # Browser support
 
