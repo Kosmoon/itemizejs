@@ -1,5 +1,5 @@
 /*
- -- itemize.js v0.65--
+ -- itemize.js v1.0.3 --
  -- (c) 2019 Kosmoon Studio --
  -- Released under the MIT license --
  */
@@ -1260,7 +1260,6 @@ class Itemize {
                       }
                     }
                     this.showNotification("removed", item);
-                    this.flipRead(this.items);
                     this.flipRemove(item);
                     this.items.splice(item.arrayPosition, 1);
                   } else {
@@ -1293,7 +1292,6 @@ class Itemize {
                   }
                 }
                 this.showNotification("removed", item);
-                this.flipRead(this.items);
                 this.flipRemove(item);
                 this.items.splice(item.arrayPosition, 1);
               } else {
@@ -1319,7 +1317,6 @@ class Itemize {
                 }
               }
               this.showNotification("removed", item);
-              this.flipRead(this.items);
               this.flipRemove(item);
               this.items.splice(item.arrayPosition, 1);
             } else {
@@ -1582,8 +1579,12 @@ class Itemize {
     }, options.animDuration);
   }
   flipRead(elems) {
-    for (let i = 0; i < elems.length; i++) {
-      this.elPos[elems[i].itemizeItemId] = elems[i].getBoundingClientRect();
+    for (let i = elems.length - 1; i >= 0; i--) {
+      if (elems[i].parentNode) {
+        this.elPos[elems[i].itemizeItemId] = elems[i].getBoundingClientRect();
+      } else {
+        elems.splice(i, 1);
+      }
     }
   }
   flipPlay(elems, duration) {

@@ -266,7 +266,7 @@ function () {
                         }
 
                         if (newNode) {
-                          if (!node.getAttribute("notItemize") && node.parentElement && node.type !== "text/css" && node.tagName !== "BR" && node.tagName !== "SCRIPT" && node.parentElement.itemizeContainerId && node.tagName !== "STYLE") {
+                          if (!node.getAttribute("notitemize") && node.parentElement && node.type !== "text/css" && node.tagName !== "BR" && node.tagName !== "SCRIPT" && node.parentElement.itemizeContainerId && node.tagName !== "STYLE") {
                             if (node.parentElement.itemizeOptions && node.parentElement.itemizeOptions.anim) {
                               node.classList.add("itemize_hide");
                               scope.itemizeChild(node, node.parentElement, true);
@@ -324,7 +324,7 @@ function () {
   }, {
     key: "childIsItemizable",
     value: function childIsItemizable(child, parent) {
-      return child.type !== "text/css" && typeof child.getAttribute("notItemize") !== "string" && child.tagName !== "BR" && child.tagName !== "SCRIPT" && !child.itemizeItemId && !child.itemizeBtn && !child.classList.contains("itemize_remove_btn") && !(parent.parentNode.itemizeOptions && child.classList.contains(parent.parentNode.itemizeOptions.removeBtnClass));
+      return child.type !== "text/css" && typeof child.getAttribute("notitemize") !== "string" && child.tagName !== "BR" && child.tagName !== "SCRIPT" && !child.itemizeItemId && !child.itemizeBtn && !child.classList.contains("itemize_remove_btn") && !(parent.parentNode.itemizeOptions && child.classList.contains(parent.parentNode.itemizeOptions.removeBtnClass));
     }
   }, {
     key: "itemizeChild",
@@ -1184,8 +1184,6 @@ function () {
 
                     _this6.showNotification("removed", item);
 
-                    _this6.flipRead(_this6.items);
-
                     _this6.flipRemove(item);
 
                     _this6.items.splice(item.arrayPosition, 1);
@@ -1221,7 +1219,6 @@ function () {
                   }
 
                   this.showNotification("removed", item);
-                  this.flipRead(this.items);
                   this.flipRemove(item);
                   this.items.splice(item.arrayPosition, 1);
                 } else {
@@ -1249,7 +1246,6 @@ function () {
                 }
 
                 this.showNotification("removed", item);
-                this.flipRead(this.items);
                 this.flipRemove(item);
                 this.items.splice(item.arrayPosition, 1);
               } else {
@@ -1488,8 +1484,12 @@ function () {
   }, {
     key: "flipRead",
     value: function flipRead(elems) {
-      for (var i = 0; i < elems.length; i++) {
-        this.elPos[elems[i].itemizeItemId] = elems[i].getBoundingClientRect();
+      for (var i = elems.length - 1; i >= 0; i--) {
+        if (elems[i].parentNode) {
+          this.elPos[elems[i].itemizeItemId] = elems[i].getBoundingClientRect();
+        } else {
+          elems.splice(i, 1);
+        }
       }
     }
   }, {
@@ -1570,11 +1570,11 @@ function () {
           removeBtnThickness: 2,
           removeBtnColor: "#565C67",
           removeBtnHoverColor: "#ffffff",
-          removeBtnSharpness: "0px",
+          removeBtnSharpness: "0%",
           removeBtnPosition: "top-right",
           removeBtnMargin: 2,
           removeBtnCircle: true,
-          removeBtnBgColor: "rgba(209, 207, 207, 0.569)",
+          removeBtnBgColor: "rgba(200, 200, 200, 0.5)",
           removeBtnBgHoverColor: "#959595",
           removeBtnClass: null,
           modalConfirm: false,

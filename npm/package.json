@@ -1,6 +1,6 @@
 {
   "name": "itemizejs",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Turn any container's children into removable items",
   "main": "itemize.js",
   "scripts": {
