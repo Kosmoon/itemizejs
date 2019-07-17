@@ -4,7 +4,7 @@
 
 [<img src="https://img.shields.io/badge/npm-1.0.3-blue.svg">](https://www.npmjs.com/package/itemizejs)
 
-[Website](https://animejs.com/)
+[Website](https://itemizejs.com/)
 
 ItemizeJS is a Javascript library which transforms any containers children into manageable items in just two lines of code.
 
