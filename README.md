@@ -36,12 +36,12 @@ itemManager.apply(".target_container");
 
 # Usage example
 
-A few examples: https://itemize.js/index.html?example
+A few examples: https://itemizejs.com/index.html?example
 
 
-## Meta
+## About
 
-Kosmoon – [@YourTwitter](https://twitter.com/kosmoon) – kosmoonstudio@gmail.com
+Created by Kosmoon – kosmoonstudio@gmail.com
 
 
 Distributed under the MIT license. [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
