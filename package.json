@@ -1,8 +1,8 @@
 {
   "name": "itemizejs",
   "version": "1.0.3",
-  "description": "Turn any container's child into removable items",
-  "main": "itemize.js",
+  "description": "Turn any container's child into manageable items",
+  "main": "build/itemize.min.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,6 +12,7 @@
   },
   "keywords": [
     "javascript",
+    "library",
     "item",
     "remove",
     "add",
@@ -22,7 +23,7 @@
   "bugs": {
     "url": "https://github.com/Kosmoon/itemizejs/issues"
   },
-  "homepage": "https://github.com/Kosmoon/itemizejs#readme",
+  "homepage": "https://www.itemizejs.com",
   "devDependencies": {
     "uglify-js": "^3.5.15"
   },
