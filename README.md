@@ -10,7 +10,6 @@ ItemizeJS is a Javascript library which transforms any containers children into 
 
 Items will reorganize themselves with a nice animation when removed or added.
 
-![](header.png)
 
 # Installation
 
