@@ -1,8 +1,13 @@
 "use strict";
+/*
+ -- itemize.js v1.0.4 --
+ -- (c) 2019 Kosmoon --
+ -- Released under the MIT license --
+ */
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { keys.push.apply(keys, Object.getOwnPropertySymbols(object)); } if (enumerableOnly) keys = keys.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(source, true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(source).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -14,11 +19,6 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-/*
- -- itemize.js v1.0.3 --
- -- (c) 2019 Kosmoon Studio --
- -- Released under the MIT license --
- */
 if (typeof Object.assign != "function") {
   Object.defineProperty(Object, "assign", {
     value: function assign(target, varArgs) {
@@ -404,6 +404,79 @@ function () {
           }
         }
 
+        if (parent.itemizeOptions.dragAndDrop) {
+          child.setAttribute("draggable", "true");
+          child.style.cursor = "move";
+          child.addEventListener("dragstart", function (event) {
+            event.stopPropagation();
+
+            if (!child.inFlipAnim) {
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("Text", child.itemizeItemId);
+              child.parentNode.draggedItemId = child.itemizeItemId;
+              child.opacityBeforeDrag = getComputedStyle(child).opacity;
+            }
+
+            return true;
+          });
+          child.addEventListener("dragend", function (event) {
+            event.preventDefault();
+            child.parentNode.draggedItemId = null;
+            child.style.opacity = child.opacityBeforeDrag;
+            return true;
+          });
+          child.addEventListener("drag", function (event) {
+            return true;
+          });
+          child.addEventListener("dragover", function (event) {
+            event.preventDefault();
+
+            if (child.parentNode.draggedItemId && !child.inFlipAnim) {
+              var draggedEl = document.querySelector(".itemize_item_" + child.parentNode.draggedItemId);
+
+              if (draggedEl && draggedEl.parentNode === child.parentNode && !draggedEl.inFlipAnim) {
+                draggedEl.style.opacity = "0.6";
+
+                _this3.flipRead(_this3.items);
+
+                var draggedElNodeIndex = Array.prototype.indexOf.call(draggedEl.parentNode.children, draggedEl);
+                var draggedOnNodeIndex = Array.prototype.indexOf.call(draggedEl.parentNode.children, child);
+
+                if (draggedElNodeIndex < draggedOnNodeIndex) {
+                  if (child.nextElementSibling && child.nextElementSibling.itemizeItemId) {
+                    draggedEl.parentNode.insertBefore(draggedEl, child.nextElementSibling);
+                  } else if (!child.nextElementSibling || !child.nextElementSibling.itemizeItemId) {
+                    var temp = document.createElement("div");
+                    temp.setAttribute("notitemize", "");
+                    draggedEl.parentNode.insertBefore(temp, child);
+                    draggedEl.parentNode.insertBefore(child, temp);
+                    draggedEl.parentNode.insertBefore(draggedEl, temp);
+                    draggedEl.parentNode.removeChild(temp);
+                  }
+                } else if (draggedElNodeIndex > draggedOnNodeIndex) {
+                  draggedEl.parentNode.insertBefore(draggedEl, child);
+                }
+
+                _this3.flipPlay(_this3.items, 250);
+              }
+            }
+
+            return false;
+          });
+          child.addEventListener("dragenter", function (event) {
+            event.preventDefault();
+            return false;
+          });
+          child.addEventListener("dragleave", function (event) {
+            event.preventDefault();
+            return false;
+          });
+          child.addEventListener("drop", function (event) {
+            event.preventDefault();
+            return false;
+          });
+        }
+
         if (fromObserver) {
           this.showNotification("added", child);
         }
@@ -780,6 +853,7 @@ function () {
         };
 
         Object.assign(modal.style, {
+          all: "none",
           position: "fixed",
           top: "50%",
           left: "50%",
@@ -808,13 +882,17 @@ function () {
 
         modal.appendChild(styleEl);
         Object.assign(notificationText.style, {
-          marginBottom: "25px"
+          all: "none",
+          marginBottom: "25px",
+          fontSize: "18px"
         });
         Object.assign(btnContainer.style, {
           width: "100%",
           display: "flex"
         });
         Object.assign(btnCancel.style, {
+          all: "none",
+          fontSize: "14px",
           background: "#6C757D",
           border: "none",
           padding: "10px 0 10px 0",
@@ -826,6 +904,8 @@ function () {
           transition: "background-color 0.3s ease-in-out"
         });
         Object.assign(btnConfirm.style, {
+          all: "none",
+          fontSize: "14px",
           background: "#F94336",
           border: "none",
           padding: "10px 0 10px 0",
@@ -979,12 +1059,15 @@ function () {
         notificationText.classList.add(notificationTextClassName);
         notificationText.textContent = notificationTextContent;
         Object.assign(notificationText.style, {
+          all: "none",
           boxSizing: "border-box",
           width: "100%",
           height: "100%",
           textAlign: "center",
           whiteSpace: "nowrap",
-          padding: "10px 15px 10px 15px"
+          padding: "10px 15px 10px 15px",
+          fontSize: "16px",
+          fontWeight: "normal"
         });
         Object.assign(notificationTimer.style, {
           background: notificationTimerColor,
@@ -1489,7 +1572,7 @@ function () {
     }
   }, {
     key: "flipPlay",
-    value: function flipPlay(elems, duration) {
+    value: function flipPlay(elems, duration, swapAnim) {
       var _this8 = this;
 
       var _loop2 = function _loop2(i) {
@@ -1521,7 +1604,7 @@ function () {
                 transform: "none"
               }], {
                 duration: duration,
-                easing: el.parentNode.itemizeOptions.animEasing
+                easing: swapAnim ? "ease-in-out" : el.parentNode.itemizeOptions.animEasing
               });
             } else {
               _this8.animateRAF(el, [{
@@ -1587,6 +1670,7 @@ function () {
           animRemoveTranslateY: -100,
           animAddTranslateX: 0,
           animAddTranslateY: -100,
+          dragAndDrop: false,
           beforeRemove: null,
           outlineItemOnHover: false,
           nestingLevel: 1,

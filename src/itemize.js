@@ -1,6 +1,6 @@
 /*
- -- itemize.js v1.0.3 --
- -- (c) 2019 Kosmoon Studio --
+ -- itemize.js v1.0.4 --
+ -- (c) 2019 Kosmoon --
  -- Released under the MIT license --
  */
 
@@ -384,6 +384,92 @@ class Itemize {
           }
         }
       }
+      if (parent.itemizeOptions.dragAndDrop) {
+        child.setAttribute("draggable", "true");
+        child.style.cursor = "move";
+
+        child.addEventListener("dragstart", event => {
+          event.stopPropagation();
+          if (!child.inFlipAnim) {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("Text", child.itemizeItemId);
+            child.parentNode.draggedItemId = child.itemizeItemId;
+            child.opacityBeforeDrag = getComputedStyle(child).opacity;
+          }
+          return true;
+        });
+
+        child.addEventListener("dragend", event => {
+          event.preventDefault();
+          child.parentNode.draggedItemId = null;
+          child.style.opacity = child.opacityBeforeDrag;
+          return true;
+        });
+        child.addEventListener("drag", event => {
+          return true;
+        });
+        child.addEventListener("dragover", event => {
+          event.preventDefault();
+          if (child.parentNode.draggedItemId && !child.inFlipAnim) {
+            let draggedEl = document.querySelector(
+              ".itemize_item_" + child.parentNode.draggedItemId
+            );
+            if (
+              draggedEl &&
+              draggedEl.parentNode === child.parentNode &&
+              !draggedEl.inFlipAnim
+            ) {
+              draggedEl.style.opacity = "0.6";
+              this.flipRead(this.items);
+              let draggedElNodeIndex = Array.prototype.indexOf.call(
+                draggedEl.parentNode.children,
+                draggedEl
+              );
+              let draggedOnNodeIndex = Array.prototype.indexOf.call(
+                draggedEl.parentNode.children,
+                child
+              );
+              if (draggedElNodeIndex < draggedOnNodeIndex) {
+                if (
+                  child.nextElementSibling &&
+                  child.nextElementSibling.itemizeItemId
+                ) {
+                  draggedEl.parentNode.insertBefore(
+                    draggedEl,
+                    child.nextElementSibling
+                  );
+                } else if (
+                  !child.nextElementSibling ||
+                  !child.nextElementSibling.itemizeItemId
+                ) {
+                  let temp = document.createElement("div");
+                  temp.setAttribute("notitemize", "");
+                  draggedEl.parentNode.insertBefore(temp, child);
+                  draggedEl.parentNode.insertBefore(child, temp);
+                  draggedEl.parentNode.insertBefore(draggedEl, temp);
+                  draggedEl.parentNode.removeChild(temp);
+                }
+              } else if (draggedElNodeIndex > draggedOnNodeIndex) {
+                draggedEl.parentNode.insertBefore(draggedEl, child);
+              }
+              this.flipPlay(this.items, 250);
+            }
+          }
+          return false;
+        });
+        child.addEventListener("dragenter", event => {
+          event.preventDefault();
+          return false;
+        });
+        child.addEventListener("dragleave", event => {
+          event.preventDefault();
+          return false;
+        });
+        child.addEventListener("drop", event => {
+          event.preventDefault();
+          return false;
+        });
+      }
       if (fromObserver) {
         this.showNotification("added", child);
       }
@@ -392,6 +478,7 @@ class Itemize {
       return false;
     }
   }
+
   shadowOnHover(elem, isRemoveBtn) {
     let parent = null;
     if (isRemoveBtn) {
@@ -778,6 +865,7 @@ class Itemize {
       };
 
       Object.assign(modal.style, {
+        all: "none",
         position: "fixed",
         top: "50%",
         left: "50%",
@@ -808,13 +896,17 @@ class Itemize {
       modal.appendChild(styleEl);
 
       Object.assign(notificationText.style, {
-        marginBottom: "25px"
+        all: "none",
+        marginBottom: "25px",
+        fontSize: "18px"
       });
       Object.assign(btnContainer.style, {
         width: "100%",
         display: "flex"
       });
       Object.assign(btnCancel.style, {
+        all: "none",
+        fontSize: "14px",
         background: "#6C757D",
         border: "none",
         padding: "10px 0 10px 0",
@@ -826,6 +918,8 @@ class Itemize {
         transition: "background-color 0.3s ease-in-out"
       });
       Object.assign(btnConfirm.style, {
+        all: "none",
+        fontSize: "14px",
         background: "#F94336",
         border: "none",
         padding: "10px 0 10px 0",
@@ -1009,12 +1103,15 @@ class Itemize {
       notificationText.classList.add(notificationTextClassName);
       notificationText.textContent = notificationTextContent;
       Object.assign(notificationText.style, {
+        all: "none",
         boxSizing: "border-box",
         width: "100%",
         height: "100%",
         textAlign: "center",
         whiteSpace: "nowrap",
-        padding: "10px 15px 10px 15px"
+        padding: "10px 15px 10px 15px",
+        fontSize: "16px",
+        fontWeight: "normal"
       });
       Object.assign(notificationTimer.style, {
         background: notificationTimerColor,
@@ -1582,7 +1679,7 @@ class Itemize {
       }
     }
   }
-  flipPlay(elems, duration) {
+  flipPlay(elems, duration, swapAnim) {
     for (let i = 0; i < elems.length; i++) {
       let el = elems[i];
       if (!el.inAddAnim && el.parentNode && el.parentNode.itemizeOptions) {
@@ -1613,7 +1710,9 @@ class Itemize {
               ],
               {
                 duration: duration,
-                easing: el.parentNode.itemizeOptions.animEasing
+                easing: swapAnim
+                  ? "ease-in-out"
+                  : el.parentNode.itemizeOptions.animEasing
               }
             );
           } else {
@@ -1683,6 +1782,7 @@ class Itemize {
         animRemoveTranslateY: -100,
         animAddTranslateX: 0,
         animAddTranslateY: -100,
+        dragAndDrop: false,
         beforeRemove: null,
         outlineItemOnHover: false,
         nestingLevel: 1,
