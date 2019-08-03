@@ -1,4 +1,9 @@
 "use strict";
+/*
+ -- itemize.js v1.0.5 --
+ -- (c) 2019 Kosmoon --
+ -- Released under the MIT license --
+ */
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -14,11 +19,6 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-/*
- -- itemize.js v1.0.4 --
- -- (c) 2019 Kosmoon --
- -- Released under the MIT license --
- */
 if (typeof Object.assign != "function") {
   Object.defineProperty(Object, "assign", {
     value: function assign(target, varArgs) {
