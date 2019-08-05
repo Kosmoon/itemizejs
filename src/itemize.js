@@ -1,9 +1,4 @@
 "use strict";
-/*
- -- itemize.js v1.0.5 --
- -- (c) 2019 Kosmoon --
- -- Released under the MIT license --
- */
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -19,6 +14,11 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
+/*
+ -- itemize.js v1.0.5 --
+ -- (c) 2019 Kosmoon --
+ -- Released under the MIT license --
+ */
 if (typeof Object.assign != "function") {
   Object.defineProperty(Object, "assign", {
     value: function assign(target, varArgs) {
@@ -61,6 +61,7 @@ function () {
     this.elPos = {};
     this.flipPlayId = "";
     this.elemToRemove = [];
+    this.draggedEl = null;
     this.lastTargetedContainers = null;
     window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame; // let optionCheckResult = this.optionsTypeCheck(this.globalOptions);
     // if (optionCheckResult !== "valid") {
@@ -409,20 +410,31 @@ function () {
           child.style.cursor = "move";
           child.addEventListener("dragstart", function (event) {
             event.stopPropagation();
+            _this4.draggedEl = child;
+
+            if (!child.opacityBeforeDrag) {
+              child.opacityBeforeDrag = getComputedStyle(child).opacity;
+            }
 
             if (!child.inFlipAnim) {
               event.dataTransfer.effectAllowed = "move";
-              event.dataTransfer.setData("Text", child.itemizeItemId);
-              child.parentNode.draggedItemId = child.itemizeItemId;
-              child.opacityBeforeDrag = getComputedStyle(child).opacity;
+              event.dataTransfer.setData("Text", "");
             }
 
             return true;
           });
           child.addEventListener("dragend", function (event) {
             event.preventDefault();
-            child.parentNode.draggedItemId = null;
-            child.style.opacity = child.opacityBeforeDrag;
+            event.stopPropagation();
+
+            if (_this4.draggedEl) {
+              if (_this4.draggedEl.opacityBeforeDrag) {
+                _this4.draggedEl.style.opacity = _this4.draggedEl.opacityBeforeDrag;
+              }
+
+              _this4.draggedEl = null;
+            }
+
             return true;
           });
           child.addEventListener("drag", function (event) {
@@ -431,33 +443,35 @@ function () {
           child.addEventListener("dragover", function (event) {
             event.preventDefault();
 
-            if (child.parentNode.draggedItemId && !child.inFlipAnim) {
-              var draggedEl = document.querySelector(".itemize_item_" + child.parentNode.draggedItemId);
-
-              if (draggedEl && draggedEl.parentNode === child.parentNode && !draggedEl.inFlipAnim) {
-                draggedEl.style.opacity = "0.6";
+            if (_this4.draggedEl && !child.inFlipAnim) {
+              if (_this4.draggedEl.parentNode === child.parentNode && !_this4.draggedEl.inFlipAnim) {
+                _this4.draggedEl.style.opacity = "0.6";
 
                 _this4.flipRead(_this4.items);
 
-                var draggedElNodeIndex = Array.prototype.indexOf.call(draggedEl.parentNode.children, draggedEl);
-                var draggedOnNodeIndex = Array.prototype.indexOf.call(draggedEl.parentNode.children, child);
+                var draggedElNodeIndex = Array.prototype.indexOf.call(_this4.draggedEl.parentNode.children, _this4.draggedEl);
+                var draggedOnNodeIndex = Array.prototype.indexOf.call(_this4.draggedEl.parentNode.children, child);
 
                 if (draggedElNodeIndex < draggedOnNodeIndex) {
                   if (child.nextElementSibling && child.nextElementSibling.itemizeItemId) {
-                    draggedEl.parentNode.insertBefore(draggedEl, child.nextElementSibling);
+                    _this4.draggedEl.parentNode.insertBefore(_this4.draggedEl, child.nextElementSibling);
                   } else if (!child.nextElementSibling || !child.nextElementSibling.itemizeItemId) {
                     var temp = document.createElement("div");
                     temp.setAttribute("notitemize", "");
-                    draggedEl.parentNode.insertBefore(temp, child);
-                    draggedEl.parentNode.insertBefore(child, temp);
-                    draggedEl.parentNode.insertBefore(draggedEl, temp);
-                    draggedEl.parentNode.removeChild(temp);
+
+                    _this4.draggedEl.parentNode.insertBefore(temp, child);
+
+                    _this4.draggedEl.parentNode.insertBefore(child, temp);
+
+                    _this4.draggedEl.parentNode.insertBefore(_this4.draggedEl, temp);
+
+                    _this4.draggedEl.parentNode.removeChild(temp);
                   }
                 } else if (draggedElNodeIndex > draggedOnNodeIndex) {
-                  draggedEl.parentNode.insertBefore(draggedEl, child);
+                  _this4.draggedEl.parentNode.insertBefore(_this4.draggedEl, child);
                 }
 
-                _this4.flipPlay(_this4.items, 250);
+                _this4.flipPlay(_this4.items, 250, true);
               }
             }
 
@@ -473,6 +487,11 @@ function () {
           });
           child.addEventListener("drop", function (event) {
             event.preventDefault();
+
+            if (_this4.draggedEl && _this4.draggedEl.opacityBeforeDrag) {
+              _this4.draggedEl.style.opacity = _this4.draggedEl.opacityBeforeDrag;
+            }
+
             return false;
           });
         }
@@ -1572,7 +1591,7 @@ function () {
     }
   }, {
     key: "flipPlay",
-    value: function flipPlay(elems, duration, swapAnim) {
+    value: function flipPlay(elems, duration, dragAnim) {
       var _this9 = this;
 
       var _loop2 = function _loop2(i) {
@@ -1604,7 +1623,7 @@ function () {
                 transform: "none"
               }], {
                 duration: duration,
-                easing: swapAnim ? "ease-in-out" : el.parentNode.itemizeOptions.animEasing
+                easing: dragAnim ? "ease-in-out" : el.parentNode.itemizeOptions.animEasing
               });
             } else {
               _this9.animateRAF(el, [{
