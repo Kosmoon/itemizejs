@@ -1,4 +1,9 @@
 "use strict";
+/*
+ -- itemize.js v1.0.7 --
+ -- (c) 2019 Kosmoon --
+ -- Released under the MIT license --
+ */
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -14,11 +19,6 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-/*
- -- itemize.js v1.0.5 --
- -- (c) 2019 Kosmoon --
- -- Released under the MIT license --
- */
 if (typeof Object.assign != "function") {
   Object.defineProperty(Object, "assign", {
     value: function assign(target, varArgs) {
@@ -116,9 +116,12 @@ function () {
         } else {
           console.error(" - Itemize error - \n no valid target found.\n");
         }
-      }
+      } // console.log(
+      //   "%c" + childItemizedNb + " element(s) itemized",
+      //   "background: #060606; color:#1FEA00;padding:10px"
+      // );
 
-      console.log("%c" + childItemizedNb + " element(s) itemized", "background: #060606; color:#1FEA00;padding:10px");
+
       return childItemizedNb + " element(s) itemized";
     }
   }, {
@@ -1258,7 +1261,8 @@ function () {
               var confirmRemove = item.parentElement.itemizeOptions.beforeRemove(item);
 
               if (confirmRemove === undefined) {
-                throw new Error(' - Itemize error - \n The function "beforeErase" must return a Boolean or a Promise');
+                item.removeStatus = null;
+                throw new Error(' - Itemize error - \n The function "beforeRemove" must return a Boolean or a Promise');
               }
 
               if (typeof confirmRemove.then === "function") {
@@ -1287,13 +1291,14 @@ function () {
                   } else {
                     _this7.showNotification("removed", item);
 
-                    item.removeStatus = null;
                     item.parentNode.removeChild(item);
 
                     _this7.cleanItem(item);
 
                     _this7.items.splice(item.arrayPosition, 1);
                   }
+
+                  item.removeStatus = null;
                 })["catch"](function (err) {
                   console.log(err);
                   item.onclick = onClickFn;
@@ -1325,6 +1330,10 @@ function () {
                   this.items.splice(item.arrayPosition, 1);
                   this.cleanItem(item);
                 }
+
+                item.removeStatus = null;
+              } else {
+                item.removeStatus = null;
               }
             } else {
               if (item.parentElement.itemizeOptions.anim) {
@@ -1347,11 +1356,12 @@ function () {
                 this.items.splice(item.arrayPosition, 1);
               } else {
                 this.showNotification("removed", item);
-                item.removeStatus = null;
                 item.parentNode.removeChild(item);
                 this.cleanItem(item);
                 this.items.splice(item.arrayPosition, 1);
               }
+
+              item.removeStatus = null;
             }
           }
         } else {
