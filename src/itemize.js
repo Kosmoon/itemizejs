@@ -1,6 +1,6 @@
 "use strict";
 /*
- -- itemize.js v1.0.7 --
+ -- itemize.js v1.0.8 --
  -- (c) 2019 Kosmoon --
  -- Released under the MIT license --
  */
@@ -906,7 +906,7 @@ function () {
         Object.assign(notificationText.style, {
           all: "none",
           marginBottom: "25px",
-          fontSize: "18px"
+          fontSize: "16px"
         });
         Object.assign(btnContainer.style, {
           width: "100%",
@@ -1300,7 +1300,6 @@ function () {
 
                   item.removeStatus = null;
                 })["catch"](function (err) {
-                  console.log(err);
                   item.onclick = onClickFn;
                   item.removeStatus = null;
                 });

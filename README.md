@@ -2,7 +2,7 @@
 
 > Turn any container's children into manageable items.
 
-[<img src="https://img.shields.io/badge/npm-1.0.7-blue.svg">](https://www.npmjs.com/package/itemizejs)
+[<img src="https://img.shields.io/badge/npm-1.0.8-blue.svg">](https://www.npmjs.com/package/itemizejs)
 
 [Website](https://itemizejs.com/)
 
@@ -17,7 +17,7 @@ Items will reorganize themselves with a nice animation when removed, added or dr
 CDN:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/itemizejs@1.0.7/itemize.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/itemizejs@1.0.8/itemize.min.js"></script>
 ```
 
 Locally:
