@@ -4,6 +4,8 @@
 
 [<img src="https://img.shields.io/badge/npm-1.0.8-blue.svg">](https://www.npmjs.com/package/itemizejs)
 
+[Website](https://kosmoon.github.io/itemize/)
+
 ItemizeJS is a Javascript library which transforms any containers children into manageable items in just two lines of code.
 
 Items will reorganize themselves with a nice animation when removed, added or dragged.
@@ -43,11 +45,11 @@ itemManager.apply(".target_container");
 
 # Usage example
 
-https://itemizejs.com/index.html?example
+https://kosmoon.github.io/itemize/index.html?example
 
 # Documentation
 
-https://itemizejs.com/docs.html
+https://kosmoon.github.io/itemize/docs.html
 
 # Browser support
 
